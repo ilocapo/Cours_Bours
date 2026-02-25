@@ -1,1 +1,1 @@
-ACTIONS = 
+DATA_PATH = "./cours_boursiers_fusion.csv"
