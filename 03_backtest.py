@@ -275,7 +275,9 @@ def get_summary():
 # 💰 MODULE DE BACKTEST : STRATÉGIE Z-SCORE
 # ==========================================
 
-def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction=0.01, fenetre_zscore=200):
+def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction=0.01, fenetre_zscore=200,
+                             take_profit_pct=0.08, stop_loss_pct=0.05, time_stop_days=10,
+                             falling_knife_window=3, falling_knife_drop_pct=0.08, verbose=True):
     """
     Effectue un backtest sur une action spécifique avec la stratégie Z-score.
     Compare la performance avec le Buy & Hold et le taux sans risque (6.5% UEMOA).
@@ -285,34 +287,45 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
         capital_initial (float): Capital de départ en FCFA (défaut 1M)
         frais_transaction (float): Frais SGI par transaction (défaut 1%)
         fenetre_zscore (int): Fenêtre de calcul du Z-score (défaut 200 jours)
+        take_profit_pct (float): Niveau Take Profit (défaut +8%, ex: 0.08)
+        stop_loss_pct (float): Niveau Stop Loss (défaut -5%, ex: 0.05)
+        time_stop_days (int): Nombre de jours avant Time-Stop (défaut 10)
+        falling_knife_window (int): Fenêtre pour détection chute (défaut 3)
+        falling_knife_drop_pct (float): Seuil chute pour éviter (défaut -8%, ex: 0.08)
+        verbose (bool): Afficher les détails (défaut True)
         
     Returns:
         dict: Résultats du backtest avec statistiques de performance
     """
     
-    print("\n" + "=" * 80)
-    print(f"🔄 BACKTEST STRATÉGIE Z-SCORE : {ticker}")
-    print("=" * 80)
+    if verbose:
+        print("\n" + "=" * 80)
+        print(f"🔄 BACKTEST STRATÉGIE Z-SCORE : {ticker}")
+        print(f"   TP={take_profit_pct*100:.1f}% | SL={stop_loss_pct*100:.1f}% | TimeStop={time_stop_days}j | FK_drop={falling_knife_drop_pct*100:.1f}%")
+        print("=" * 80)
     
     # Charger les données
     df = charge_and_clean_data()
     
     if df.empty:
-        print("❌ Erreur: Pas de données disponibles.")
+        if verbose:
+            print("❌ Erreur: Pas de données disponibles.")
         return {}
     
     # Filtrer pour l'action spécifiée
     df_stock = df[df['Code symbole'] == ticker].copy()
     
     if df_stock.empty:
-        print(f"❌ Erreur: Action {ticker} non trouvée.")
+        if verbose:
+            print(f"❌ Erreur: Action {ticker} non trouvée.")
         return {}
     
     # Trier par date (la conversion est déjà faite dans charge_and_clean_data())
     df_stock = df_stock.sort_values(by='Date').reset_index(drop=True)
     
     if len(df_stock) < fenetre_zscore:
-        print(f"⚠️  Pas assez d'historique pour {ticker} (besoin de {fenetre_zscore} jours).")
+        if verbose:
+            print(f"⚠️  Pas assez d'historique pour {ticker} (besoin de {fenetre_zscore} jours).")
         return {}
     
     # Calcul des Z-scores
@@ -327,26 +340,120 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
     # Générer les signaux et appliquer les filtres
     df_stock = signals_generation(df_stock)
     df_stock = add_filters(df_stock)
-    
-    # Logique de trading avec signaux filtrés
-    df_stock['Signal'] = 0
-    # Utiliser les signaux filtrés pour les décisions de trading
-    df_stock.loc[df_stock['Signal_Filtre'].isin(['Buy_FILTERED', 'Strong Buy_FILTERED']), 'Signal'] = 1   # Achat
-    df_stock.loc[df_stock['Signal_Filtre'].isin(['Sell_FILTERED', 'Strong Sell_FILTERED']), 'Signal'] = -1   # Vente
-    
-    # Position (FFill = rester en position jusqu'au signal de vente)
-    # Remplacer les 0 par la dernière position non-zéro (forward fill)
-    df_stock['Position'] = df_stock['Signal'].replace(0, pd.NA).ffill().fillna(0)
-    df_stock.loc[df_stock['Signal'] == -1, 'Position'] = 0
-    
-    # Rendements
+
+    # Préparer colonnes pour simulation pas-à-pas
     df_stock['Rendement_Action'] = df_stock['Cours moyen'].pct_change()
-    df_stock['Rendement_Algo'] = df_stock['Position'].shift(1) * df_stock['Rendement_Action']
-    
-    # Frais de transaction
-    df_stock['Trade_Effectue'] = df_stock['Position'].diff().abs()
+    df_stock['Position'] = 0
+    df_stock['Signal_Exec'] = 0    # 1 = achat exécuté, -1 = vente exécutée
+    df_stock['Entry_Price'] = pd.NA
+    df_stock['Exit_Price'] = pd.NA
+    df_stock['Holding_Days'] = 0
+    df_stock['Avoid_Falling_Knife'] = False
+
+    # Signaux candidats (après filtres)
+    df_stock['Signal_Candidate'] = 0
+    df_stock.loc[df_stock['Signal_Filtre'].isin(['Buy_FILTERED', 'Strong Buy_FILTERED']), 'Signal_Candidate'] = 1
+    df_stock.loc[df_stock['Signal_Filtre'].isin(['Sell_FILTERED', 'Strong Sell_FILTERED']), 'Signal_Candidate'] = -1
+
+    # Simulation itérative
+    in_position = False
+    entry_price = None
+    tp_price = None
+    sl_price = None
+    holding_days = 0
+
+    for i in range(len(df_stock)):
+        price = df_stock.at[df_stock.index[i], 'Cours moyen']
+        date = df_stock.at[df_stock.index[i], 'Date']
+
+        # Default copy previous position
+        prev_position = 1 if in_position else 0
+        df_stock.at[df_stock.index[i], 'Position'] = prev_position
+
+        # Update holding days if in position
+        if in_position:
+            holding_days += 1
+            df_stock.at[df_stock.index[i], 'Holding_Days'] = holding_days
+
+            # Vérifier Take Profit
+            if price >= tp_price:
+                # Vendre au marché
+                df_stock.at[df_stock.index[i], 'Signal_Exec'] = -1
+                df_stock.at[df_stock.index[i], 'Exit_Price'] = price
+                in_position = False
+                entry_price = None
+                tp_price = None
+                sl_price = None
+                holding_days = 0
+                df_stock.at[df_stock.index[i], 'Position'] = 0
+                continue
+
+            # Vérifier Stop Loss
+            if price <= sl_price:
+                df_stock.at[df_stock.index[i], 'Signal_Exec'] = -1
+                df_stock.at[df_stock.index[i], 'Exit_Price'] = price
+                in_position = False
+                entry_price = None
+                tp_price = None
+                sl_price = None
+                holding_days = 0
+                df_stock.at[df_stock.index[i], 'Position'] = 0
+                continue
+
+            # Vérifier Time-Stop
+            if holding_days >= time_stop_days:
+                df_stock.at[df_stock.index[i], 'Signal_Exec'] = -1
+                df_stock.at[df_stock.index[i], 'Exit_Price'] = price
+                in_position = False
+                entry_price = None
+                tp_price = None
+                sl_price = None
+                holding_days = 0
+                df_stock.at[df_stock.index[i], 'Position'] = 0
+                continue
+
+        else:
+            # Pas en position: possibilité d'entrer
+            if df_stock.at[df_stock.index[i], 'Signal_Candidate'] == 1:
+                # Falling-knife check: mesurer chute depuis falling_knife_window jours
+                avoid_fk = False
+                idx_past = i - falling_knife_window
+                if idx_past >= 0:
+                    price_past = df_stock.at[df_stock.index[idx_past], 'Cours moyen']
+                    if price_past and price_past > 0:
+                        pct_change = (price - price_past) / price_past
+                        if pct_change <= -falling_knife_drop_pct:
+                            avoid_fk = True
+                # Éviter l'achat si ex-dividende le jour même (si colonne disponible)
+                ex_dividend_today = False
+                if 'Dividendes / Intérêts' in df_stock.columns:
+                    try:
+                        if pd.notna(df_stock.at[df_stock.index[i], 'Dividendes / Intérêts']) and df_stock.at[df_stock.index[i], 'Dividendes / Intérêts'] > 0:
+                            ex_dividend_today = True
+                    except Exception:
+                        ex_dividend_today = False
+
+                if avoid_fk:
+                    df_stock.at[df_stock.index[i], 'Avoid_Falling_Knife'] = True
+                if (not avoid_fk) and (not ex_dividend_today):
+                    # Exécuter l'achat
+                    df_stock.at[df_stock.index[i], 'Signal_Exec'] = 1
+                    df_stock.at[df_stock.index[i], 'Entry_Price'] = price
+                    in_position = True
+                    entry_price = price
+                    tp_price = entry_price * (1 + take_profit_pct)
+                    sl_price = entry_price * (1 - stop_loss_pct)
+                    holding_days = 0
+                    df_stock.at[df_stock.index[i], 'Position'] = 1
+
+    # Calculer Rendement_Algo en utilisant la Position (position appliquée sur la journée suivante)
+    df_stock['Position_Shift'] = df_stock['Position'].shift(1).fillna(0)
+    df_stock['Rendement_Algo'] = df_stock['Position_Shift'] * df_stock['Rendement_Action']
+
+    # Frais de transaction: appliquer un coût quand un trade est exécuté (achat ou vente)
+    df_stock['Trade_Effectue'] = df_stock['Signal_Exec'].abs()
     df_stock.loc[df_stock['Trade_Effectue'] == 1, 'Rendement_Algo'] -= frais_transaction
-    
+
     # Évolution du capital
     df_stock['Capital_Algo'] = capital_initial * (1 + df_stock['Rendement_Algo']).cumprod()
     df_stock['Capital_BuyHold'] = capital_initial * (1 + df_stock['Rendement_Action']).cumprod()
@@ -370,47 +477,49 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
     volatilite_algo = (df_stock['Rendement_Algo'].dropna().std()) * (252 ** 0.5) * 100
     sharpe_ratio_algo = (rendement_net_algo - rendement_net_safe) / volatilite_algo if volatilite_algo > 0 else 0
     
-    # Affichage des résultats
-    print(f"\n📅 Période: {df_stock['Date'].iloc[0]} → {df_stock['Date'].iloc[-1]}")
-    print(f"📊 Nombre de jours: {len(df_stock)}")
-    print(f"🔔 Nombre d'ordres: {int(nombre_trades)}")
-    
-    print("\n" + "-" * 80)
-    print("💹 RÉSULTATS FINANCIERS")
-    print("-" * 80)
-    print(f"Capital Initial           : {capital_initial:>15,.0f} FCFA")
-    print(f"Capital Final (Z-Score)   : {capital_final_algo:>15,.0f} FCFA  ({rendement_net_algo:>6.2f}%)")
-    print(f"Capital Final (Buy & Hold): {capital_final_bh:>15,.0f} FCFA  ({rendement_net_bh:>6.2f}%)")
-    print(f"Capital Final (Taux 6.5%) : {capital_final_safe:>15,.0f} FCFA  ({rendement_net_safe:>6.2f}%)")
-    
-    print("\n" + "-" * 80)
-    print("🎯 ANALYSE DE PERFORMANCE")
-    print("-" * 80)
     surperformance = rendement_net_algo - rendement_net_bh
     ecart_taux_safe = rendement_net_algo - rendement_net_safe
     
-    if surperformance > 0:
-        print(f"✅ Surperformance vs Buy & Hold : +{surperformance:.2f}%")
-    else:
-        print(f"❌ Sous-performance vs Buy & Hold : {surperformance:.2f}%")
-    
-    if ecart_taux_safe > 0:
-        print(f"✅ Surperformance vs Taux 6.5%  : +{ecart_taux_safe:.2f}%")
-    else:
-        print(f"⚠️  Sous-performance vs Taux 6.5%  : {ecart_taux_safe:.2f}%")
-    
-    print(f"📈 Volatilité Annualisée    : {volatilite_algo:.2f}%")
-    print(f"📊 Ratio de Sharpe           : {sharpe_ratio_algo:.4f}")
-    
-    # Exporter le rapport détaillé
-    timestamp = datetime.now().strftime('%Y%m%d')
-    export_file = f"backtest_report_{ticker}_{timestamp}.csv"
-    columns_export = [
-        'Date', 'Code symbole', 'Cours moyen', 'Z_Score', 'Signal',
-        'Position', 'Rendement_Algo', 'Capital_Algo', 'Capital_BuyHold', 'Capital_SafeRate'
-    ]
-    df_stock[columns_export].to_csv(export_file, sep=";", index=False)
-    print(f"\n📁 Rapport exporté: {export_file}")
+    # Affichage des résultats (si verbose=True)
+    if verbose:
+        print(f"\n📅 Période: {df_stock['Date'].iloc[0]} → {df_stock['Date'].iloc[-1]}")
+        print(f"📊 Nombre de jours: {len(df_stock)}")
+        print(f"🔔 Nombre d'ordres: {int(nombre_trades)}")
+        
+        print("\n" + "-" * 80)
+        print("💹 RÉSULTATS FINANCIERS")
+        print("-" * 80)
+        print(f"Capital Initial           : {capital_initial:>15,.0f} FCFA")
+        print(f"Capital Final (Z-Score)   : {capital_final_algo:>15,.0f} FCFA  ({rendement_net_algo:>6.2f}%)")
+        print(f"Capital Final (Buy & Hold): {capital_final_bh:>15,.0f} FCFA  ({rendement_net_bh:>6.2f}%)")
+        print(f"Capital Final (Taux 6.5%) : {capital_final_safe:>15,.0f} FCFA  ({rendement_net_safe:>6.2f}%)")
+        
+        print("\n" + "-" * 80)
+        print("🎯 ANALYSE DE PERFORMANCE")
+        print("-" * 80)
+        
+        if surperformance > 0:
+            print(f"✅ Surperformance vs Buy & Hold : +{surperformance:.2f}%")
+        else:
+            print(f"❌ Sous-performance vs Buy & Hold : {surperformance:.2f}%")
+        
+        if ecart_taux_safe > 0:
+            print(f"✅ Surperformance vs Taux 6.5%  : +{ecart_taux_safe:.2f}%")
+        else:
+            print(f"⚠️  Sous-performance vs Taux 6.5%  : {ecart_taux_safe:.2f}%")
+        
+        print(f"📈 Volatilité Annualisée    : {volatilite_algo:.2f}%")
+        print(f"📊 Ratio de Sharpe           : {sharpe_ratio_algo:.4f}")
+        
+        # Exporter le rapport détaillé
+        timestamp = datetime.now().strftime('%Y%m%d')
+        export_file = f"backtest_report_{ticker}_{timestamp}.csv"
+        columns_export = [
+            'Date', 'Code symbole', 'Cours moyen', 'Z_Score', 'Signal',
+            'Position', 'Rendement_Algo', 'Capital_Algo', 'Capital_BuyHold', 'Capital_SafeRate'
+        ]
+        df_stock[columns_export].to_csv(export_file, sep=";", index=False)
+        print(f"\n📁 Rapport exporté: {export_file}")
     
     return {
         'ticker': ticker,
@@ -534,6 +643,101 @@ def run_backtest_portfolio(tickers=None, capital_par_action=200000, frais_transa
     }
 
 
+def parameter_grid_search(ticker, capital_initial=1000000, frais_transaction=0.01):
+    """
+    Effectue une recherche de grille de paramètres pour optimiser les TP/SL/TimeStop/FK.
+    
+    Args:
+        ticker (str): Code symbole à tester
+        capital_initial (float): Capital initial en FCFA
+        frais_transaction (float): Frais par transaction
+        
+    Returns:
+        pd.DataFrame: Résultats de tous les backtests avec paramètres variés
+    """
+    
+    print("\n" + "=" * 120)
+    print(f"🔎 GRID SEARCH OPTIMISATION PARAMÈTRES : {ticker}")
+    print("=" * 120)
+    
+    # Grilles de paramètres à tester
+    tp_values = [0.05, 0.08, 0.10, 0.15]        # TP: +5%, +8%, +10%, +15%
+    sl_values = [0.03, 0.05, 0.08]              # SL: -3%, -5%, -8%
+    ts_values = [5, 10, 15, 20]                 # Time-Stop: 5, 10, 15, 20 jours
+    fk_drop_values = [0.05, 0.08, 0.10]         # FK drop: -5%, -8%, -10%
+    
+    results = []
+    total_tests = len(tp_values) * len(sl_values) * len(ts_values) * len(fk_drop_values)
+    test_count = 0
+    
+    print(f"\n📊 Grille de test: {total_tests} combinaisons")
+    print(f"   TP: {tp_values}")
+    print(f"   SL: {sl_values}")
+    print(f"   TimeStop: {ts_values}")
+    print(f"   FK_drop: {fk_drop_values}\n")
+    
+    for tp in tp_values:
+        for sl in sl_values:
+            for ts in ts_values:
+                for fk_drop in fk_drop_values:
+                    test_count += 1
+                    print(f"[{test_count:3d}/{total_tests}] Testing TP={tp*100:.0f}% | SL={sl*100:.0f}% | TS={ts}j | FK={fk_drop*100:.0f}%", end=" ... ")
+                    
+                    result = run_backtest_single_stock(
+                        ticker,
+                        capital_initial=capital_initial,
+                        frais_transaction=frais_transaction,
+                        take_profit_pct=tp,
+                        stop_loss_pct=sl,
+                        time_stop_days=ts,
+                        falling_knife_drop_pct=fk_drop,
+                        verbose=False  # ne pas afficher les détails
+                    )
+                    
+                    if result:
+                        results.append({
+                            'TP': tp,
+                            'SL': sl,
+                            'TimeStop': ts,
+                            'FK_Drop': fk_drop,
+                            'Rendement': result['rendement_algo'],
+                            'Surperf_BH': result['surperformance'],
+                            'Surperf_Safe': result['ecart_taux_safe'],
+                            'Sharpe': result['sharpe_ratio'],
+                            'Volatilite': result['volatilite'],
+                            'Trades': result['nombre_trades'],
+                            'Capital_Final': result['capital_final_algo']
+                        })
+                        print(f"Rendement={result['rendement_algo']:6.2f}% | Sharpe={result['sharpe_ratio']:7.3f}")
+                    else:
+                        print("SKIP")
+    
+    if not results:
+        print("❌ Aucun résultat valide.")
+        return None
+    
+    # Créer DataFrame et trier par Sharpe ratio (décroissant)
+    df_results = pd.DataFrame(results)
+    df_results = df_results.sort_values('Sharpe', ascending=False).reset_index(drop=True)
+    
+    # Afficher les meilleurs résultats
+    print("\n" + "=" * 120)
+    print("🏆 TOP 10 MEILLEURES COMBINAISONS (par Sharpe Ratio)")
+    print("=" * 120)
+    
+    display_cols = ['TP', 'SL', 'TimeStop', 'FK_Drop', 'Rendement', 'Surperf_BH', 'Sharpe', 'Volatilite', 'Trades']
+    print(df_results[display_cols].head(10).to_string(index=False))
+    
+    # Exporter les résultats en CSV
+    timestamp = datetime.now().strftime('%Y%m%d')
+    export_file = f"grid_search_{ticker}_{timestamp}.csv"
+    df_results.to_csv(export_file, index=False)
+    print(f"\n✅ Résultats exportés : {export_file}")
+    print("=" * 120)
+    
+    return df_results
+
+
 if __name__ == "__main__":
     # Exécuter le scan quotidien
     print("🔍 PHASE 1: SCAN DES OPPORTUNITÉS")
@@ -546,3 +750,9 @@ if __name__ == "__main__":
     # Backtester un portefeuille (5 actions)
     print("\n\n💼 PHASE 3: BACKTEST PORTEFEUILLE")
     run_backtest_portfolio(capital_par_action=200000)
+    
+    # OPTIONNEL : Grid search pour optimiser les paramètres (décommenter pour exécuter)
+    # Cette phase peut prendre du temps (~10-20 min pour une action, dépend du nb combinaisons)
+    # print("\n\n🔎 PHASE 4: GRID SEARCH OPTIMISATION PARAMÈTRES")
+    # df_grid_results = parameter_grid_search('SNTS', capital_initial=1000000)
+
