@@ -1,207 +1,199 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+MAIN - Lanceur principal pour la stratégie Z-Score BRVM
+========================================================
 
-import pandas as pd
+Ce script orchestre:
+1. Scan quotidien des opportunités
+2. Backtesting de la stratégie
+3. Optimisation des paramètres (optionnel)
+4. Gestion portefeuille Core-Satellite (optionnel)
+"""
 
-
-import rarfile
+import sys
 import os
-import shutil
+
+# Ajouter src au chemin pour les imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
+# Imports des modules stratégie
+from backtester import (
+    scan_market_opportunities,
+    get_summary,
+    run_backtest_single_stock,
+    run_backtest_portfolio,
+    parameter_grid_search
+)
+from portfolio_strategy import core_satellite_backtest
+from config import OUTPUT_DAILY_REPORTS, OUTPUT_BACKTEST_REPORTS
 
 
-
-# Extraction du fichier RAR avec gestion d'erreur et fallback sur unrar
-def extract_rar(filepath, extract_to):
-    try:
-        with rarfile.RarFile(filepath) as archive:
-            archive.extractall(extract_to)
-        return True
-    except Exception as e:
-        print("Erreur avec rarfile :", e)
-        print("Tentative d'extraction avec la commande unrar...")
-        import subprocess
-        try:
-            result = subprocess.run([
-                "unrar", "x", "-o+", filepath, extract_to
-            ], capture_output=True, text=True)
-            print(result.stdout)
-            if result.returncode == 0:
-                print("Extraction avec unrar réussie.")
-                return True
-            else:
-                print("Échec de l'extraction avec unrar :", result.stderr)
-                return False
-        except FileNotFoundError:
-            print("La commande 'unrar' n'est pas installée. Veuillez l'installer (sudo apt install unrar ou sudo dnf install unrar).")
-            return False
-        except Exception as e2:
-            print("Erreur inattendue avec unrar :", e2)
-            return False
-
-RAR_PATH = "./Data BRVM.rar"
-EXTRACT_PATH = "./ExtractedFiles"
-success = extract_rar(RAR_PATH, EXTRACT_PATH)
-if not success:
-    exit(1)
-
+def main_full_analysis():
+    """Exécute le flux complet: scan → backtest → portfolio"""
     
+    print("\n" + "="*100)
+    print("STRATÉGIE Z-SCORE BRVM - ANALYSE COMPLÈTE")
+    print("="*100)
+    
+    # ====== PHASE 1: SCAN QUOTIDIEN ======
+    print("\n🔍 PHASE 1: SCAN DES OPPORTUNITÉS QUOTIDIENNES")
+    print("-" * 100)
+    get_summary()
+    
+    # ====== PHASE 2: BACKTEST STRATÉGIE ======
+    print("\n\n🔬 PHASE 2: BACKTEST STRATÉGIE (Single Stock)")
+    print("-" * 100)
+    print("\nTest sur SNTS (Sonatel)...")
+    result_snts = run_backtest_single_stock(
+        'SNTS',
+        capital_initial=1000000,
+        verbose=True
+    )
+    
+    # ====== PHASE 3: BACKTEST PORTEFEUILLE ======
+    print("\n\n💼 PHASE 3: BACKTEST PORTEFEUILLE DIVERSIFIÉ")
+    print("-" * 100)
+    portfolio_result = run_backtest_portfolio(
+        capital_par_action=200000
+    )
+    
+    print("\n" + "="*100)
+    print("✅ ANALYSE COMPLÈTE TERMINÉE")
+    print(f"📁 Rapports sauvegardés:")
+    print(f"   • Daily reports: {OUTPUT_DAILY_REPORTS}")
+    print(f"   • Backtest reports: {OUTPUT_BACKTEST_REPORTS}")
+    print("="*100 + "\n")
 
 
-# Parcours des fichiers extraits et filtrage
-files_data = []
-print("Début du filtrage des fichiers extraits...")
-keywords = ["variation", "cours", "price", "close"]
-
-for root, dirs, files in os.walk("./ExtractedFiles"):
-    for filename in files:
-        if not filename.endswith((".xls", ".xlsx", ".xlt", ".xml")):
-            continue
-
-        path = os.path.join(root, filename)
-        filename_lower = filename.lower()
-        full_path_lower = path.lower()
-
-        # Vérifie si le nom du fichier ou du chemin contient un mot-clé
-        found_by_name = any(word in full_path_lower for word in keywords)
-
-        # Les fichiers .xml/.xlt numériques (ex: 16.xml) dans des dossiers mois/année sont des cours
-        is_numeric_xml = filename.endswith((".xml", ".xlt")) and os.path.splitext(filename)[0].strip("+-").isdigit()
-
-        found = found_by_name or is_numeric_xml
-        if not found:
-            # Analyse le contenu si le nom ne suffit pas
-            try:
-                xls = pd.ExcelFile(path)
-                for sheet in xls.sheet_names:
-                    df = pd.read_excel(xls, sheet_name=sheet, nrows=10)
-                    colss = " ".join([str(c) for c in df.columns]).lower()
-                    if any(word in colss for word in keywords):
-                        found = True
-                        break
-                    for row in df.values:
-                        row_text = " ".join([str(cell).lower() for cell in row if pd.notnull(cell)])
-                        if any(word in row_text for word in keywords):
-                            found = True
-                            break
-                    if found:
-                        break
-            except Exception as e:
-                pass
-
-        if found:
-            year = None
-            for y in range(2017, 2026):
-                if str(y) in path:
-                    year = y
-                    break
-            if year:
-                files_data.append((year, path))
-            else:
-                files_data.append(("sans_annee", path))
+def main_grid_search():
+    """Exécute une optimisation des paramètres pour une action"""
+    
+    print("\n" + "="*100)
+    print("OPTIMISATION PARAMÈTRES - GRID SEARCH")
+    print("="*100)
+    
+    ticker = input("\nEntrez le code de l'action à optimiser (ex: SNTS): ").strip().upper()
+    
+    if not ticker:
+        print("❌ Code invalide.")
+        return
+    
+    print(f"\n🔎 Lancement grid search pour {ticker}...")
+    print("   Cela peut prendre 10-20 minutes selon le nombre de combinaisons...\n")
+    
+    df_results = parameter_grid_search(ticker, capital_initial=1000000)
+    
+    if df_results is not None:
+        print(f"\n✅ Grid search terminé!"
+              f"\nRésultats exportés dans: {OUTPUT_BACKTEST_REPORTS}")
 
 
-# Trier par année ("sans_annee" à la fin)
-def sort_key(x):
+def main_core_satellite():
+    """Exécute la stratégie Core-Satellite"""
+    
+    print("\n" + "="*100)
+    print("STRATÉGIE CORE-SATELLITE")
+    print("="*100)
+    
+    ticker_core = input("\nEntrez le code de l'action CORE (ex: SNTS): ").strip().upper()
+    tickers_satellite = input("Entrez les codes SATELLITES séparés par virgule (ex: ABJC,BICB,CABC): ").strip().upper().split(',')
+    tickers_satellite = [t.strip() for t in tickers_satellite if t.strip()]
+    
+    if not ticker_core or not tickers_satellite:
+        print("❌ Codes invalides.")
+        return
+    
+    print(f"\nCore: {ticker_core}")
+    print(f"Satellites: {', '.join(tickers_satellite)}")
+    
+    result = core_satellite_backtest(
+        ticker_core,
+        tickers_satellite,
+        capital_total=1000000,
+        capital_core_ratio=0.4
+    )
+    
+    print("\n✅ Stratégie Core-Satellite exécutée!")
+
+
+def main_quick_backtest():
+    """Backtest rapide sur une action avec paramètres personnalisés"""
+    
+    print("\n" + "="*100)
+    print("BACKTEST RAPIDE - PARAMÈTRES PERSONNALISÉS")
+    print("="*100)
+    
+    ticker = input("\nCode de l'action (ex: SNTS): ").strip().upper()
+    
+    if not ticker:
+        print("❌ Code invalide.")
+        return
+    
+    print(f"\nParamètres (appuyez sur Entrée pour utiliser les valeurs par défaut):")
+    tp_input = input("  Take Profit % (défaut 8): ").strip()
+    sl_input = input("  Stop Loss % (défaut 5): ").strip()
+    ts_input = input("  Time-Stop jours (défaut 10): ").strip()
+    fk_input = input("  Falling-Knife drop % (défaut 8): ").strip()
+    
+    params = {
+        'take_profit_pct': float(tp_input) / 100 if tp_input else 0.08,
+        'stop_loss_pct': float(sl_input) / 100 if sl_input else 0.05,
+        'time_stop_days': int(ts_input) if ts_input else 10,
+        'falling_knife_drop_pct': float(fk_input) / 100 if fk_input else 0.08
+    }
+    
+    print(f"\n🔬 Backtest {ticker} avec paramètres: TP={params['take_profit_pct']*100}%, SL={params['stop_loss_pct']*100}%, TS={params['time_stop_days']}j, FK={params['falling_knife_drop_pct']*100}%")
+    
+    result = run_backtest_single_stock(ticker, capital_initial=1000000, **params, verbose=True)
+    
+    if result:
+        print(f"\n✅ Backtest terminé!")
+        print(f"   Rendement: {result['rendement_algo']:.2f}%")
+        print(f"   Sharpe: {result['sharpe_ratio']:.4f}")
+
+
+def show_menu():
+    """Affiche le menu interactif"""
+    
+    print("\n" + "="*100)
+    print("STRATÉGIE Z-SCORE BRVM - MENU PRINCIPAL")
+    print("="*100)
+    print("\nOptions disponibles:")
+    print("  1. Analyse complète (Scan + Backtest + Portfolio)")
+    print("  2. Grid search - Optimiser paramètres pour une action")
+    print("  3. Core-Satellite - Stratégie portefeuille")
+    print("  4. Backtest rapide - Test avec paramètres personnalisés")
+    print("  5. Quitter")
+    print("\n" + "-"*100)
+    
+    choice = input("\nChoisissez une option (1-5): ").strip()
+    
+    if choice == '1':
+        main_full_analysis()
+    elif choice == '2':
+        main_grid_search()
+    elif choice == '3':
+        main_core_satellite()
+    elif choice == '4':
+        main_quick_backtest()
+    elif choice == '5':
+        print("👋 Au revoir!")
+        sys.exit(0)
+    else:
+        print("❌ Option invalide")
+
+
+if __name__ == "__main__":
+    # Mode interactif par défaut
     try:
-        return int(x[0])
-    except:
-        return 9999
-files_data.sort(key=sort_key)
+        show_menu()
+    except KeyboardInterrupt:
+        print("\n\n⏹️  Arrêt utilisateur")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\n❌ Erreur: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
-# Copier dans dossier final
-OUTPUT_DIR = "./FinalFiles"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-print(f"Nombre de fichiers à copier : {len(files_data)}")
-
-import re
-
-MOIS_FR = {
-    "janvier": "01", "jan": "01",
-    "fevrier": "02", "février": "02", "fev": "02", "fév": "02",
-    "mars": "03",
-    "avril": "04",
-    "mai": "05",
-    "juin": "06",
-    "juillet": "07",
-    "aout": "08", "août": "08",
-    "septembre": "09", "sep": "09",
-    "octobre": "10", "oct": "10",
-    "novembre": "11", "nov": "11",
-    "decembre": "12", "décembre": "12", "dec": "12", "déc": "12",
-}
-
-def extract_date_from_path(filepath):
-    filename = os.path.basename(filepath)
-    name = os.path.splitext(filename)[0]
-
-    # 1. Nom du fichier contient JJ mois(lettres) AAAA ex: "Cours au 01 janvier 2017"
-    m = re.search(r'(\d{1,2})[- _]+([a-zA-Zéûèàê]+)[- _]+(20\d{2})', name, re.IGNORECASE)
-    if m:
-        day = m.group(1).zfill(2)
-        month_word = m.group(2).lower()
-        year = m.group(3)
-        month = MOIS_FR.get(month_word)
-        if month:
-            return f"{day}-{month}-{year}"
-
-    # 2. Nom du fichier contient JJ MM AAAA (tout en chiffres) ex: "Cours 01 12 2025"
-    m = re.search(r'(\d{1,2})[- _]+(\d{1,2})[- _]+(20\d{2})', name)
-    if m:
-        day = m.group(1).zfill(2)
-        month = m.group(2).zfill(2)
-        year = m.group(3)
-        if 1 <= int(month) <= 12 and 1 <= int(day) <= 31:
-            return f"{day}-{month}-{year}"
-
-    # 3. Fichier numérique (ex: 16.xml) -> extraire depuis le chemin: .../2024/01_24/16.xml
-    parts = filepath.replace("\\", "/").split("/")
-    day_from_name = re.fullmatch(r'(\d{1,2})', name)
-    if day_from_name:
-        day = day_from_name.group(1).zfill(2)
-        year, month = None, None
-        for part in parts:
-            # dossier type "01_24" ou "01 24"
-            m2 = re.fullmatch(r'(\d{2})[ _](\d{2})', part)
-            if m2:
-                month = m2.group(1)
-                year_short = m2.group(2)
-                year = f"20{year_short}"
-            # dossier type "2024"
-            m3 = re.fullmatch(r'(20\d{2})', part)
-            if m3:
-                year = m3.group(1)
-        if day and month and year:
-            return f"{day}-{month}-{year}"
-
-    return None
-
-seen_names = {}
-for year, path in files_data:
-    base = os.path.basename(path)
-    ext = os.path.splitext(base)[1]
-    date_str = extract_date_from_path(path)
-    if date_str:
-        dest_name = f"{date_str}{ext}"
-    elif year == "sans_annee":
-        dest_name = f"sans_annee_{base}"
-    else:
-        dest_name = f"{year}_{base}"
-    # Éviter les doublons (même date, plusieurs formats ex: .xls et .xml)
-    if dest_name in seen_names:
-        seen_names[dest_name] += 1
-        dest_name = f"{os.path.splitext(dest_name)[0]}_{seen_names[dest_name]}{ext}"
-    else:
-        seen_names[dest_name] = 0
-    dest_path = os.path.join(OUTPUT_DIR, dest_name)
-    shutil.copy(path, dest_path)
-print("Copie terminée.")
-
-# Zipper le dossier FinalFiles
-import zipfile
-
-ZIP_PATH = "./ZippedFiles.zip"
-print(f"Compression de {OUTPUT_DIR} dans {ZIP_PATH}...")
-with zipfile.ZipFile(ZIP_PATH, "w", zipfile.ZIP_DEFLATED) as zipf:
-    for froot, fdirs, ffiles in os.walk(OUTPUT_DIR):
-        for fname in ffiles:
-            fpath = os.path.join(froot, fname)
-            zipf.write(fpath, os.path.relpath(fpath, OUTPUT_DIR))
-print(f"Compression terminée : {ZIP_PATH}")

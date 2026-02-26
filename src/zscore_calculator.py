@@ -1,6 +1,10 @@
 import pandas as pd
 import os
 from glob import glob
+import sys
+
+# Ajouter le répertoire parent au chemin pour l'import de config
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import DATA_PATH
 
 def charge_and_clean_data():
@@ -11,7 +15,7 @@ def charge_and_clean_data():
         pd.DataFrame: DataFrame nettoyé contenant les données fusionnées.
     """
     """ Charger les données depuis le fichier CSV, puis supprimer les lignes avec des valeurs manquantes """
-    df = pd.read_csv("./cours_boursiers_fusion.csv", sep=";", low_memory=False)
+    df = pd.read_csv(DATA_PATH, sep=";", low_memory=False)
 
     # Supprimer les lignes avec des valeurs manquantes dans les colonnes critiques
     # NOTÉE: dropna() sans colonnes enlèverait TOUTES les lignes car beaucoup de colonnes sont vides

@@ -25,23 +25,24 @@ Gestion des dividendes:
 
 import pandas as pd
 from datetime import datetime
-import importlib.util
 import sys
+import os
 import io
+
+# Ajouter le répertoire parent au chemin pour l'import de config
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Configurer l'encodage UTF-8 pour Windows
 if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-# Charger les modules
-spec = importlib.util.spec_from_file_location("zscore_module", "./02_zscore.py")
-zscore_module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(zscore_module)
-
-charge_and_clean_data = zscore_module.charge_and_clean_data
-calculate_zscore = zscore_module.calculate_zscore
-signals_generation = zscore_module.signals_generation
-add_filters = zscore_module.add_filters
+# Importer directement les fonctions depuis zscore_calculator
+from zscore_calculator import (
+    charge_and_clean_data,
+    calculate_zscore,
+    signals_generation,
+    add_filters
+)
 
 
 def classify_stocks(df, volatility_threshold=30.0, min_dividend_yield=0.03):

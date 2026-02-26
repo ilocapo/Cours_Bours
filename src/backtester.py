@@ -2,23 +2,24 @@
 import pandas as pd
 from datetime import datetime, timedelta
 import sys
+import os
+
+# Ajouter le répertoire parent au chemin pour l'import de config
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import OUTPUT_DAILY_REPORTS, OUTPUT_BACKTEST_REPORTS
 
 # Configurer l'encodage UTF-8 pour la sortie sur Windows
 if sys.platform == 'win32':
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-import importlib.util
-
-# Charger le module 02_zscore.py dynamiquement
-spec = importlib.util.spec_from_file_location("zscore_module", "./02_zscore.py")
-zscore_module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(zscore_module)
-
-charge_and_clean_data = zscore_module.charge_and_clean_data
-calculate_zscore = zscore_module.calculate_zscore
-signals_generation = zscore_module.signals_generation
-add_filters = zscore_module.add_filters
+# Importer directement les fonctions depuis zscore_calculator
+from zscore_calculator import (
+    charge_and_clean_data,
+    calculate_zscore,
+    signals_generation,
+    add_filters
+)
 
 def scan_market_opportunities(top_n=20):
     """
@@ -206,7 +207,7 @@ def export_daily_report(latest_date, strong_buy, buy, watchlist, sell, strong_se
     """
     
     timestamp = datetime.now().strftime('%Y%m%d')
-    filename = f"daily_report_{timestamp}.csv"
+    filename = os.path.join(OUTPUT_DAILY_REPORTS, f"daily_report_{timestamp}.csv")
     
     # Créer un DataFrame avec tous les signaux importants
     report_data = []
@@ -513,7 +514,7 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
         
         # Exporter le rapport détaillé
         timestamp = datetime.now().strftime('%Y%m%d')
-        export_file = f"backtest_report_{ticker}_{timestamp}.csv"
+        export_file = os.path.join(OUTPUT_BACKTEST_REPORTS, f"backtest_report_{ticker}_{timestamp}.csv")
         columns_export = [
             'Date', 'Code symbole', 'Cours moyen', 'Z_Score', 'Signal',
             'Position', 'Rendement_Algo', 'Capital_Algo', 'Capital_BuyHold', 'Capital_SafeRate'
@@ -730,7 +731,7 @@ def parameter_grid_search(ticker, capital_initial=1000000, frais_transaction=0.0
     
     # Exporter les résultats en CSV
     timestamp = datetime.now().strftime('%Y%m%d')
-    export_file = f"grid_search_{ticker}_{timestamp}.csv"
+    export_file = os.path.join(OUTPUT_BACKTEST_REPORTS, f"grid_search_{ticker}_{timestamp}.csv")
     df_results.to_csv(export_file, index=False)
     print(f"\n✅ Résultats exportés : {export_file}")
     print("=" * 120)
