@@ -198,6 +198,56 @@ Ici : **TP=10%, SL=3%, TimeStop=15j, FK=8%** offre le meilleur ratio risque/rend
    - Libère capital "mort" (bloqué sans rebond)
    - Réalloue vers meilleurs opportunités
 
+---
+
+## Sélection dynamique des titres via Sharpe Ratio
+
+La fonction `run_backtest_portfolio()` peut maintenant choisir automatiquement les
+meilleures actions au lieu de prendre les 5 premières du dataset.
+
+### Calcul de Sharpe
+Utiliser `compute_sharpe_ratios(df, window_days=N)` pour obtenir un dictionnaire
+*{ticker: Sharpe}* calculé sur les N derniers jours (N par défaut = 252).
+
+```python
+from src.backtester import charge_and_clean_data, compute_sharpe_ratios
+
+df = charge_and_clean_data()
+sharpe_dict = compute_sharpe_ratios(df, window_days=100)
+for ticker, s in sorted(sharpe_dict.items(), key=lambda x: x[1], reverse=True)[:5]:
+    print(ticker, s)
+```
+
+### Sélection top‑N
+`select_top_by_sharpe(df, top_n=5, window_days=100)` renvoie la liste des
+*top_n* tickers classés par Sharpe décroissant.
+
+```python
+from src.backtester import select_top_by_sharpe
+
+best5 = select_top_by_sharpe(df, top_n=5, window_days=100)
+print("Actions retenues :", best5)
+```
+
+### Intégration dans `run_backtest_portfolio`
+Trois modes de sélection sont disponibles via les arguments `selection_method`
+:`'fixed'` (5 premières), `'sharpe'` (top‑N par Sharpe) ou `'all'` (toutes les
+actions). On peut aussi indiquer `top_n` et `sharpe_window`.
+
+```python
+from src.backtester import run_backtest_portfolio
+
+# portefeuille avec les 5 meilleures actions selon Sharpe sur les 252 derniers jours
+res = run_backtest_portfolio(
+    selection_method='sharpe',
+    top_n=5,
+    sharpe_window=252,
+    capital_par_action=200000,
+)
+```
+
+Le choix s'affiche dans la console au démarrage du backtest.
+
 4. **Frais** : Application réaliste à chaque trade
    - 1% SGI déjà inclus dans calculs
 

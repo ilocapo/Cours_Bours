@@ -540,15 +540,73 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
     }
 
 
-def run_backtest_portfolio(tickers=None, capital_par_action=200000, frais_transaction=0.01):
+def compute_sharpe_ratios(df, window_days=252, annualization=252):
+    """Calcule le ratio de Sharpe pour chaque action sur les derniers jours spécifiés.
+
+    Args:
+        df (pd.DataFrame): Données de marché avec colonnes 'Code symbole' et 'Cours moyen'.
+        window_days (int): Nombre de jours glissants à utiliser pour le calcul.
+        annualization (int): Facteur d'annualisation (défaut 252 jours de trading).
+
+    Returns:
+        dict: Mapping ticker -> Sharpe ratio (float). Actions sans données suffisantes sont ignorées.
+    """
+    sharpe = {}
+    # Ensure the DataFrame is sorted by date for consistent slicing
+    df = df.sort_values('Date')
+    for ticker in df['Code symbole'].unique():
+        sub = df[df['Code symbole'] == ticker].copy()
+        sub = sub.sort_values('Date')
+        sub['ret'] = sub['Cours moyen'].pct_change()
+        recent = sub['ret'].dropna().tail(window_days)
+        if len(recent) < 10:
+            # pas assez de données
+            continue
+        mu = recent.mean()
+        sigma = recent.std()
+        if sigma > 0:
+            sharpe[ticker] = (mu * annualization) / (sigma * (annualization ** 0.5))
+        else:
+            sharpe[ticker] = 0.0
+    return sharpe
+
+
+def select_top_by_sharpe(df, top_n=5, window_days=252):
+    """Retourne la liste des *top_n* actions selon leur Sharpe ratio.
+
+    Args:
+        df (pd.DataFrame): Données de marché.
+        top_n (int): Nombre d'actions à sélectionner.
+        window_days (int): Période pour le calcul de Sharpe (dernier N jours).
+
+    Returns:
+        list: Tickeurs triés par Sharpe décroissante, longueur <= top_n.
+    """
+    sharpe = compute_sharpe_ratios(df, window_days=window_days)
+    sorted_items = sorted(sharpe.items(), key=lambda x: x[1], reverse=True)
+    return [t for t, _ in sorted_items[:top_n]]
+
+
+def run_backtest_portfolio(tickers=None, capital_par_action=200000, frais_transaction=0.01,
+                           selection_method='fixed', top_n=5, sharpe_window=252):
     """
     Backteste un portefeuille diversifié avec allocation égale par action.
-    
+
+    La sélection des titres peut être faite de trois manières:
+      * 'fixed'   : prends les *top_n* premiers symboles apparaissant dans le dataset
+      * 'sharpe'  : calcule le Sharpe Ratio sur les derniers `sharpe_window` jours
+                    et retourne les *top_n* actions les plus performantes.
+      * 'all'     : utilise tous les symboles disponibles (ignore top_n)
+
     Args:
-        tickers (list): Liste des codes symboles. Si None, détecte automatiquement.
+        tickers (list): Liste des codes symboles. Si None, le choix est déterminé
+                        par ``selection_method``.
         capital_par_action (float): Capital alloué par action (défaut 200k FCFA)
         frais_transaction (float): Frais par transaction (défaut 1%)
-        
+        selection_method (str): 'fixed'|'sharpe'|'all' (voir description ci-dessus)
+        top_n (int): Nombre de titres à inclure si `selection_method` est 'fixed' ou 'sharpe'.
+        sharpe_window (int): Période (jours) à utiliser pour le calcul du Sharpe.
+
     Returns:
         dict: Résumé de la performance du portefeuille
     """
@@ -566,7 +624,18 @@ def run_backtest_portfolio(tickers=None, capital_par_action=200000, frais_transa
     
     # Détecter les tickers si non fournis
     if tickers is None:
-        tickers = df['Code symbole'].unique()[:5]  # Top 5 par défaut
+        if selection_method == 'fixed':
+            tickers = list(df['Code symbole'].unique()[:top_n])
+            print(f"ℹ️  Sélection fixe des {top_n} premières actions du dataset.")
+        elif selection_method == 'sharpe':
+            tickers = select_top_by_sharpe(df, top_n=top_n, window_days=sharpe_window)
+            print(f"ℹ️  Sélection dynamique par Sharpe sur les {sharpe_window} derniers jours (top {top_n}).")
+        elif selection_method == 'all':
+            tickers = list(df['Code symbole'].unique())
+            print("ℹ️  Utilisation de toutes les actions disponibles.")
+        else:
+            print(f"⚠️  Méthode de sélection inconnue '{selection_method}', utilisation des 5 premières.")
+            tickers = list(df['Code symbole'].unique()[:top_n])
     
     print(f"📑 Actions à tester: {', '.join(tickers)}")
     
