@@ -130,20 +130,24 @@ def main_quick_backtest():
         print("❌ Code invalide.")
         return
     
-    print(f"\nParamètres (appuyez sur Entrée pour utiliser les valeurs par défaut):")
-    tp_input = input("  Take Profit % (défaut 8): ").strip()
-    sl_input = input("  Stop Loss % (défaut 5): ").strip()
-    ts_input = input("  Time-Stop jours (défaut 10): ").strip()
-    fk_input = input("  Falling-Knife drop % (défaut 8): ").strip()
+    print(f"\nParamètres calibrés BRVM (Entrée = valeurs par défaut):")
+    print(f"  ⚠️  Rappel: frais SGI ~1%/sens = ~2% aller-retour")
+    print(f"  ⚠️  Rendement médian brut par trade: ~2%. Négociez vos frais!")
+    ze_input = input("  Z-Score sortie mean reversion (défaut -0.5): ").strip()
+    tp_input = input("  Take Profit % filet max (défaut 10): ").strip()
+    sl_input = input("  Stop Loss % filet max (défaut 10): ").strip()
+    ts_input = input("  Time-Stop jours filet max (défaut 90): ").strip()
+    ml_input = input("  Déclin structurel max jours (défaut 10): ").strip()
     
     params = {
-        'take_profit_pct': float(tp_input) / 100 if tp_input else 0.08,
-        'stop_loss_pct': float(sl_input) / 100 if sl_input else 0.05,
-        'time_stop_days': int(ts_input) if ts_input else 10,
-        'falling_knife_drop_pct': float(fk_input) / 100 if fk_input else 0.08
+        'zscore_exit_threshold': float(ze_input) if ze_input else -0.5,
+        'take_profit_pct': float(tp_input) / 100 if tp_input else 0.10,
+        'stop_loss_pct': float(sl_input) / 100 if sl_input else 0.10,
+        'time_stop_days': int(ts_input) if ts_input else 90,
+        'max_consecutive_low_zscore': int(ml_input) if ml_input else 10
     }
     
-    print(f"\n🔬 Backtest {ticker} avec paramètres: TP={params['take_profit_pct']*100}%, SL={params['stop_loss_pct']*100}%, TS={params['time_stop_days']}j, FK={params['falling_knife_drop_pct']*100}%")
+    print(f"\n🔬 Backtest {ticker}: Z_exit={params['zscore_exit_threshold']}, TP={params['take_profit_pct']*100}%, SL={params['stop_loss_pct']*100}%, TS={params['time_stop_days']}j, MaxLow={params['max_consecutive_low_zscore']}j")
     
     result = run_backtest_single_stock(ticker, capital_initial=1000000, **params, verbose=True)
     

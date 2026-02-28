@@ -277,22 +277,36 @@ def get_summary():
 # ==========================================
 
 def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction=0.01, fenetre_zscore=200,
-                             take_profit_pct=0.08, stop_loss_pct=0.05, time_stop_days=10,
-                             falling_knife_window=3, falling_knife_drop_pct=0.08, verbose=True):
+                             take_profit_pct=0.10, stop_loss_pct=0.10, time_stop_days=90,
+                             falling_knife_window=3, falling_knife_drop_pct=0.10,
+                             zscore_exit_threshold=-0.5, falling_knife_min_zscore=-3.0,
+                             max_consecutive_low_zscore=10, verbose=True):
     """
-    Effectue un backtest sur une action spécifique avec la stratégie Z-score.
+    Effectue un backtest sur une action spécifique avec la stratégie Z-score (mean reversion).
     Compare la performance avec le Buy & Hold et le taux sans risque (6.5% UEMOA).
+    
+    CALIBRÉ POUR LA BRVM :
+    - Marché à faible volatilité où les gains médians sont de ~2% par trade
+    - Frais SGI ~1% par sens (~2% aller-retour) → la rentabilité dépend fortement des frais
+    - Le rendement brut moyen est +0.9% par trade (avant frais)
+    - 30% des trades font > +5%, 19% touchent le SL → filtrer les déclins structurels est crucial
+    
+    La sortie PRINCIPALE est le retour du Z-Score vers la moyenne (mean reversion).
+    Les TP/SL/TimeStop sont des filets de sécurité secondaires calibrés pour la BRVM.
     
     Args:
         ticker (str): Code symbole (ex: 'SNTS')
         capital_initial (float): Capital de départ en FCFA (défaut 1M)
-        frais_transaction (float): Frais SGI par transaction (défaut 1%)
+        frais_transaction (float): Frais SGI par transaction (défaut 1% = 2% AR)
         fenetre_zscore (int): Fenêtre de calcul du Z-score (défaut 200 jours)
-        take_profit_pct (float): Niveau Take Profit (défaut +8%, ex: 0.08)
-        stop_loss_pct (float): Niveau Stop Loss (défaut -5%, ex: 0.05)
-        time_stop_days (int): Nombre de jours avant Time-Stop (défaut 10)
-        falling_knife_window (int): Fenêtre pour détection chute (défaut 3)
-        falling_knife_drop_pct (float): Seuil chute pour éviter (défaut -8%, ex: 0.08)
+        take_profit_pct (float): Filet TP (défaut +10%, réaliste BRVM, P75=6%, P90=13%)
+        stop_loss_pct (float): Filet SL (défaut -10%, limiter les pertes structurelles)
+        time_stop_days (int): Filet Time-Stop (défaut 90j, laisser le temps au mean reversion)
+        falling_knife_window (int): Fenêtre pour détection chute (défaut 3 jours)
+        falling_knife_drop_pct (float): Seuil chute pour éviter (défaut -10%, ex: 0.10)
+        zscore_exit_threshold (float): Z-Score cible pour sortie mean reversion (défaut -0.5)
+        falling_knife_min_zscore (float): Z-Score sous lequel le FK est désactivé (défaut -3.0)
+        max_consecutive_low_zscore (int): Nb jours max avec Z < -1.5 avant exclusion (défaut 10)
         verbose (bool): Afficher les détails (défaut True)
         
     Returns:
@@ -302,7 +316,7 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
     if verbose:
         print("\n" + "=" * 80)
         print(f"🔄 BACKTEST STRATÉGIE Z-SCORE : {ticker}")
-        print(f"   TP={take_profit_pct*100:.1f}% | SL={stop_loss_pct*100:.1f}% | TimeStop={time_stop_days}j | FK_drop={falling_knife_drop_pct*100:.1f}%")
+        print(f"   Sortie Z≥{zscore_exit_threshold} | TP={take_profit_pct*100:.1f}% | SL={stop_loss_pct*100:.1f}% | TimeStop={time_stop_days}j | FK≥{falling_knife_min_zscore}")
         print("=" * 80)
     
     # Charger les données
@@ -342,6 +356,19 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
     df_stock = signals_generation(df_stock)
     df_stock = add_filters(df_stock)
 
+    # FILTRE DÉCLIN STRUCTUREL: Exclure les actions avec Z < -1.5 depuis trop longtemps
+    # Sur la BRVM, un Z-Score chroniquement bas indique un déclin permanent, pas une anomalie
+    df_stock['Z_Below_Threshold'] = (df_stock['Z_Score'] < -1.5).astype(int)
+    df_stock['Consecutive_Low_Z'] = 0
+    count = 0
+    for i in range(len(df_stock)):
+        if df_stock.at[df_stock.index[i], 'Z_Below_Threshold'] == 1:
+            count += 1
+        else:
+            count = 0
+        df_stock.at[df_stock.index[i], 'Consecutive_Low_Z'] = count
+    df_stock['Declin_Structurel'] = df_stock['Consecutive_Low_Z'] > max_consecutive_low_zscore
+
     # Préparer colonnes pour simulation pas-à-pas
     df_stock['Rendement_Action'] = df_stock['Cours moyen'].pct_change()
     df_stock['Position'] = 0
@@ -376,7 +403,20 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
             holding_days += 1
             df_stock.at[df_stock.index[i], 'Holding_Days'] = holding_days
 
-            # Vérifier Take Profit
+            # SORTIE PRINCIPALE: Z-Score revenu vers la moyenne (mean reversion accomplie)
+            current_zscore = df_stock.at[df_stock.index[i], 'Z_Score']
+            if pd.notna(current_zscore) and current_zscore >= zscore_exit_threshold:
+                df_stock.at[df_stock.index[i], 'Signal_Exec'] = -1
+                df_stock.at[df_stock.index[i], 'Exit_Price'] = price
+                in_position = False
+                entry_price = None
+                tp_price = None
+                sl_price = None
+                holding_days = 0
+                df_stock.at[df_stock.index[i], 'Position'] = 0
+                continue
+
+            # FILET DE SÉCURITÉ: Take Profit (cap de gain max)
             if price >= tp_price:
                 # Vendre au marché
                 df_stock.at[df_stock.index[i], 'Signal_Exec'] = -1
@@ -389,7 +429,7 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
                 df_stock.at[df_stock.index[i], 'Position'] = 0
                 continue
 
-            # Vérifier Stop Loss
+            # FILET DE SÉCURITÉ: Stop Loss (protection maximale)
             if price <= sl_price:
                 df_stock.at[df_stock.index[i], 'Signal_Exec'] = -1
                 df_stock.at[df_stock.index[i], 'Exit_Price'] = price
@@ -401,7 +441,7 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
                 df_stock.at[df_stock.index[i], 'Position'] = 0
                 continue
 
-            # Vérifier Time-Stop
+            # FILET DE SÉCURITÉ: Time-Stop (durée maximale de détention)
             if holding_days >= time_stop_days:
                 df_stock.at[df_stock.index[i], 'Signal_Exec'] = -1
                 df_stock.at[df_stock.index[i], 'Exit_Price'] = price
@@ -416,15 +456,23 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
         else:
             # Pas en position: possibilité d'entrer
             if df_stock.at[df_stock.index[i], 'Signal_Candidate'] == 1:
-                # Falling-knife check: mesurer chute depuis falling_knife_window jours
+                # FILTRE DÉCLIN STRUCTUREL: Ne pas acheter si Z < -1.5 depuis trop longtemps
+                # Sur la BRVM, ces titres ne remontent presque jamais (19% des trades = SL)
+                if df_stock.at[df_stock.index[i], 'Declin_Structurel']:
+                    continue
+
+                # Falling-knife check: désactivé pour Z-Scores extrêmes (mean reversion)
+                # Car c'est justement la chute qui crée l'opportunité d'achat
+                current_zscore = df_stock.at[df_stock.index[i], 'Z_Score']
                 avoid_fk = False
-                idx_past = i - falling_knife_window
-                if idx_past >= 0:
-                    price_past = df_stock.at[df_stock.index[idx_past], 'Cours moyen']
-                    if price_past and price_past > 0:
-                        pct_change = (price - price_past) / price_past
-                        if pct_change <= -falling_knife_drop_pct:
-                            avoid_fk = True
+                if pd.isna(current_zscore) or current_zscore > falling_knife_min_zscore:
+                    idx_past = i - falling_knife_window
+                    if idx_past >= 0:
+                        price_past = df_stock.at[df_stock.index[idx_past], 'Cours moyen']
+                        if price_past and price_past > 0:
+                            pct_change = (price - price_past) / price_past
+                            if pct_change <= -falling_knife_drop_pct:
+                                avoid_fk = True
                 # Éviter l'achat si ex-dividende le jour même (si colonne disponible)
                 ex_dividend_today = False
                 if 'Dividendes / Intérêts' in df_stock.columns:
@@ -730,57 +778,67 @@ def parameter_grid_search(ticker, capital_initial=1000000, frais_transaction=0.0
     print(f"🔎 GRID SEARCH OPTIMISATION PARAMÈTRES : {ticker}")
     print("=" * 120)
     
-    # Grilles de paramètres à tester
-    tp_values = [0.05, 0.08, 0.10, 0.15]        # TP: +5%, +8%, +10%, +15%
-    sl_values = [0.03, 0.05, 0.08]              # SL: -3%, -5%, -8%
-    ts_values = [5, 10, 15, 20]                 # Time-Stop: 5, 10, 15, 20 jours
-    fk_drop_values = [0.05, 0.08, 0.10]         # FK drop: -5%, -8%, -10%
+    # Grilles de paramètres calibrées pour la BRVM
+    # - TP: 8-12% réaliste (P75=6%, P90=13% sur données historiques)
+    # - SL: 8-12% (limiter les 19% de trades qui touchent le SL)
+    # - TimeStop: 60-120j (la BRVM est lente, laisser le temps au mean reversion)
+    # - Z_exit: -0.5 à +0.5 (sortie mean reversion principale)
+    # - Déclin structurel: 5-15j (filtrer les titres chroniquement bas)
+    tp_values = [0.08, 0.10, 0.12]              # TP filet: +8%, +10%, +12%
+    sl_values = [0.08, 0.10, 0.12]              # SL filet: -8%, -10%, -12%
+    ts_values = [60, 90, 120]                   # Time-Stop: 60, 90, 120 jours
+    zscore_exit_values = [-0.5, 0.0, 0.5]       # Z-Score sortie mean reversion
+    consec_low_values = [5, 10, 15]             # Filtre déclin structurel (jours)
     
     results = []
-    total_tests = len(tp_values) * len(sl_values) * len(ts_values) * len(fk_drop_values)
+    total_tests = len(tp_values) * len(sl_values) * len(ts_values) * len(zscore_exit_values) * len(consec_low_values)
     test_count = 0
     
-    print(f"\n📊 Grille de test: {total_tests} combinaisons")
+    print(f"\n📊 Grille de test: {total_tests} combinaisons (calibrée BRVM)")
     print(f"   TP: {tp_values}")
     print(f"   SL: {sl_values}")
     print(f"   TimeStop: {ts_values}")
-    print(f"   FK_drop: {fk_drop_values}\n")
+    print(f"   Z-Score sortie: {zscore_exit_values}")
+    print(f"   Déclin structurel max: {consec_low_values}\n")
     
     for tp in tp_values:
         for sl in sl_values:
             for ts in ts_values:
-                for fk_drop in fk_drop_values:
-                    test_count += 1
-                    print(f"[{test_count:3d}/{total_tests}] Testing TP={tp*100:.0f}% | SL={sl*100:.0f}% | TS={ts}j | FK={fk_drop*100:.0f}%", end=" ... ")
-                    
-                    result = run_backtest_single_stock(
-                        ticker,
-                        capital_initial=capital_initial,
-                        frais_transaction=frais_transaction,
-                        take_profit_pct=tp,
-                        stop_loss_pct=sl,
-                        time_stop_days=ts,
-                        falling_knife_drop_pct=fk_drop,
-                        verbose=False  # ne pas afficher les détails
-                    )
-                    
-                    if result:
-                        results.append({
-                            'TP': tp,
-                            'SL': sl,
-                            'TimeStop': ts,
-                            'FK_Drop': fk_drop,
-                            'Rendement': result['rendement_algo'],
-                            'Surperf_BH': result['surperformance'],
-                            'Surperf_Safe': result['ecart_taux_safe'],
-                            'Sharpe': result['sharpe_ratio'],
-                            'Volatilite': result['volatilite'],
-                            'Trades': result['nombre_trades'],
-                            'Capital_Final': result['capital_final_algo']
-                        })
-                        print(f"Rendement={result['rendement_algo']:6.2f}% | Sharpe={result['sharpe_ratio']:7.3f}")
-                    else:
-                        print("SKIP")
+                for z_exit in zscore_exit_values:
+                    for consec in consec_low_values:
+                        test_count += 1
+                        print(f"[{test_count:3d}/{total_tests}] TP={tp*100:.0f}% | SL={sl*100:.0f}% | TS={ts}j | Z_exit={z_exit} | MaxLow={consec}j", end=" ... ")
+                        
+                        result = run_backtest_single_stock(
+                            ticker,
+                            capital_initial=capital_initial,
+                            frais_transaction=frais_transaction,
+                            take_profit_pct=tp,
+                            stop_loss_pct=sl,
+                            time_stop_days=ts,
+                            zscore_exit_threshold=z_exit,
+                            max_consecutive_low_zscore=consec,
+                            verbose=False  # ne pas afficher les détails
+                        )
+                        
+                        if result:
+                            results.append({
+                                'TP': tp,
+                                'SL': sl,
+                                'TimeStop': ts,
+                                'Z_Exit': z_exit,
+                                'MaxLow': consec,
+                                'Rendement': result['rendement_algo'],
+                                'Surperf_BH': result['surperformance'],
+                                'Surperf_Safe': result['ecart_taux_safe'],
+                                'Sharpe': result['sharpe_ratio'],
+                                'Volatilite': result['volatilite'],
+                                'Trades': result['nombre_trades'],
+                                'Capital_Final': result['capital_final_algo']
+                            })
+                            print(f"Rendement={result['rendement_algo']:6.2f}% | Sharpe={result['sharpe_ratio']:7.3f}")
+                        else:
+                            print("SKIP")
     
     if not results:
         print("❌ Aucun résultat valide.")
@@ -795,7 +853,7 @@ def parameter_grid_search(ticker, capital_initial=1000000, frais_transaction=0.0
     print("🏆 TOP 10 MEILLEURES COMBINAISONS (par Sharpe Ratio)")
     print("=" * 120)
     
-    display_cols = ['TP', 'SL', 'TimeStop', 'FK_Drop', 'Rendement', 'Surperf_BH', 'Sharpe', 'Volatilite', 'Trades']
+    display_cols = ['TP', 'SL', 'TimeStop', 'Z_Exit', 'MaxLow', 'Rendement', 'Surperf_BH', 'Sharpe', 'Volatilite', 'Trades']
     print(df_results[display_cols].head(10).to_string(index=False))
     
     # Exporter les résultats en CSV

@@ -140,7 +140,8 @@ def add_filters(df, window_volatility=20, min_volume=1000, trend_period=50):
         lambda x: x.rolling(window=window_volatility, min_periods=5).std() * 100
     )
     
-    # Filtre: volatilité entre 5% et 40% annualisée (√252 ajustement)
+    # Filtre: volatilité entre 5% et 80% annualisée (√252 ajustement)
+    # BRVM: volatilité annualisée moyenne ~30%, fourchette typique 10-60%
     df['Volatilite_Ann'] = df['Volatilite_Historique'] * (252 ** 0.5)
     df['Filtre_Volatilite'] = (df['Volatilite_Ann'] > 5) & (df['Volatilite_Ann'] < 80)
     
@@ -149,8 +150,8 @@ def add_filters(df, window_volatility=20, min_volume=1000, trend_period=50):
     if 'Transactions (total)' in df.columns:
         df['Filtre_Volume'] = df['Transactions (total)'] >= min_volume
     else:
-        # Si la colonne n'existe pas, considérer tous les titres comme liquides
-        df['Filtre_Volume'] = True
+        # Si la colonne n'existe pas, on ne peut pas confirmer la liquidité
+        df['Filtre_Volume'] = False
     
     # 3. FILTRE DE TENDANCE
     # Calculer la tendance sur les 50 derniers jours
@@ -188,8 +189,8 @@ def add_filters(df, window_volatility=20, min_volume=1000, trend_period=50):
                 return 'Hold'
         
         elif signal == 'Buy' or (-2.0 >= z_score > -3.0):
-            # Les signaux d'achat (Z <= -2.0) passent avec une tendance baissière OU volume raisonnable
-            if tendance_baiss or filtre_volume:
+            # Buy nécessite une volatilité raisonnable (le Z-Score ≤ -2 est déjà le filtre principal)
+            if filtre_volatilite:
                 return 'Buy_FILTERED'
             else:
                 return 'Hold'
@@ -205,8 +206,8 @@ def add_filters(df, window_volatility=20, min_volume=1000, trend_period=50):
                 return 'Hold'
         
         elif signal == 'Sell' or (2.0 <= z_score < 3.0):
-            # Les signaux de vente (Z >= 2.0) passent avec une tendance haussière OU volume raisonnable
-            if tendance_hauss or filtre_volume:
+            # Sell nécessite une volatilité raisonnable (le Z-Score ≥ 2 est déjà le filtre principal)
+            if filtre_volatilite:
                 return 'Sell_FILTERED'
             else:
                 return 'Hold'
