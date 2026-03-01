@@ -43,3 +43,8 @@ data/*.csv
 
 # Logs
 *.log
+# Test/Debug files (local development only)
+debug_*.py
+test_*.py
+find_bigcaps.py
+run_option10.py
