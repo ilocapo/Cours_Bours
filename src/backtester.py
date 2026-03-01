@@ -3,15 +3,25 @@ import pandas as pd
 from datetime import datetime, timedelta
 import sys
 import os
+import re
 
 # Ajouter le répertoire parent au chemin pour l'import de config
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Ajouter le répertoire src au chemin pour les imports locaux
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from config import OUTPUT_DAILY_REPORTS, OUTPUT_BACKTEST_REPORTS
 
 # Configurer l'encodage UTF-8 pour la sortie sur Windows
+# (ne pas remplacer si la sortie est déjà fermée ou encodée en UTF-8)
 if sys.platform == 'win32':
     import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    try:
+        if not sys.stdout.closed and not (hasattr(sys.stdout, 'encoding') and sys.stdout.encoding and 'utf-8' in sys.stdout.encoding.lower()):
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    except Exception:
+        # si quelque chose ne va pas (buffer fermé, etc.), on ignore
+        pass
 
 # Importer directement les fonctions depuis zscore_calculator
 from zscore_calculator import (
@@ -350,6 +360,8 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
     df_stock['Exit_Price'] = pd.NA
     df_stock['Holding_Days'] = 0
     df_stock['Avoid_Falling_Knife'] = False
+    # Trace des raisons de sortie pour diagnostiquer TP/SL/TimeStop
+    df_stock['Exit_Reason'] = ''
 
     # Signaux candidats (après filtres)
     df_stock['Signal_Candidate'] = 0
@@ -381,6 +393,7 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
                 # Vendre au marché
                 df_stock.at[df_stock.index[i], 'Signal_Exec'] = -1
                 df_stock.at[df_stock.index[i], 'Exit_Price'] = price
+                df_stock.at[df_stock.index[i], 'Exit_Reason'] = 'TP'
                 in_position = False
                 entry_price = None
                 tp_price = None
@@ -393,6 +406,7 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
             if price <= sl_price:
                 df_stock.at[df_stock.index[i], 'Signal_Exec'] = -1
                 df_stock.at[df_stock.index[i], 'Exit_Price'] = price
+                df_stock.at[df_stock.index[i], 'Exit_Reason'] = 'SL'
                 in_position = False
                 entry_price = None
                 tp_price = None
@@ -405,6 +419,7 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
             if holding_days >= time_stop_days:
                 df_stock.at[df_stock.index[i], 'Signal_Exec'] = -1
                 df_stock.at[df_stock.index[i], 'Exit_Price'] = price
+                df_stock.at[df_stock.index[i], 'Exit_Reason'] = 'TS'
                 in_position = False
                 entry_price = None
                 tp_price = None
@@ -540,7 +555,219 @@ def run_backtest_single_stock(ticker, capital_initial=1000000, frais_transaction
     }
 
 
-def compute_sharpe_ratios(df, window_days=252, annualization=252):
+def compute_volatility_per_stock(df, window_days=252):
+    """Calcule la volatilité annualisée pour chaque action.
+
+    Args:
+        df (pd.DataFrame): Données de marché avec 'Code symbole' et 'Cours moyen'.
+        window_days (int): Fenêtre de calcul (défaut 252 jours = 1 année).
+
+    Returns:
+        dict: Mapping ticker -> volatilité annualisée (%).
+    """
+    volatility = {}
+    df = df.sort_values('Date')
+    for ticker in df['Code symbole'].unique():
+        sub = df[df['Code symbole'] == ticker].copy()
+        sub = sub.sort_values('Date')
+        sub['ret'] = sub['Cours moyen'].pct_change()
+        recent = sub['ret'].dropna().tail(window_days)
+        if len(recent) < 10:
+            volatility[ticker] = 0.0  # Pas assez de données
+        else:
+            volatility[ticker] = recent.std() * (252 ** 0.5) * 100
+    return volatility
+
+
+# --- fonctions utilitaires pour rapports quotidiens et gestion de portefeuille ---
+
+def classify_ticker_type(ticker: str) -> str:
+    """Retourne le type d'un code symbole selon la nomenclature BRVM.
+
+    - Indice : contient 'BRVM' (ex. BRVM-30, BRVM-AGR)
+    - Obligation : contient au moins un chiffre, point ou tiret (ex. TPCI.O17, SNTS.O2)
+    - Action : uniquement lettres majuscules (3-4 caractères en pratique)
+
+    Args:
+        ticker (str): code symbole à classifier.
+
+    Returns:
+        str: 'Indice', 'Obligation', 'Action' ou 'Unknown'.
+    """
+    if not isinstance(ticker, str):
+        return 'Unknown'
+    if 'BRVM' in ticker:
+        return 'Indice'
+    # si présence de chiffres, point ou tiret, on considère comme obligation
+    import re
+    if re.search(r"[0-9\.\-]", ticker):
+        return 'Obligation'
+    if re.fullmatch(r"[A-Z]{3,5}", ticker):
+        return 'Action'
+    return 'Unknown'
+
+
+def run_daily_market_report(top_n_vol=10, verbose=True):
+    """Génère un rapport quotidien de marché.
+
+    - Calcule la volatilité de chaque titre.
+    - Ajoute les signaux Z-score filtrés pour la dernière date.
+    - Sauvegarde un CSV summary dans output/daily_reports.
+    - Affiche un tableau Markdown et un graphique simple (si matplotlib installé).
+
+    Args:
+        top_n_vol (int): Nombre de titres à afficher par volatilité.
+        verbose (bool): Afficher des informations dans la console.
+
+    Returns:
+        pd.DataFrame: DataFrame de résumé (Symbol, Volatility, Signal_Filtre, Price, Z_Score).
+    """
+    df = charge_and_clean_data()
+    if df.empty:
+        if verbose:
+            print("⚠️  Pas de données disponibles pour le rapport de marché.")
+        return pd.DataFrame()
+
+    vol_dict = compute_volatility_per_stock(df)
+    vol_df = pd.DataFrame(list(vol_dict.items()), columns=['Symbol', 'Volatility']).sort_values('Volatility', ascending=False)
+
+    # calculer Z-score CORRIGÉ: grouper par symbole pour chaque titre indépendamment
+    fenetre_zscore = 200
+    df = df.sort_values(['Code symbole', 'Date'])
+    df['Moyenne_Mobile'] = df.groupby('Code symbole')['Cours moyen'].transform(
+        lambda x: x.rolling(window=fenetre_zscore, min_periods=50).mean()
+    )
+    df['Ecart_Type'] = df.groupby('Code symbole')['Cours moyen'].transform(
+        lambda x: x.rolling(window=fenetre_zscore, min_periods=50).std()
+    )
+    df['Z_Score'] = (df['Cours moyen'] - df['Moyenne_Mobile']) / df['Ecart_Type']
+
+    # ajouter signaux pour la date la plus récente
+    df = signals_generation(df)
+    df = add_filters(df)
+    latest = df['Date'].max()
+    todays = df[df['Date'] == latest]
+    merge = todays[['Code symbole','Signal_Filtre','Cours moyen','Z_Score']].rename(columns={'Code symbole':'Symbol','Cours moyen':'Price'})
+    summary = pd.merge(vol_df, merge, on='Symbol', how='left')
+    summary['Signal_Filtre'] = summary['Signal_Filtre'].fillna('None')
+    summary['Z_Score'] = summary['Z_Score'].fillna(0.0)
+    # classifier types BRVM
+    summary['Type'] = summary['Symbol'].apply(classify_ticker_type)
+    # FILTRER: n'afficher et exporter QUE les actions (pas obligations/indices)
+    summary = summary[summary['Type'] == 'Action'].copy()
+    # FILTRER: n'afficher et exporter que les actions volatiles (volatilité > 15%)
+    summary = summary[summary['Volatility'] > 15.0].copy()
+    
+    if verbose:
+        if len(summary) == 0:
+            print("\n⚠️  Aucune action détectée dans les données.")
+
+    # affichage toujours effectué en premier
+    if verbose:
+        print(f"\n=== TOP {top_n_vol} TICKERS VOLATILES ===")
+        # afficher type pour distinguer actions/obligations/indices
+        print(summary.head(top_n_vol)[['Symbol','Type','Volatility','Signal_Filtre']].to_markdown(index=False))
+        if summary['Signal_Filtre'].isin(['Buy_FILTERED','Strong Buy_FILTERED']).any():
+            print("\n⚡️ Signaux d'achat détectés aujourd'hui")
+        else:
+            print("\nℹ️ Aucun signal d'achat aujourd'hui")
+        try:
+            import matplotlib.pyplot as plt
+            top = summary.head(top_n_vol)
+            top.plot.bar(x='Symbol', y='Volatility', legend=False, title='Volatilité (%)')
+            plt.tight_layout()
+            plt.show()
+        except ImportError:
+            pass
+
+    # export CSV
+    # utiliser date des données + time pour éviter verrouillage du même nom
+    date_str = latest.strftime('%Y%m%d') if not pd.isna(latest) else datetime.now().strftime('%Y%m%d')
+    time_str = datetime.now().strftime('%H%M%S')
+    os.makedirs(OUTPUT_DAILY_REPORTS, exist_ok=True)
+    csv_path = os.path.join(OUTPUT_DAILY_REPORTS, f'market_summary_{date_str}_{time_str}.csv')
+    try:
+        summary.to_csv(csv_path, index=False)
+        if verbose:
+            print(f"✅ Rapport marché exporté : {csv_path}")
+    except PermissionError:
+        if verbose:
+            print(f"⚠️ Impossible d'écrire le fichier {csv_path} (verrouillé) - rapport non enregistré.")
+    return summary
+
+
+def portfolio_plan(capital_alloue, prix_marche, frais_pct, stop_loss_pct, take_profit_pct):
+    """Renvoie un DataFrame de calculs pour un ordre avec SL/TP.
+
+    Colonnes générées :
+        Capital Alloué, Frais SGI, Prix marché, Prix revient, Quantité,
+        Coût total, Cash restant, Stop-Loss, Perte max, Take-Profit, Profit net
+    """
+    # coût d'achat unitaire (inclut frais achat et vente potentielle)
+    prix_revient = prix_marche * (1 + frais_pct)
+    quantite = int(capital_alloue // prix_revient) if prix_revient>0 else 0
+    cout_total = quantite * prix_revient
+    cash_rest = capital_alloue - cout_total
+    stop_price = prix_marche * (1 - stop_loss_pct)
+    perte_max = quantite * prix_marche * stop_loss_pct
+    tp_price = prix_marche * (1 + take_profit_pct)
+    profit_net = quantite * prix_marche * take_profit_pct - 2 * frais_pct * quantite * prix_marche
+
+    df = pd.DataFrame([{
+        'Capital Alloué': capital_alloue,
+        'Frais SGI (A/V)': frais_pct,
+        'Prix marché': prix_marche,
+        'Prix revient': prix_revient,
+        'Quantité': quantite,
+        'Coût total': cout_total,
+        'Cash restant': cash_rest,
+        'Stop-Loss (%)': stop_loss_pct,
+        'Perte Max capital': perte_max,
+        'Take-Profit (%)': take_profit_pct,
+        'Profit Net': profit_net
+    }])
+    return df
+
+
+def filter_stocks_by_volatility(df, min_volatility=15.0, max_volatility=None, window_days=252, verbose=True):
+    """Sélectionne les actions dans la plage de volatilité spécifiée.
+    
+    Cible: Exclure les "obligations" (SNTS stable ~15%), garder les vraies actions volatiles.
+
+    Args:
+        df (pd.DataFrame): Données de marché.
+        min_volatility (float): Volatilité minimale en % (défaut 15%).
+        max_volatility (float): Volatilité maximale en % (défaut None = pas de max).
+        window_days (int): Fenêtre de calcul (défaut 252 jours).
+        verbose (bool): Afficher les détails.
+
+    Returns:
+        list: Liste des tickers sélectionnés (triés par volatilité décroissante).
+    """
+    volatility = compute_volatility_per_stock(df, window_days=window_days)
+    
+    # Filtrer dans la plage
+    selected = {}
+    for ticker, vol in volatility.items():
+        if vol >= min_volatility:
+            if max_volatility is None or vol <= max_volatility:
+                selected[ticker] = vol
+    
+    # Trier par volatilité décroissante
+    sorted_tickers = sorted(selected.items(), key=lambda x: x[1], reverse=True)
+    result = [t for t, _ in sorted_tickers]
+    
+    if verbose:
+        print(f"\n📊 FILTRAGE PAR VOLATILITÉ")
+        print(f"   Min: {min_volatility:.1f}% | Max: {max_volatility if max_volatility else '∞'}%")
+        print(f"   Actions sélectionnées: {len(result)}/{len(volatility)}")
+        if result:
+            print(f"   Top 5 par volatilité:")
+            for i, (ticker, vol) in enumerate(sorted_tickers[:5]):
+                print(f"      {i+1}. {ticker:10} : {vol:6.2f}%")
+    
+    return result
+
     """Calcule le ratio de Sharpe pour chaque action sur les derniers jours spécifiés.
 
     Args:
@@ -716,6 +943,7 @@ def run_backtest_portfolio(tickers=None, capital_par_action=200000, frais_transa
 def parameter_grid_search(ticker, capital_initial=1000000, frais_transaction=0.01):
     """
     Effectue une recherche de grille de paramètres pour optimiser les TP/SL/TimeStop/FK.
+    SEULEMENT des paires TP/SL logiques (TP > SL).
     
     Args:
         ticker (str): Code symbole à tester
@@ -730,57 +958,63 @@ def parameter_grid_search(ticker, capital_initial=1000000, frais_transaction=0.0
     print(f"🔎 GRID SEARCH OPTIMISATION PARAMÈTRES : {ticker}")
     print("=" * 120)
     
-    # Grilles de paramètres à tester
-    tp_values = [0.05, 0.08, 0.10, 0.15]        # TP: +5%, +8%, +10%, +15%
-    sl_values = [0.03, 0.05, 0.08]              # SL: -3%, -5%, -8%
+    # Générer dynamiquement les paires TP/SL logiques (TP > SL) et appliquer
+    # une contrainte de ratio risque/récompense minimal (TP/SL >= min_rr)
+    tp_values = [0.05, 0.08, 0.10, 0.15]
+    sl_values = [0.03, 0.05, 0.08]
+    min_rr = 1.5  # ratio TP/SL minimal accepté
+    tp_sl_pairs = []
+    for tp in tp_values:
+        for sl in sl_values:
+            if tp > sl and (tp / sl) >= min_rr:
+                tp_sl_pairs.append((tp, sl))
+
     ts_values = [5, 10, 15, 20]                 # Time-Stop: 5, 10, 15, 20 jours
     fk_drop_values = [0.05, 0.08, 0.10]         # FK drop: -5%, -8%, -10%
     
     results = []
-    total_tests = len(tp_values) * len(sl_values) * len(ts_values) * len(fk_drop_values)
+    total_tests = len(tp_sl_pairs) * len(ts_values) * len(fk_drop_values)
     test_count = 0
     
-    print(f"\n📊 Grille de test: {total_tests} combinaisons")
-    print(f"   TP: {tp_values}")
-    print(f"   SL: {sl_values}")
+    print(f"\n📊 Grille de test: {total_tests} combinaisons (TP>SL & TP/SL>={min_rr})")
+    print(f"   Paires TP/SL retenues: {tp_sl_pairs}")
     print(f"   TimeStop: {ts_values}")
     print(f"   FK_drop: {fk_drop_values}\n")
     
-    for tp in tp_values:
-        for sl in sl_values:
-            for ts in ts_values:
-                for fk_drop in fk_drop_values:
-                    test_count += 1
-                    print(f"[{test_count:3d}/{total_tests}] Testing TP={tp*100:.0f}% | SL={sl*100:.0f}% | TS={ts}j | FK={fk_drop*100:.0f}%", end=" ... ")
-                    
-                    result = run_backtest_single_stock(
-                        ticker,
-                        capital_initial=capital_initial,
-                        frais_transaction=frais_transaction,
-                        take_profit_pct=tp,
-                        stop_loss_pct=sl,
-                        time_stop_days=ts,
-                        falling_knife_drop_pct=fk_drop,
-                        verbose=False  # ne pas afficher les détails
-                    )
-                    
-                    if result:
-                        results.append({
-                            'TP': tp,
-                            'SL': sl,
-                            'TimeStop': ts,
-                            'FK_Drop': fk_drop,
-                            'Rendement': result['rendement_algo'],
-                            'Surperf_BH': result['surperformance'],
-                            'Surperf_Safe': result['ecart_taux_safe'],
-                            'Sharpe': result['sharpe_ratio'],
-                            'Volatilite': result['volatilite'],
-                            'Trades': result['nombre_trades'],
-                            'Capital_Final': result['capital_final_algo']
-                        })
-                        print(f"Rendement={result['rendement_algo']:6.2f}% | Sharpe={result['sharpe_ratio']:7.3f}")
-                    else:
-                        print("SKIP")
+    for tp, sl in tp_sl_pairs:
+        for ts in ts_values:
+            for fk_drop in fk_drop_values:
+                test_count += 1
+                print(f"[{test_count:3d}/{total_tests}] Testing TP={tp*100:.0f}% | SL={sl*100:.0f}% | TS={ts}j | FK={fk_drop*100:.0f}%", end=" ... ")
+                
+                result = run_backtest_single_stock(
+                    ticker,
+                    capital_initial=capital_initial,
+                    frais_transaction=frais_transaction,
+                    take_profit_pct=tp,
+                    stop_loss_pct=sl,
+                    time_stop_days=ts,
+                    falling_knife_drop_pct=fk_drop,
+                    verbose=False  # ne pas afficher les détails
+                )
+                
+                if result:
+                    results.append({
+                        'TP': tp,
+                        'SL': sl,
+                        'TimeStop': ts,
+                        'FK_Drop': fk_drop,
+                        'Rendement': result['rendement_algo'],
+                        'Surperf_BH': result['surperformance'],
+                        'Surperf_Safe': result['ecart_taux_safe'],
+                        'Sharpe': result['sharpe_ratio'],
+                        'Volatilite': result['volatilite'],
+                        'Trades': result['nombre_trades'],
+                        'Capital_Final': result['capital_final_algo']
+                    })
+                    print(f"Rendement={result['rendement_algo']:6.2f}% | Sharpe={result['sharpe_ratio']:7.3f}")
+                else:
+                    print("SKIP")
     
     if not results:
         print("❌ Aucun résultat valide.")
