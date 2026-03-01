@@ -38,6 +38,11 @@ BRVM_URL = "https://www.brvm.org"
 def fetch_brvm_prices() -> dict:
     """
     Scrape les prix courants de BRVM (tous les titres)
+    Structure du tableau:
+      Col 0: Volume
+      Col 1: Cours moyen (fermeture) ← CELLE QU'ON VEUT
+      Col 2-4: Autres prix
+      Col 5: Variation %
     Retourne: {ticker: price}
     """
     prices = {}
@@ -62,31 +67,41 @@ def fetch_brvm_prices() -> dict:
             rows = table.find_all("tr")
             for row in rows:
                 cells = row.find_all(["td", "th"])
-                if cells and len(cells) > 0:
+                if cells and len(cells) >= 3:  # Besoin minimum 3 colonnes
                     try:
                         # Première colonne = ticker
                         ticker_text = cells[0].get_text(strip=True).upper()
                         
                         # Ne traiter que les tickers valides (3-10 caractères)
-                        if not (3 <= len(ticker_text) <= 10 and ticker_text.replace('.', '').replace('-', '').replace('O', '').isalnum()):
+                        if not (3 <= len(ticker_text) <= 10 and ticker_text.replace('.', '').replace('-', '').isalnum()):
                             continue
                         
-                        # Prix de fermeture (habituellement colonne 6-7)
-                        if len(cells) >= 7:
-                            close_text = cells[6].get_text(strip=True)
-                            try:
-                                close_price = float(close_text.replace(",", ".").replace(" ", ""))
-                                if close_price > 0:
-                                    prices[ticker_text] = close_price
-                            except (ValueError, AttributeError):
-                                continue
+                        # **CORRECTION**: Cours moyen est en colonne 1 (index 1), pas 6
+                        # Structure BRVM: [Volume] [Cours moyen] [Ouverture] [Précédent] [Variation%]
+                        price_text = cells[1].get_text(strip=True)
+                        
+                        try:
+                            # Nettoyer: supprimer espaces, virgules (séparateur décimal français)
+                            price_text_clean = price_text.replace(",", ".").replace(" ", "").replace("\n", "")
+                            close_price = float(price_text_clean)
+                            
+                            # Valider: prix doit être > 0
+                            if close_price > 0:
+                                prices[ticker_text] = close_price
+                        except (ValueError, AttributeError):
+                            continue
                     except Exception:
                         continue
         
         if prices:
             print(f"   ✅ Scraped {len(prices)} prices from BRVM")
+            # Debug: afficher quelques prix
+            sample_tickers = ['SNTS', 'ONTBF', 'ORGT', 'SAFC', 'SLBC']
+            for ticker in sample_tickers:
+                if ticker in prices:
+                    print(f"      {ticker}: {prices[ticker]} FCFA")
         else:
-            print(f"   ⚠️  No prices found on BRVM (may be closed or network issue)")
+            print(f"   ⚠️  No prices found on BRVM")
         
         return prices
         
