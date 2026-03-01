@@ -7,9 +7,11 @@ Utilisé pour identifier les opportunités d'achat/vente
 
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 from pathlib import Path
+import requests
+from bs4 import BeautifulSoup
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 sys.path.insert(0, os.path.dirname(__file__))
@@ -26,17 +28,126 @@ from config import (
     STOP_LOSS_PCT
 )
 
+# URL BRVM pour scraping
+BRVM_URL = "https://www.brvm.org"
+
+# URL BRVM pour scraping
+BRVM_URL = "https://www.brvm.org"
+
+
+def fetch_brvm_prices() -> dict:
+    """
+    Scrape les prix courants de BRVM (tous les titres)
+    Retourne: {ticker: price}
+    """
+    prices = {}
+    
+    try:
+        print(f"   Scraping BRVM prices from {BRVM_URL}/en/cours-actions/...")
+        
+        url = f"{BRVM_URL}/en/cours-actions/"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10, verify=False)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, "html.parser")
+        
+        # Chercher toutes les tables
+        tables = soup.find_all("table")
+        
+        for table in tables:
+            rows = table.find_all("tr")
+            for row in rows:
+                cells = row.find_all(["td", "th"])
+                if cells and len(cells) > 0:
+                    try:
+                        # Première colonne = ticker
+                        ticker_text = cells[0].get_text(strip=True).upper()
+                        
+                        # Ne traiter que les tickers valides (3-10 caractères)
+                        if not (3 <= len(ticker_text) <= 10 and ticker_text.replace('.', '').replace('-', '').replace('O', '').isalnum()):
+                            continue
+                        
+                        # Prix de fermeture (habituellement colonne 6-7)
+                        if len(cells) >= 7:
+                            close_text = cells[6].get_text(strip=True)
+                            try:
+                                close_price = float(close_text.replace(",", ".").replace(" ", ""))
+                                if close_price > 0:
+                                    prices[ticker_text] = close_price
+                            except (ValueError, AttributeError):
+                                continue
+                    except Exception:
+                        continue
+        
+        if prices:
+            print(f"   ✅ Scraped {len(prices)} prices from BRVM")
+        else:
+            print(f"   ⚠️  No prices found on BRVM (may be closed or network issue)")
+        
+        return prices
+        
+    except Exception as e:
+        print(f"   ❌ Error scraping BRVM: {e}")
+        return {}
+
+
+def merge_brvm_prices_with_history(df_historical: pd.DataFrame, brvm_prices: dict, today_date: datetime) -> pd.DataFrame:
+    """
+    Combine historical data (CSV up to 31/12/2025) avec prices d'aujourd'hui de BRVM
+    Ajoute une ligne pour aujourd'hui avec les prix BRVM scraped
+    """
+    
+    if not brvm_prices:
+        print("   ⚠️  No BRVM prices available, using last historical date")
+        return df_historical
+    
+    # Créer des rows pour aujourd'hui avec les prix BRVM
+    today_rows = []
+    for ticker, price in brvm_prices.items():
+        today_rows.append({
+            'Date': today_date,
+            'Code symbole': ticker,
+            'Cours moyen': price,
+            'ISIN': '',
+            'Cours dernier': price,
+            'Cours précédent': 0,
+            'Plus haut': price,
+            'Plus bas': price,
+            'Volume': 0
+        })
+    
+    df_today = pd.DataFrame(today_rows)
+    
+    # Combiner
+    df_combined = pd.concat([df_historical, df_today], ignore_index=True)
+    
+    # Assurer types de données
+    df_combined['Date'] = pd.to_datetime(df_combined['Date'])
+    
+    print(f"   ✅ Merged {len(df_today)} BRVM prices with historical data")
+    
+    return df_combined
+
+
 def generate_daily_signals():
     """
-    Génère les signaux Z-Score pour le jour (basé sur dernier prix disponible)
+    Génère les signaux Z-Score pour aujourd'hui
+    Combine les données historiques (CSV) avec prix BRVM en temps réel
     """
     
     print("\n" + "="*100)
     print("DAILY SIGNALS GENERATOR - Z-SCORE ANALYSIS")
     print("="*100)
     
-    # Charger toutes les données
-    print("\nChargement des données...")
+    # Déterminer aujourd'hui
+    today_date = datetime.now()
+    
+    # Charger les données historiques du CSV
+    print("\nChargement des données historiques...")
     df_all = charge_and_clean_data()
     
     if df_all.empty:
@@ -45,16 +156,26 @@ def generate_daily_signals():
     
     print(f"OK - {len(df_all)} lignes chargées")
     
-    # Récupérer la dernière date disponible
+    # Adapter les types de données
     df_all['Date'] = pd.to_datetime(df_all['Date'])
+    latest_historical_date = df_all['Date'].max()
+    print(f"Dernier jour historique: {latest_historical_date.strftime('%d/%m/%Y')}")
+    
+    # Scraper les prix BRVM d'aujourd'hui
+    print(f"\nScraping BRVM prices for {today_date.strftime('%d/%m/%Y')}...")
+    brvm_prices = fetch_brvm_prices()
+    
+    # Combiner données historiques + prix BRVM
+    print("\nMerging with BRVM data...")
+    df_all = merge_brvm_prices_with_history(df_all, brvm_prices, today_date)
+    
+    # Récupérer la dernière date (aujourd'hui si BRVM a des prix, sinon dernière hist)
     latest_date = df_all['Date'].max()
-    print(f"\nDernier jour avec données: {latest_date.strftime('%d/%m/%Y')}")
+    print(f"Calcul Z-Score pour: {latest_date.strftime('%d/%m/%Y')}")
     
     # Filtrer les 200 derniers jours pour calcul du Z-Score (200-day rolling window)
-    cutoff_date = df_all['Date'].max() - pd.Timedelta(days=200)
+    cutoff_date = latest_date - pd.Timedelta(days=200)
     df_recent = df_all[df_all['Date'] >= cutoff_date].copy()
-    
-    print(f"Calcul Z-Score sur {len(df_recent)} jours (200-day window)...")
     
     # Calculer Z-Score
     df_signals = calculate_zscore(df_recent)
@@ -82,8 +203,8 @@ def generate_daily_signals():
         price = row.get('Cours moyen', 0)
         
         # Paramètres depuis config (adaptés à ton capital réel)
-        tp_pct = TAKE_PROFIT_PCT  # 5% take-profit (configurable)
-        sl_pct = STOP_LOSS_PCT    # 8% stop-loss (configurable)
+        tp_pct = TAKE_PROFIT_PCT  # 8% take-profit (configurable)
+        sl_pct = STOP_LOSS_PCT    # 5% stop-loss (configurable)
         
         if signal == 'Strong Buy':
             tp = price * (1 + tp_pct)
@@ -130,7 +251,9 @@ def generate_daily_signals():
     print(df_signals_export.to_string(index=False))
     
     # Sauvegarder
-    signals_file = f"signals_{latest_date.strftime('%Y%m%d')}.csv"
+    output_dir = os.path.join(os.path.dirname(__file__), 'output', 'signals')
+    os.makedirs(output_dir, exist_ok=True)
+    signals_file = os.path.join(output_dir, f"signals_{latest_date.strftime('%Y%m%d')}.csv")
     df_signals_export.to_csv(signals_file, index=False)
     print(f"\n✅ Signals sauvegardés: {signals_file}")
     
