@@ -12,9 +12,19 @@ import pandas as pd
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.insert(0, os.path.dirname(__file__))
 
 from backtester import charge_and_clean_data
 from zscore_calculator import calculate_zscore, signals_generation
+from config import (
+    REAL_SATELLITE_CAPITAL,
+    ZSCORE_STRONG_BUY,
+    ZSCORE_BUY,
+    ZSCORE_SELL,
+    ZSCORE_STRONG_SELL,
+    TAKE_PROFIT_PCT,
+    STOP_LOSS_PCT
+)
 
 def generate_daily_signals():
     """
@@ -71,19 +81,19 @@ def generate_daily_signals():
         z_score = row.get('Z_Score', 0)
         price = row.get('Cours moyen', 0)
         
-        # Paramètres par défaut
-        tp_pct = 0.05  # 5% take-profit
-        sl_pct = 0.08  # 8% stop-loss
+        # Paramètres depuis config (adaptés à ton capital réel)
+        tp_pct = TAKE_PROFIT_PCT  # 5% take-profit (configurable)
+        sl_pct = STOP_LOSS_PCT    # 8% stop-loss (configurable)
         
         if signal == 'Strong Buy':
             tp = price * (1 + tp_pct)
             sl = price * (1 - sl_pct)
-            qty = int(3_000_000 / price) if price > 0 else 0  # 3M FCFA pour SATELLITE
+            qty = int(REAL_SATELLITE_CAPITAL / price) if price > 0 else 0  # Capital SATELLITE adapté
             action = 'BUY'
         elif signal == 'Buy':
             tp = price * (1 + tp_pct)
             sl = price * (1 - sl_pct)
-            qty = int(3_000_000 / price / 2) if price > 0 else 0  # Moitié pour buy normal
+            qty = int(REAL_SATELLITE_CAPITAL / price / 2) if price > 0 else 0  # Moitié pour buy normal
             action = 'BUY'
         elif signal == 'Strong Sell' or signal == 'Sell':
             action = 'SELL'

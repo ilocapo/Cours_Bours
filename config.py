@@ -13,3 +13,86 @@ OUTPUT_BACKTEST_REPORTS = os.path.join(PROJECT_ROOT, "output", "backtest_reports
 # Créer les répertoires s'ils n'existent pas
 os.makedirs(OUTPUT_DAILY_REPORTS, exist_ok=True)
 os.makedirs(OUTPUT_BACKTEST_REPORTS, exist_ok=True)
+
+# ============================================================================
+# REAL PORTFOLIO SETTINGS - À ADAPTER À TON CAPITAL RÉEL
+# ============================================================================
+# Ce système d'entreprend avec 10M hypothétiques en backtest
+# Mais en réalité tu commences avec 500K-1M XOF
+# Cette section te permet d'adapter tout le système à ton capital réel
+# ============================================================================
+
+# Capital total que tu investis RÉELLEMENT (en FCFA)
+# Exemples:
+#   - 500_000 FCFA pour commencer petit
+#   - 1_000_000 FCFA pour capital normal
+#   - Les rendements en % restent identiques, juste les montants changent
+REAL_PORTFOLIO_CAPITAL = 1_000_000  # À MODIFIER selon ton capital réel
+
+# Allocation CORE vs SATELLITE (split ne change pas)
+CORE_ALLOCATION_PCT = 0.70      # 70% en CORE (5 big caps dividend)
+SATELLITE_ALLOCATION_PCT = 0.30 # 30% en SATELLITE (Z-Score robot)
+
+# Capital calculé automatiquement
+REAL_CORE_CAPITAL = int(REAL_PORTFOLIO_CAPITAL * CORE_ALLOCATION_PCT)
+REAL_SATELLITE_CAPITAL = int(REAL_PORTFOLIO_CAPITAL * SATELLITE_ALLOCATION_PCT)
+
+# 5 stocks CORE (division égale parmi les 5)
+REAL_CAPITAL_PER_CORE_STOCK = REAL_CORE_CAPITAL // 5
+
+# Stocks CORE (ne change pas - ce sont les dividendes réguliers)
+CORE_STOCKS = ['SNTS', 'ORGT', 'ONTBF', 'SAFC', 'ABJC']
+
+# Stocks SATELLITE (univers de stocks pour trading Z-Score)
+# À adapter selon ton broker et liquidité
+SATELLITE_STOCK_UNIVERSE = [
+    'ABJC', 'ABJCI', 'ABJAN', 'ABGC', 'ABGCI', 'ABJAN',
+    'BABS', 'BABS.O1', 'BICB', 'BHSN', 'BHSN.O1',
+    'BOABF', 'BOABG', 'BOAM', 'BOAP', 'BOAOG', 'BOAOH',
+    'CBILF', 'CBILG', 'CBILH', 'CBPRH', 'CBPRK',
+    'COCONAS', 'CORIS', 'CIL',
+    'ELIM', 'ETIT',
+    'NEAM', 'NETRH',
+    'ORGT', 'ORGT.O1',
+    'PALMEQ', 'PIVS',
+    'SAFC', 'SHEC', 'SNTS', 'SNTS.O1',
+    'SOMDIAA', 'SONATEL', 'SONATEL.O1',
+    'UNCC', 'UNOA'
+]
+
+# Paramètres de trading SATELLITE
+MAX_LOSS_PER_DAY_PCT = 0.02        # Maximum -2% loss per day
+STOP_LOSS_PCT = 0.08               # -8% stop loss per trade
+TAKE_PROFIT_PCT = 0.05             # +5% take profit per trade
+
+# Paramètres Z-Score
+ZSCORE_WINDOW = 200                # 200-day rolling window
+ZSCORE_STRONG_BUY = -3.0           # Z <= -3.0 = Strong Buy
+ZSCORE_BUY = -2.5                  # Z <= -2.5 = Buy
+ZSCORE_SELL = 2.5                  # Z >= +2.5 = Sell
+ZSCORE_STRONG_SELL = 3.0           # Z >= +3.0 = Strong Sell
+
+# Paramètres CORE rebalancing
+CORE_WEAK_SCORE_THRESHOLD = 45     # Score < 45 = remplacer
+CORE_MONITORING_FREQUENCY = "monthly"  # 1st of month
+
+# Print debug
+if __name__ == "__main__":
+    print("=" * 80)
+    print("REAL PORTFOLIO CONFIGURATION")
+    print("=" * 80)
+    print(f"Total Capital: {REAL_PORTFOLIO_CAPITAL:,} FCFA")
+    print(f"  CORE (70%): {REAL_CORE_CAPITAL:,} FCFA ({REAL_CAPITAL_PER_CORE_STOCK:,} per stock)")
+    print(f"  SATELLITE (30%): {REAL_SATELLITE_CAPITAL:,} FCFA")
+    print()
+    print(f"Risk Limits:")
+    print(f"  Daily max loss: {MAX_LOSS_PER_DAY_PCT*100}%")
+    print(f"  Per trade SL: {STOP_LOSS_PCT*100}%")
+    print(f"  Per trade TP: {TAKE_PROFIT_PCT*100}%")
+    print()
+    print(f"Z-Score Thresholds:")
+    print(f"  Strong Buy: Z <= {ZSCORE_STRONG_BUY}")
+    print(f"  Buy: Z <= {ZSCORE_BUY}")
+    print(f"  Sell: Z >= {ZSCORE_SELL}")
+    print(f"  Strong Sell: Z >= {ZSCORE_STRONG_SELL}")
+    print("=" * 80)

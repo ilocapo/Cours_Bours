@@ -14,12 +14,19 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.insert(0, os.path.dirname(__file__))
 
 from backtester import charge_and_clean_data
+from config import (
+    CORE_STOCKS,
+    REAL_CAPITAL_PER_CORE_STOCK,
+    CORE_WEAK_SCORE_THRESHOLD,
+    SATELLITE_STOCK_UNIVERSE
+)
 
-# Configuration
-CORE_TICKERS = ['SNTS', 'ORGT', 'ONTBF', 'SAFC', 'ABJC']
-CORE_VALUE_PER_STOCK = 1_400_000  # Each core stock
+# Configuration (utilise les valeurs de config.py pour être adaptable)
+CORE_TICKERS = CORE_STOCKS
+CORE_VALUE_PER_STOCK = REAL_CAPITAL_PER_CORE_STOCK  # Dynamique selon capital réel
 
 def calculate_stock_metrics(ticker, df_all):
     """
