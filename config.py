@@ -60,10 +60,15 @@ SATELLITE_STOCK_UNIVERSE = [
     'UNCC', 'UNOA'
 ]
 
-# Paramètres de trading SATELLITE
+# Paramètres de trading SATELLITE (backtest-proven parameters)
 MAX_LOSS_PER_DAY_PCT = 0.02        # Maximum -2% loss per day
-STOP_LOSS_PCT = 0.08               # -8% stop loss per trade
-TAKE_PROFIT_PCT = 0.05             # +5% take profit per trade
+STOP_LOSS_PCT = 0.05               # -5% stop loss per trade (backtest optimal)
+TAKE_PROFIT_PCT = 0.08             # +8% take profit per trade (backtest optimal)
+
+# Protections contre les faux signaux (whipsaw & falling knife)
+TIME_STOP_DAYS = 10                # Close position after 10 days (max holding)
+FALLING_KNIFE_WINDOW = 3           # Look back 3 days for sharp drops
+FALLING_KNIFE_DROP_PCT = 0.08      # Don't buy if price dropped 8%+ in 3 days
 
 # Paramètres Z-Score
 ZSCORE_WINDOW = 200                # 200-day rolling window
@@ -89,6 +94,10 @@ if __name__ == "__main__":
     print(f"  Daily max loss: {MAX_LOSS_PER_DAY_PCT*100}%")
     print(f"  Per trade SL: {STOP_LOSS_PCT*100}%")
     print(f"  Per trade TP: {TAKE_PROFIT_PCT*100}%")
+    print()
+    print(f"Whipsaw/Falling Knife Protection:")
+    print(f"  Time Stop: {TIME_STOP_DAYS} days (close position after max holding)")
+    print(f"  Falling Knife: {FALLING_KNIFE_DROP_PCT*100}% in {FALLING_KNIFE_WINDOW} days (avoid buying)")
     print()
     print(f"Z-Score Thresholds:")
     print(f"  Strong Buy: Z <= {ZSCORE_STRONG_BUY}")
