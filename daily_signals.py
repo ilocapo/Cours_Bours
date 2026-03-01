@@ -38,11 +38,11 @@ BRVM_URL = "https://www.brvm.org"
 def fetch_brvm_prices() -> dict:
     """
     Scrape les prix courants de BRVM (tous les titres)
-    Structure du tableau:
-      Col 0: Volume
-      Col 1: Cours moyen (fermeture) ← CELLE QU'ON VEUT
-      Col 2-4: Autres prix
-      Col 5: Variation %
+    
+    Gère 2 formats:
+    1. Tables "Top 5": [Ticker | Prix | Variation]
+    2. Table complète: [Ticker | NomComplet | Volume | Prix1 | Prix2 | PRIX_MOYEN | Variation]
+    
     Retourne: {ticker: price}
     """
     prices = {}
@@ -60,53 +60,98 @@ def fetch_brvm_prices() -> dict:
         
         soup = BeautifulSoup(response.content, "html.parser")
         
-        # Chercher toutes les tables
+        # Chercher TOUTES les tables
         tables = soup.find_all("table")
+        print(f"   Found {len(tables)} tables in HTML")
         
-        for table in tables:
+        table_count = 0
+        ticker_count = 0
+        
+        for table_idx, table in enumerate(tables):
             rows = table.find_all("tr")
-            for row in rows:
+            if len(rows) < 2:  # Skip tables with < 2 rows
+                continue
+            
+            table_count += 1
+            num_rows = len(rows)
+            print(f"      Table {table_count}: {num_rows} rows")
+            
+            # Détecter le format: compter les colonnes de la première row
+            first_row = rows[0]
+            first_cells = first_row.find_all(["td", "th"])
+            num_cols = len(first_cells)
+            
+            # Déterminer l'index du prix selon le nombre de colonnes
+            # Format petit (3 cols): [Ticker, Prix, Var]
+            # Format complet (7 cols): [Ticker, Nom, Volume, Prix1, Prix2, PRIX_MOYEN, Var]
+            if num_cols == 3:
+                price_col_idx = 1  # Index du prix en format petit
+            elif num_cols >= 6:
+                price_col_idx = 5  # Index du prix en format complet
+            else:
+                continue  # Format inconnu, skip cette table
+            
+            for row_idx, row in enumerate(rows):
                 cells = row.find_all(["td", "th"])
-                if cells and len(cells) >= 3:  # Besoin minimum 3 colonnes
+                if cells and len(cells) >= price_col_idx + 1:
                     try:
                         # Première colonne = ticker
                         ticker_text = cells[0].get_text(strip=True).upper()
                         
-                        # Ne traiter que les tickers valides (3-10 caractères)
-                        if not (3 <= len(ticker_text) <= 10 and ticker_text.replace('.', '').replace('-', '').isalnum()):
+                        # Filtrer: tickers valides seulement (3-10 caractères)
+                        if not (3 <= len(ticker_text) <= 10):
                             continue
                         
-                        # **CORRECTION**: Cours moyen est en colonne 1 (index 1), pas 6
-                        # Structure BRVM: [Volume] [Cours moyen] [Ouverture] [Précédent] [Variation%]
-                        price_text = cells[1].get_text(strip=True)
+                        # Ignorer les headers
+                        if ticker_text in ['TICKER', 'CODE SYMBOLE', 'SYMBOL', 'TOUTES']:
+                            continue
+                        
+                        # Vérifier que c'est un code valide
+                        if not all(c.isalnum() or c in '.-' for c in ticker_text):
+                            continue
+                        
+                        # Éviter doublons
+                        if ticker_text in prices:
+                            continue
+                        
+                        # Extraire le prix à l'index détecté
+                        price_text = cells[price_col_idx].get_text(strip=True)
                         
                         try:
-                            # Nettoyer: supprimer espaces, virgules (séparateur décimal français)
+                            # Nettoyer
                             price_text_clean = price_text.replace(",", ".").replace(" ", "").replace("\n", "")
                             close_price = float(price_text_clean)
                             
-                            # Valider: prix doit être > 0
+                            # Valider
                             if close_price > 0:
                                 prices[ticker_text] = close_price
+                                ticker_count += 1
+                                
+                                # Debug: afficher premier exemplaire par table
+                                if row_idx == 1:
+                                    print(f"         Sample ({num_cols} cols, col {price_col_idx}): {ticker_text} = {close_price}")
                         except (ValueError, AttributeError):
-                            continue
+                            pass
                     except Exception:
-                        continue
+                        pass
         
-        if prices:
-            print(f"   ✅ Scraped {len(prices)} prices from BRVM")
-            # Debug: afficher quelques prix
-            sample_tickers = ['SNTS', 'ONTBF', 'ORGT', 'SAFC', 'SLBC']
-            for ticker in sample_tickers:
-                if ticker in prices:
-                    print(f"      {ticker}: {prices[ticker]} FCFA")
-        else:
-            print(f"   ⚠️  No prices found on BRVM")
+        print(f"   ✅ Scraped {ticker_count} prices from {table_count} tables on BRVM")
+        
+        # Afficher les 5 CORE stocks
+        core_tickers = ['SNTS', 'ONTBF', 'ORGT', 'SAFC', 'ABJC']
+        print(f"   📈 CORE Stock Prices:")
+        for ticker in core_tickers:
+            if ticker in prices:
+                print(f"      {ticker}: {prices[ticker]:,.0f} FCFA ✅")
+            else:
+                print(f"      {ticker}: Not found ⚠️")
         
         return prices
         
     except Exception as e:
         print(f"   ❌ Error scraping BRVM: {e}")
+        import traceback
+        traceback.print_exc()
         return {}
 
 
