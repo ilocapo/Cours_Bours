@@ -43,9 +43,9 @@ def fetch_brvm_prices() -> dict:
     prices = {}
     
     try:
-        print(f"   Scraping BRVM prices from {BRVM_URL}/en/cours-actions/...")
+        print(f"   Scraping BRVM prices from {BRVM_URL}/fr/cours-actions/0...")
         
-        url = f"{BRVM_URL}/en/cours-actions/"
+        url = f"{BRVM_URL}/fr/cours-actions/0"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
