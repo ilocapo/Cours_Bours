@@ -29,47 +29,62 @@ BRVM_URL = "https://www.brvm.org"
 
 def fetch_stock_price(ticker: str) -> dict:
     """
-    Récupère le dernier prix d'un stock via scraping BRVM
+    Récupère le prix d'un stock via scraping BRVM (v2 - corrigée)
+    Utilise la bonne URL et gère multi-format
     """
     try:
-        # Aller sur la page des cours du jour
-        url = f"{BRVM_URL}/en/cours-actions/"
+        # Bonne URL (comme dans daily_signals.py)
+        url = f"{BRVM_URL}/fr/cours-actions/0"
         
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
         
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=10, verify=False)
         response.raise_for_status()
         
         soup = BeautifulSoup(response.content, "html.parser")
         
-        # Chercher la ligne du ticker dans la table
-        # Structure BRVM: <table> avec rows contenant le ticker
+        # Scraper toutes les tables (comme dans daily_signals.py)
         tables = soup.find_all("table")
         
         for table in tables:
             rows = table.find_all("tr")
+            if len(rows) < 2:
+                continue
+            
+            # Détecter format (3 cols = petit format, 7+ cols = format complet)
+            first_row = rows[0]
+            first_cells = first_row.find_all(["td", "th"])
+            num_cols = len(first_cells)
+            
+            if num_cols == 3:
+                price_col_idx = 1
+            elif num_cols >= 6:
+                price_col_idx = 5
+            else:
+                continue
+            
             for row in rows:
                 cells = row.find_all(["td", "th"])
-                if cells and len(cells) > 0:
-                    # Première colonne = ticker
-                    cell_text = cells[0].get_text(strip=True).upper()
-                    if ticker.upper() in cell_text:
-                        # Récupérer le prix de fermeture (habituellement colonne 6-7)
-                        if len(cells) >= 7:
-                            close_text = cells[6].get_text(strip=True)
-                            try:
-                                close_price = float(close_text.replace(",", "."))
+                if cells and len(cells) >= price_col_idx + 1:
+                    ticker_text = cells[0].get_text(strip=True).upper()
+                    
+                    if ticker_text == ticker.upper():
+                        try:
+                            price_text = cells[price_col_idx].get_text(strip=True)
+                            price_text_clean = price_text.replace(",", ".").replace(" ", "")
+                            close_price = float(price_text_clean)
+                            
+                            if close_price > 0:
                                 return {
                                     "ticker": ticker.upper(),
                                     "close": close_price,
                                     "success": True
                                 }
-                            except ValueError:
-                                continue
+                        except (ValueError, AttributeError):
+                            pass
         
-        print(f"⚠️  Pas de données trouvées pour {ticker}")
         return {"ticker": ticker, "success": False}
             
     except Exception as e:
