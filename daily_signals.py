@@ -20,12 +20,17 @@ from backtester import charge_and_clean_data
 from zscore_calculator import calculate_zscore, signals_generation
 from config import (
     REAL_SATELLITE_CAPITAL,
+    REAL_PORTFOLIO_CAPITAL,
     ZSCORE_STRONG_BUY,
     ZSCORE_BUY,
     ZSCORE_SELL,
     ZSCORE_STRONG_SELL,
     TAKE_PROFIT_PCT,
-    STOP_LOSS_PCT
+    STOP_LOSS_PCT,
+    MAX_POSITION_PCT,
+    SLIPPAGE_NORMAL_PCT,
+    ADVT_MIN_FCFA,
+    DAYS_TRADED_MIN
 )
 
 # URL BRVM pour scraping
@@ -288,12 +293,16 @@ def generate_daily_signals():
         if signal == 'Strong Buy':
             tp = price * (1 + tp_pct)
             sl = price * (1 - sl_pct)
-            qty = int(REAL_SATELLITE_CAPITAL / price) if price > 0 else 0  # Capital SATELLITE adapté
+            # Position sizing: 8% max du capital (Phase 1 robustesse)
+            max_position_value = int(REAL_PORTFOLIO_CAPITAL * MAX_POSITION_PCT)
+            qty = int(max_position_value / price) if price > 0 else 0
             action = 'BUY'
         elif signal == 'Buy':
             tp = price * (1 + tp_pct)
             sl = price * (1 - sl_pct)
-            qty = int(REAL_SATELLITE_CAPITAL / price / 2) if price > 0 else 0  # Moitié pour buy normal
+            # Position sizing: 4% pour buy normal (moitié de max)
+            max_position_value = int(REAL_PORTFOLIO_CAPITAL * MAX_POSITION_PCT / 2)
+            qty = int(max_position_value / price) if price > 0 else 0
             action = 'BUY'
         elif signal == 'Strong Sell' or signal == 'Sell':
             action = 'SELL'

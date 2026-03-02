@@ -43,6 +43,29 @@ REAL_CAPITAL_PER_CORE_STOCK = REAL_CORE_CAPITAL // 5
 # Stocks CORE (ne change pas - ce sont les dividendes réguliers)
 CORE_STOCKS = ['SNTS', 'ORGT', 'ONTBF', 'SAFC', 'ABJC']
 
+# ============================================================================
+# PHASE 1 ROBUSTESSE - Filtres de liquidité et position sizing
+# ============================================================================
+
+# Filtre de liquidité (ADVT = Average Daily Value Traded)
+ADVT_MIN_FCFA = 10_000_000      # Minimum 10M FCFA/jour (sinon carnet trop fin)
+DAYS_TRADED_MIN = 20            # Min 20 jours tradés sur 30 (pas d'actions "mortes")
+
+# Position sizing réaliste
+MAX_POSITION_PCT = 0.08         # 8% max par trade (était 30% = trop agressif)
+                                # Avec 1M capital → 80K max par position
+
+# Slippage réaliste BRVM
+SLIPPAGE_NORMAL_PCT = 0.02      # 2% (spread 1-3% + impact 1-2%)
+SLIPPAGE_STRESS_PCT = 0.04      # 4% en stress test
+
+# Gap risk management
+GAP_SL_WORST_CASE = 0.12        # SL peut glisser -12% (au lieu de -5% théorique)
+
+# Dividende CORE (stress scenario)
+DIVIDEND_CORE_NORMAL = 0.08     # 8% en scénario normal
+DIVIDEND_CORE_STRESS = 0.04     # 4% si dividendes coupés 50%
+
 # Stocks SATELLITE (univers de stocks pour trading Z-Score)
 # À adapter selon ton broker et liquidité
 SATELLITE_STOCK_UNIVERSE = [
