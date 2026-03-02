@@ -6,26 +6,113 @@ calcule les valeurs du portefeuille CORE + SATELLITE,
 et met à jour YTD_2026.csv
 """
 
+import sys
+import os
+
+# Forcer UTF-8 pour Windows
+if sys.platform == 'win32':
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
 import requests
 import pandas as pd
 from datetime import datetime
 from bs4 import BeautifulSoup
 from pathlib import Path
 
-# Configuration
-CORE_TICKERS = ["SNTS", "ORGT", "ONTBF", "SAFC", "ABJC"]
-INITIAL_CAPITAL = 10_000_000
-CORE_ALLOCATION = 0.70
-SATELLITE_ALLOCATION = 0.30
-
-CORE_VALUE_INITIAL = INITIAL_CAPITAL * CORE_ALLOCATION  # 7M
-SATELLITE_VALUE_INITIAL = INITIAL_CAPITAL * SATELLITE_ALLOCATION  # 3M
-
-# Capital initial par action du core
-CORE_PER_STOCK = CORE_VALUE_INITIAL / len(CORE_TICKERS)  # 1.4M chacun
+# Charger la configuration depuis config.py
+try:
+    sys.path.insert(0, os.path.dirname(__file__))
+    from config import (
+        REAL_PORTFOLIO_CAPITAL,
+        REAL_CORE_CAPITAL,
+        REAL_SATELLITE_CAPITAL,
+        REAL_CAPITAL_PER_CORE_STOCK,
+        CORE_STOCKS
+    )
+    CORE_TICKERS = CORE_STOCKS
+    INITIAL_CAPITAL = REAL_PORTFOLIO_CAPITAL
+    CORE_VALUE_INITIAL = REAL_CORE_CAPITAL
+    SATELLITE_VALUE_INITIAL = REAL_SATELLITE_CAPITAL
+    CORE_PER_STOCK = REAL_CAPITAL_PER_CORE_STOCK
+except ImportError:
+    # Fallback si config.py non disponible
+    CORE_TICKERS = ["SNTS", "ORGT", "ONTBF", "SAFC", "ABJC"]
+    INITIAL_CAPITAL = 1_000_000
+    CORE_ALLOCATION = 0.70
+    SATELLITE_ALLOCATION = 0.30
+    CORE_VALUE_INITIAL = INITIAL_CAPITAL * CORE_ALLOCATION
+    SATELLITE_VALUE_INITIAL = INITIAL_CAPITAL * SATELLITE_ALLOCATION
+    CORE_PER_STOCK = CORE_VALUE_INITIAL / len(CORE_TICKERS)
 
 # URL BRVM pour scraper
 BRVM_URL = "https://www.brvm.org"
+
+
+def fetch_all_brvm_prices() -> dict:
+    """
+    Scrape TOUS les prix BRVM en une seule requête
+    Retourne: {ticker: price}
+    """
+    prices = {}
+    try:
+        url = f"{BRVM_URL}/fr/cours-actions/0"
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        
+        response = requests.get(url, headers=headers, timeout=10, verify=False)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, "html.parser")
+        tables = soup.find_all("table")
+        
+        for table in tables:
+            rows = table.find_all("tr")
+            if len(rows) < 2:
+                continue
+            
+            # Détecter format
+            first_row = rows[0]
+            first_cells = first_row.find_all(["td", "th"])
+            num_cols = len(first_cells)
+            
+            if num_cols == 3:
+                price_col_idx = 1
+            elif num_cols >= 6:
+                price_col_idx = 5
+            else:
+                continue
+            
+            for row in rows:
+                cells = row.find_all(["td", "th"])
+                if cells and len(cells) >= price_col_idx + 1:
+                    try:
+                        ticker_text = cells[0].get_text(strip=True).upper()
+                        
+                        if not (3 <= len(ticker_text) <= 10):
+                            continue
+                        if ticker_text in ['TICKER', 'CODE SYMBOLE', 'SYMBOL', 'TOUTES']:
+                            continue
+                        if not all(c.isalnum() or c in '.-' for c in ticker_text):
+                            continue
+                        if ticker_text in prices:
+                            continue
+                        
+                        price_text = cells[price_col_idx].get_text(strip=True)
+                        price_text_clean = price_text.replace(",", ".").replace(" ", "").replace("\n", "")
+                        close_price = float(price_text_clean)
+                        
+                        if close_price > 0:
+                            prices[ticker_text] = close_price
+                    except (ValueError, AttributeError):
+                        pass
+        
+        return prices
+    except Exception as e:
+        print(f"   ⚠️  Error fetching BRVM prices: {e}")
+        return {}
+
 
 def fetch_stock_price(ticker: str) -> dict:
     """
@@ -95,31 +182,38 @@ def fetch_stock_price(ticker: str) -> dict:
 def calculate_portfolio_value() -> dict:
     """
     Calcule les valeurs CORE et SATELLITE du portefeuille
+    Utilise BRVM scraper pour les prix en temps réel
     """
     
     print(f"📊 Récupération des données... {datetime.now().strftime('%H:%M:%S')}")
     
-    # Récupérer les prix des 5 stocks du core
-    core_prices = {}
+    # Récupérer les prix BRVM en direct for all tickers
+    prices = fetch_all_brvm_prices()
+    
+    # Prix initiaux de référence pour les 5 CORE stocks
+    INITIAL_PRICE_CORE = {
+        'SNTS': 27510,
+        'ORGT': 3000,
+        'ONTBF': 2540,
+        'SAFC': 5000,
+        'ABJC': 2840
+    }
+    
+    # Calculer la valeur CORE en temps réel
     core_value = 0
     
     for ticker in CORE_TICKERS:
-        data = fetch_stock_price(ticker)
+        current_price = prices.get(ticker, INITIAL_PRICE_CORE.get(ticker, 1))
+        initial_price = INITIAL_PRICE_CORE.get(ticker, 1)
         
-        if data.get("success"):
-            close_price = data["close"]
-            core_prices[ticker] = close_price
-            
-            # Valeur = nombre d'actions × prix
-            # Nombre d'actions = capital initial / prix initial (approximation)
-            # Pour simplifier: on utilise le prix actuel et le capital initial
-            qty = CORE_PER_STOCK / close_price if close_price > 0 else 0
-            stock_value = qty * close_price
-            core_value += stock_value
-            
-            print(f"  ✓ {ticker}: {close_price:,.0f} FCFA → {stock_value:,.0f} FCFA")
-        else:
-            print(f"  ✗ {ticker}: Erreur")
+        # Nombre d'actions = capital initial par stock / prix initial
+        qty = CORE_PER_STOCK / initial_price if initial_price > 0 else 0
+        
+        # Valeur actuelle = nombre d'actions × prix actuel
+        position_value = qty * current_price
+        core_value += position_value
+        
+        print(f"  ✓ {ticker}: {current_price:,.0f} FCFA → {position_value:,.0f} FCFA")
     
     # Valeur satellite (simplifié: on suppose croissance constante)
     # À améliorer avec trading réel
