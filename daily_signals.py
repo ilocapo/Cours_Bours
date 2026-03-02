@@ -197,6 +197,10 @@ def generate_daily_signals():
     """
     Génère les signaux Z-Score pour aujourd'hui
     Combine les données historiques (CSV) avec prix BRVM en temps réel
+    
+    Fenêtre Z-Score dynamique:
+    - Avant 01/05/2026: 95 jours (évite gap 01/01-31/12/2025)
+    - À partir 01/05/2026: 200 jours (données continues)
     """
     
     print("\n" + "="*100)
@@ -233,9 +237,24 @@ def generate_daily_signals():
     latest_date = df_all['Date'].max()
     print(f"Calcul Z-Score pour: {latest_date.strftime('%d/%m/%Y')}")
     
-    # Filtrer les 200 derniers jours pour calcul du Z-Score (200-day rolling window)
-    cutoff_date = latest_date - pd.Timedelta(days=200)
+    # FENÊTRE Z-SCORE DYNAMIQUE
+    # Avant 01/05/2026: utiliser 95 jours (données continues, évite gap)
+    # À partir 01/05/2026: utiliser 200 jours (données historiquement plus robustes)
+    threshold_date = pd.to_datetime('2026-05-01')
+    
+    if latest_date < threshold_date:
+        zscore_window = 95  # Fenêtre courte (données fiables, pas de gap)
+        print(f"⚠️  DONNÉES INCOMPLÈTES: Utilisant fenêtre courte (95 jours)")
+        print(f"    (Gap 01/01-31/12/2025 identifié, utilisera 95j pour éviter biais)")
+    else:
+        zscore_window = 200  # Fenêtre long-terme (données continues)
+        print(f"✅ DONNÉES CONTINUES: Utilisant fenêtre optimale (200 jours)")
+    
+    # Filtrer la fenêtre
+    cutoff_date = latest_date - pd.Timedelta(days=zscore_window)
     df_recent = df_all[df_all['Date'] >= cutoff_date].copy()
+    
+    print(f"Calcul Z-Score sur {len(df_recent)} jours ({zscore_window}-day window)...")
     
     # Calculer Z-Score
     df_signals = calculate_zscore(df_recent)
