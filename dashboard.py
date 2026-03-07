@@ -1,6 +1,6 @@
 """
 Terminal Altos — Dashboard de Trading BRVM
-Version 2.0 — Design premium dark mode
+Version 3.0 — Bloomberg Terminal Style
 """
 import streamlit as st
 import pandas as pd
@@ -20,46 +20,107 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-C_BG     = "#0a0e1a"
-C_CARD   = "#111827"
-C_BORDER = "#1f2937"
-C_BLUE   = "#3b82f6"
-C_GREEN  = "#10b981"
-C_RED    = "#ef4444"
-C_YELLOW = "#f59e0b"
-C_PURPLE = "#8b5cf6"
-C_TEXT   = "#f9fafb"
-C_MUTED  = "#9ca3af"
+C_BG     = "#000000"
+C_CARD   = "#0a0a0a"
+C_BORDER = "#1a1a1a"
+C_ORANGE = "#FF8C00"
+C_BLUE   = "#00BFFF"   # cyan/teal pour graphiques
+C_GREEN  = "#00E676"
+C_RED    = "#FF4040"
+C_YELLOW = "#FFD700"
+C_PURPLE = "#CC44FF"
+C_TEXT   = "#F0F0F0"
+C_MUTED  = "#666666"
+FONT     = "'Courier New', 'Consolas', monospace"
 
 st.markdown(f"""
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+  * {{ font-family:{FONT} !important; }}
   .stApp {{ background-color:{C_BG}; color:{C_TEXT}; }}
-  section[data-testid="stSidebar"] {{ background-color:#0d1526; border-right:1px solid {C_BORDER}; }}
+  section[data-testid="stSidebar"] {{
+    background-color:#000000;
+    border-right:1px solid {C_ORANGE};
+  }}
   #MainMenu, footer, header {{ visibility:hidden; }}
-  .block-container {{ padding-top:1.5rem; padding-bottom:2rem; }}
+  .block-container {{ padding-top:0.5rem; padding-bottom:2rem; }}
 
-  .kpi-card {{
-    background:linear-gradient(145deg,{C_CARD},#161e2e);
-    border:1px solid {C_BORDER}; border-radius:14px;
-    padding:20px 16px 14px 16px; text-align:center; margin-bottom:8px;
+  /* ── KPI Bloomberg ── */
+  .blm-kpi {{
+    background:{C_CARD};
+    border:1px solid #1a1a1a;
+    border-left:3px solid {C_ORANGE};
+    padding:10px 12px 8px;
+    margin-bottom:6px;
   }}
-  .kpi-val {{ font-size:1.8rem; font-weight:800; margin:0; line-height:1.1; }}
-  .kpi-lbl {{ font-size:0.73rem; color:{C_MUTED}; margin:5px 0 0 0;
-              letter-spacing:.05em; text-transform:uppercase; }}
-  .kpi-sub {{ font-size:0.8rem; margin:4px 0 0 0; color:{C_MUTED}; }}
+  .blm-kpi-val {{
+    font-size:1.55rem; font-weight:700; margin:0;
+    line-height:1.1; font-family:{FONT};
+  }}
+  .blm-kpi-lbl {{
+    font-size:0.62rem; color:{C_MUTED}; margin:4px 0 0 0;
+    letter-spacing:.1em; text-transform:uppercase; font-family:{FONT};
+  }}
+  .blm-kpi-sub {{
+    font-size:0.7rem; margin:3px 0 0 0; color:#888888; font-family:{FONT};
+  }}
 
-  .sec-title {{
-    font-size:0.75rem; font-weight:700; letter-spacing:.12em;
-    text-transform:uppercase; color:{C_MUTED};
-    border-bottom:1px solid {C_BORDER}; padding-bottom:5px; margin:20px 0 12px 0;
+  /* ── Section header: barre orange Bloomberg ── */
+  .blm-sec {{
+    background:{C_ORANGE};
+    color:#000000;
+    font-size:0.65rem; font-weight:700;
+    letter-spacing:.12em; text-transform:uppercase;
+    padding:2px 8px; margin:16px 0 8px 0;
+    font-family:{FONT};
   }}
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar {{ width:4px; background:#000; }}
+  ::-webkit-scrollbar-thumb {{ background:{C_ORANGE}; }}
+
+  /* ── Buttons ── */
   .stButton>button {{
-    background:linear-gradient(135deg,{C_BLUE},#1d4ed8);
-    color:white; border:none; border-radius:8px;
-    font-weight:600; height:44px; width:100%;
+    background:{C_ORANGE};
+    color:#000000;
+    border:none;
+    border-radius:0px;
+    font-weight:700;
+    height:42px; width:100%;
+    font-family:{FONT};
+    font-size:0.85rem;
+    letter-spacing:.05em;
   }}
-  .stDataFrame {{ border-radius:10px; overflow:hidden; }}
-  div[data-testid="stRadio"] label {{ font-size:0.88rem; }}
+  .stButton>button:hover {{
+    background:#FFA333;
+    color:#000000;
+  }}
+
+  /* ── Sidebar nav radio ── */
+  div[data-testid="stRadio"] label {{
+    font-size:0.82rem; color:{C_TEXT}; font-family:{FONT};
+  }}
+  div[data-testid="stRadio"] label:hover {{ color:{C_ORANGE}; }}
+
+  /* ── Tables ── */
+  .stDataFrame {{ overflow:hidden; }}
+  .stDataFrame th {{
+    background:{C_ORANGE} !important;
+    color:#000000 !important;
+    font-family:{FONT} !important;
+    font-size:0.7rem !important;
+    font-weight:700 !important;
+    text-transform:uppercase;
+  }}
+
+  /* ── Selectbox / Multiselect / Slider ── */
+  .stSelectbox>div>div, .stMultiSelect>div>div {{
+    background:{C_CARD}; border:1px solid #333; border-radius:0;
+  }}
+
+  /* ── Divider ── */
+  hr {{ border-color:{C_ORANGE}; opacity:0.25; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -71,10 +132,12 @@ CAPITAL_INIT = 1_000_000
 CORE_STOCKS  = ['SNTS', 'ORGT', 'ONTBF', 'SAFC', 'ABJC']
 PLOTLY_BASE  = dict(
     template="plotly_dark",
-    plot_bgcolor="rgba(0,0,0,0)",
-    paper_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Inter, sans-serif", color=C_TEXT),
-    margin=dict(l=30, r=20, t=35, b=25),
+    plot_bgcolor="#000000",
+    paper_bgcolor="#000000",
+    font=dict(family="Courier New, monospace", color=C_TEXT, size=11),
+    margin=dict(l=40, r=15, t=35, b=30),
+    xaxis=dict(gridcolor="#111111", linecolor="#333333", tickfont=dict(family="Courier New")),
+    yaxis=dict(gridcolor="#111111", linecolor="#333333", tickfont=dict(family="Courier New")),
 )
 
 # ══════════════════════════════════════════════════════════
@@ -165,17 +228,17 @@ n_total  = len(signals_df) if not signals_df.empty else 0
 # ══════════════════════════════════════════════════════════
 #  HELPERS
 # ══════════════════════════════════════════════════════════
-def kpi(val, label, sub="", color=C_BLUE, border=None):
+def kpi(val, label, sub="", color=C_ORANGE, border=None):
     bc = border or color
     st.markdown(f"""
-    <div class="kpi-card" style="border-top:3px solid {bc};">
-      <p class="kpi-val" style="color:{color};">{val}</p>
-      <p class="kpi-lbl">{label}</p>
-      {"<p class='kpi-sub'>"+sub+"</p>" if sub else ""}
+    <div class="blm-kpi" style="border-left:3px solid {bc};">
+      <p class="blm-kpi-val" style="color:{color};">{val}</p>
+      <p class="blm-kpi-lbl">{label}</p>
+      {"<p class='blm-kpi-sub'>&gt; "+sub+"</p>" if sub else ""}
     </div>""", unsafe_allow_html=True)
 
 def sec(title):
-    st.markdown(f'<p class="sec-title">{title}</p>', unsafe_allow_html=True)
+    st.markdown(f'<div class="blm-sec">&gt;&gt; {title}</div>', unsafe_allow_html=True)
 
 def fcfa(v):  return f"{v:,.0f} FCFA".replace(",", " ")
 def pct(v):   return f"{v:+.2f}%"
@@ -185,23 +248,23 @@ def pct(v):   return f"{v:+.2f}%"
 # ══════════════════════════════════════════════════════════
 with st.sidebar:
     st.markdown(f"""
-    <div style="text-align:center; padding:8px 0 18px 0;">
-      <p style="font-size:1.7rem; font-weight:900; margin:0;
-         background:linear-gradient(90deg,{C_BLUE},{C_GREEN});
-         -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
-        📈 ALTOS
-      </p>
-      <p style="font-size:0.68rem; color:{C_MUTED}; margin:2px 0 0 0;
-         letter-spacing:.14em;">TRADING TERMINAL · BRVM</p>
+    <div style="background:{C_ORANGE}; padding:8px 12px; margin:-1rem -1rem 12px -1rem;">
+      <p style="font-size:0.65rem; font-weight:700; margin:0; color:#000;
+         letter-spacing:.15em; font-family:Courier New,monospace;">ALTOS TRADING TERMINAL</p>
+      <p style="font-size:1.4rem; font-weight:700; margin:0; color:#000;
+         font-family:Courier New,monospace; letter-spacing:.05em;">BRVM</p>
+      <p style="font-size:0.58rem; color:#333; margin:2px 0 0 0;
+         font-family:Courier New,monospace;">{datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
     </div>
     """, unsafe_allow_html=True)
 
+    st.markdown(f'<p style="font-size:0.6rem; color:{C_ORANGE}; letter-spacing:.1em; margin:4px 0 2px 0;">F1-F5 NAVIGATION</p>', unsafe_allow_html=True)
     page = st.radio("", [
-        "🏠  Vue d'ensemble",
-        "🎯  Signaux & Z-Score",
-        "💼  Portfolio CORE",
-        "🏦  Obligations",
-        "⚙️  Contrôle"
+        "F1  Vue d'ensemble",
+        "F2  Signaux & Z-Score",
+        "F3  Portfolio CORE",
+        "F4  Obligations",
+        "F5  Contrôle"
     ], label_visibility="collapsed")
 
     st.divider()
@@ -209,31 +272,31 @@ with st.sidebar:
     sig_col = C_GREEN if n_buy > 0 else C_YELLOW
     ytd_col = C_GREEN if ytd_ret >= 0 else C_RED
     st.markdown(f"""
-    <div style="background:{C_CARD}; border:1px solid {C_BORDER}; border-radius:10px; padding:14px;">
-      <p style="margin:0 0 10px 0; font-size:0.68rem; color:{C_MUTED};
-         text-transform:uppercase; letter-spacing:.08em;">Live status</p>
+    <div style="background:#0a0a0a; border:1px solid #1a1a1a; border-left:2px solid {C_ORANGE}; padding:10px 12px;">
+      <p style="margin:0 0 8px 0; font-size:0.6rem; color:{C_ORANGE};
+         text-transform:uppercase; letter-spacing:.1em; font-family:Courier New;">LIVE STATUS</p>
 
-      <div style="display:flex; justify-content:space-between; margin:4px 0;">
-        <span style="font-size:0.78rem; color:{C_MUTED};">Portefeuille</span>
-        <span style="font-size:0.8rem; font-weight:700; color:{C_TEXT};">{fcfa(total_val)}</span>
+      <div style="display:flex; justify-content:space-between; margin:3px 0; border-bottom:1px solid #111; padding-bottom:3px;">
+        <span style="font-size:0.72rem; color:{C_MUTED}; font-family:Courier New;">PORTFOLIO</span>
+        <span style="font-size:0.75rem; font-weight:700; color:{C_TEXT}; font-family:Courier New;">{fcfa(total_val)}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; margin:4px 0;">
-        <span style="font-size:0.78rem; color:{C_MUTED};">YTD 2026</span>
-        <span style="font-size:0.8rem; font-weight:700; color:{ytd_col};">{pct(ytd_ret)}</span>
+      <div style="display:flex; justify-content:space-between; margin:3px 0; border-bottom:1px solid #111; padding-bottom:3px;">
+        <span style="font-size:0.72rem; color:{C_MUTED}; font-family:Courier New;">YTD 2026</span>
+        <span style="font-size:0.75rem; font-weight:700; color:{ytd_col}; font-family:Courier New;">{pct(ytd_ret)}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; margin:4px 0;">
-        <span style="font-size:0.78rem; color:{C_MUTED};">Signaux BUY</span>
-        <span style="font-size:0.8rem; font-weight:700; color:{sig_col};">{n_buy} / {n_total}</span>
+      <div style="display:flex; justify-content:space-between; margin:3px 0; border-bottom:1px solid #111; padding-bottom:3px;">
+        <span style="font-size:0.72rem; color:{C_MUTED}; font-family:Courier New;">BUY SIG</span>
+        <span style="font-size:0.75rem; font-weight:700; color:{sig_col}; font-family:Courier New;">{n_buy} / {n_total}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; margin:4px 0;">
-        <span style="font-size:0.78rem; color:{C_MUTED};">Màj</span>
-        <span style="font-size:0.78rem; color:{C_TEXT};">{datetime.now().strftime('%d/%m %H:%M')}</span>
+      <div style="display:flex; justify-content:space-between; margin:3px 0;">
+        <span style="font-size:0.72rem; color:{C_MUTED}; font-family:Courier New;">TIME</span>
+        <span style="font-size:0.72rem; color:{C_ORANGE}; font-family:Courier New;">{datetime.now().strftime('%d/%m %H:%M:%S')}</span>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🔄  Rafraîchir"):
+    if st.button("REFRESH DATA"):
         st.cache_data.clear()
         st.rerun()
 
@@ -241,17 +304,21 @@ with st.sidebar:
 # ══════════════════════════════════════════════════════════
 #  PAGE 1 — VUE D'ENSEMBLE
 # ══════════════════════════════════════════════════════════
-if "Vue d'ensemble" in page:
-    st.markdown(f"<h2 style='margin:0 0 4px 0;'>Vue d'ensemble</h2>", unsafe_allow_html=True)
-    st.markdown(f"<p style='color:{C_MUTED}; margin:0 0 18px 0;'>Capital initial : 1 000 000 FCFA — BRVM, {datetime.now().strftime('%d %B %Y')}</p>", unsafe_allow_html=True)
+if "Vue d'ensemble" in page or "F1" in page:
+    st.markdown(f"""
+    <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New; letter-spacing:.05em;">F1  VUE D'ENSEMBLE — BRVM TRADING TERMINAL</span>
+      <span style="font-size:0.7rem; color:#333; font-family:Courier New;">{datetime.now().strftime('%d/%m/%Y %H:%M:%S')} · CAP: 1 000 000 FCFA</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     # ── KPI row 1 ──
     c1, c2, c3, c4, c5 = st.columns(5)
-    with c1: kpi(fcfa(total_val),            "Valeur totale",      pct(ytd_ret)+" YTD",               C_BLUE)
+    with c1: kpi(fcfa(total_val),            "Valeur totale",      pct(ytd_ret)+" YTD",               C_ORANGE)
     with c2: kpi(fcfa(gain_abs),             "Gain net",           "Depuis 01/01/2026",                C_GREEN if gain_abs>=0 else C_RED)
     with c3: kpi(pct(day_pct),               "Variation du jour",  fcfa(day_chg),                     C_GREEN if day_chg>=0 else C_RED)
-    with c4: kpi(fcfa(core_val),             "🛡 CORE (70%)",      f"{core_val/total_val*100:.0f}% du portfolio" if total_val else "–", C_PURPLE)
-    with c5: kpi(str(n_buy)+" BUY",          "Signaux actifs",     f"{n_sell} SELL · {n_total} analysés", C_GREEN if n_buy>0 else C_YELLOW)
+    with c4: kpi(fcfa(core_val),             "CORE Shield (70%)",  f"{core_val/total_val*100:.0f}% du portfolio" if total_val else "–", C_YELLOW)
+    with c5: kpi(str(n_buy)+" BUY",          "Signaux actifs",     f"{n_sell} SELL · {n_total} analysés", C_GREEN if n_buy>0 else C_ORANGE)
 
     st.divider()
     left, right = st.columns([2.2, 1])
@@ -262,16 +329,16 @@ if "Vue d'ensemble" in page:
             fig = go.Figure()
             fig.add_trace(go.Scatter(
                 x=ytd_df['Date'], y=ytd_df['Total_Value'], name="Valeur totale",
-                mode='lines', line=dict(color=C_BLUE, width=2.5),
-                fill='tozeroy', fillcolor='rgba(59,130,246,0.07)'
+                mode='lines', line=dict(color=C_ORANGE, width=2),
+                fill='tozeroy', fillcolor='rgba(255,140,0,0.07)'
             ))
             if 'Core_Value' in ytd_df.columns:
                 fig.add_trace(go.Scatter(
                     x=ytd_df['Date'], y=ytd_df['Core_Value'], name="CORE",
-                    mode='lines', line=dict(color=C_GREEN, width=1.5, dash='dot')
+                    mode='lines', line=dict(color=C_YELLOW, width=1.2, dash='dot')
                 ))
-            fig.add_hline(y=CAPITAL_INIT, line_dash="dash", line_color=C_YELLOW, line_width=1.2,
-                          annotation_text="Capital initial", annotation_font_color=C_YELLOW)
+            fig.add_hline(y=CAPITAL_INIT, line_dash="dash", line_color="#444444", line_width=1,
+                          annotation_text="Capital initial", annotation_font_color="#666666")
             fig.update_layout(**PLOTLY_BASE, height=310,
                               legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
                               xaxis=dict(showgrid=False), yaxis=dict(gridcolor=C_BORDER))
@@ -288,10 +355,11 @@ if "Vue d'ensemble" in page:
                 zc = C_RED if zscore > 2 else (C_GREEN if zscore < -2 else C_TEXT)
                 with cols5[i]:
                     st.markdown(f"""
-                    <div class="kpi-card" style="border-top:3px solid {C_PURPLE};">
-                      <p style="font-size:1rem; font-weight:800; color:{C_PURPLE}; margin:0;">{ticker}</p>
-                      <p style="font-size:1.25rem; font-weight:700; color:{C_TEXT}; margin:4px 0;">{price:,.0f}</p>
-                      <p style="font-size:0.72rem; color:{zc}; margin:0;">Z = {zscore:+.2f}</p>
+                    <div style="background:#0a0a0a; border:1px solid #1a1a1a; border-top:2px solid {C_ORANGE};
+                         padding:8px 10px; font-family:Courier New,monospace;">
+                      <p style="font-size:0.75rem; font-weight:700; color:{C_ORANGE}; margin:0; letter-spacing:.05em;">{ticker}</p>
+                      <p style="font-size:1.2rem; font-weight:700; color:{C_TEXT}; margin:3px 0; font-family:Courier New;">{price:,.0f}</p>
+                      <p style="font-size:0.68rem; color:{zc}; margin:0; font-family:Courier New;">Z={zscore:+.2f}</p>
                     </div>""", unsafe_allow_html=True)
 
     with right:
@@ -328,9 +396,13 @@ if "Vue d'ensemble" in page:
 # ══════════════════════════════════════════════════════════
 #  PAGE 2 — SIGNAUX & Z-SCORE
 # ══════════════════════════════════════════════════════════
-elif "Signaux" in page:
-    st.markdown("<h2 style='margin:0 0 4px 0;'>🎯 Radar & Signaux Z-Score</h2>", unsafe_allow_html=True)
-    st.markdown(f"<p style='color:{C_MUTED}; margin:0 0 18px 0;'>Fichier : {sig_f}</p>", unsafe_allow_html=True)
+elif "Signaux" in page or "F2" in page:
+    st.markdown(f"""
+    <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between;">
+      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F2  SIGNAUX Z-SCORE — RADAR DE MARCHE BRVM</span>
+      <span style="font-size:0.7rem; color:#333; font-family:Courier New;">{sig_f}</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     if signals_df.empty:
         st.warning("Aucun signal. Lance l'automation dans ⚙️ Contrôle")
@@ -341,7 +413,7 @@ elif "Signaux" in page:
         with k1: kpi(str(n_buy),    "Signaux BUY",    "Opportunités d'achat", C_GREEN)
         with k2: kpi(str(strong_b), "Strong BUY",     "Z-Score ≤ −2",         C_GREEN)
         with k3: kpi(str(n_sell),   "Signaux SELL",   "Vendre / Éviter",      C_RED)
-        with k4: kpi(str(n_total),  "Total analysés", "Actions BRVM scrapées",C_BLUE)
+        with k4: kpi(str(n_total),  "Total analysés", "Actions BRVM scrapées",C_ORANGE)
 
         st.divider()
         f1, f2, f3 = st.columns([2.5, 1.5, 1.5])
@@ -402,15 +474,15 @@ elif "Signaux" in page:
                             subplot_titles=[f"{sel_t} — Prix & Bandes de Bollinger",
                                             f"Z-Score (fenêtre {win} jours)"])
         fig.add_trace(go.Scatter(x=h['Date'], y=h['Price'], name="Prix",
-                                  line=dict(color=C_BLUE, width=2)), row=1, col=1)
+                                  line=dict(color=C_ORANGE, width=1.8)), row=1, col=1)
         fig.add_trace(go.Scatter(x=h['Date'], y=h['MA'], name=f"MM{win}",
-                                  line=dict(color=C_YELLOW, width=1.2, dash='dash')), row=1, col=1)
-        fig.add_trace(go.Scatter(x=h['Date'], y=h['BB_UP'], name="+2σ",
-                                  line=dict(color='rgba(239,68,68,0.35)', width=0.8)), row=1, col=1)
-        fig.add_trace(go.Scatter(x=h['Date'], y=h['BB_DN'], name="−2σ",
-                                  line=dict(color='rgba(16,185,129,0.35)', width=0.8),
-                                  fill='tonexty', fillcolor='rgba(120,120,120,0.04)'), row=1, col=1)
-        zc = h['Z'].apply(lambda z: C_GREEN if z<=-2 else(C_BLUE if z<=0 else(C_YELLOW if z<=2 else C_RED)))
+                                  line=dict(color=C_YELLOW, width=1, dash='dash')), row=1, col=1)
+        fig.add_trace(go.Scatter(x=h['Date'], y=h['BB_UP'], name="+2s",
+                                  line=dict(color='rgba(255,64,64,0.4)', width=0.7)), row=1, col=1)
+        fig.add_trace(go.Scatter(x=h['Date'], y=h['BB_DN'], name="-2s",
+                                  line=dict(color='rgba(0,230,118,0.4)', width=0.7),
+                                  fill='tonexty', fillcolor='rgba(255,140,0,0.03)'), row=1, col=1)
+        zc = h['Z'].apply(lambda z: C_GREEN if z<=-2 else(C_ORANGE if z<=0 else(C_YELLOW if z<=2 else C_RED)))
         fig.add_trace(go.Bar(x=h['Date'], y=h['Z'], name="Z-Score",
                               marker_color=zc, opacity=0.75), row=2, col=1)
         for yv, col, d in [(-2,C_GREEN,'dash'),(2,C_RED,'dash'),(0,C_MUTED,'dot')]:
@@ -428,24 +500,28 @@ elif "Signaux" in page:
                 sn = rs.iloc[0].get('Signal','')
                 zn = float(rs.iloc[0].get('Z_Score', 0))
                 sc = C_GREEN if 'Buy' in sn else (C_RED if 'Sell' in sn else C_MUTED)
-                act = "→ ACHETER" if 'Buy' in sn else ("→ ÉVITER" if 'Sell' in sn else "→ Attendre")
+                act = ">> ACHETER" if 'Buy' in sn else (">> EVITER" if 'Sell' in sn else ">> ATTENDRE")
                 st.markdown(f"""
-                <div style='background:{C_CARD}; border:1px solid {sc}; border-radius:10px; padding:12px 18px; margin-top:8px;'>
-                  <span style='font-size:1.05rem; font-weight:800; color:{sc};'>{sn}</span>
-                  <span style='color:{C_MUTED}; font-size:0.88rem;'>&nbsp; Z = {zn:+.2f} &nbsp;·&nbsp; {act}</span>
+                <div style='background:#0a0a0a; border:1px solid #1a1a1a; border-left:3px solid {sc}; padding:10px 14px; margin-top:8px; font-family:Courier New,monospace;'>
+                  <span style='font-size:1rem; font-weight:700; color:{sc}; font-family:Courier New;'>{sn}</span>
+                  <span style='color:{C_MUTED}; font-size:0.82rem; font-family:Courier New;'>&nbsp;&nbsp;Z={zn:+.2f} &nbsp;|&nbsp; {act}</span>
                 </div>""", unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════
 #  PAGE 3 — PORTFOLIO CORE
 # ══════════════════════════════════════════════════════════
-elif "CORE" in page:
-    st.markdown("<h2 style='margin:0 0 4px 0;'>💼 Portfolio CORE</h2>", unsafe_allow_html=True)
-    st.markdown(f"<p style='color:{C_MUTED}; margin:0 0 18px 0;'>Bouclier dividendes — 5 big caps BRVM détenues depuis 2017</p>", unsafe_allow_html=True)
+elif "CORE" in page or "F3" in page:
+    st.markdown(f"""
+    <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between;">
+      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F3  PORTFOLIO CORE — BOUCLIER DIVIDENDES BRVM</span>
+      <span style="font-size:0.7rem; color:#333; font-family:Courier New;">5 BIG CAPS · DÉTENUES DEPUIS 2017</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     c1, c2, c3, c4 = st.columns(4)
     core_gain = core_val - 700_000
-    with c1: kpi(fcfa(core_val),                "Valeur CORE actuelle", "",            C_PURPLE)
+    with c1: kpi(fcfa(core_val),                "Valeur CORE actuelle", "",            C_ORANGE)
     with c2: kpi(fcfa(700_000),                 "Capital investi",      "",            C_MUTED)
     with c3: kpi(fcfa(core_gain),               "Gain CORE",            pct(core_gain/700_000*100) if 700_000 else "–", C_GREEN if core_gain>=0 else C_RED)
     with c4: kpi("~8.5 % / an",                "Dividendes estimés",   "≈ 59 500 FCFA/an", C_GREEN)
@@ -486,13 +562,13 @@ elif "CORE" in page:
                 labels=core_df['Ticker'],
                 values=core_df['Current_Value'].astype(float),
                 hole=0.6,
-                marker=dict(colors=[C_BLUE, C_GREEN, C_YELLOW, '#ec4899', C_PURPLE],
+                marker=dict(colors=[C_ORANGE, C_GREEN, C_YELLOW, C_BLUE, C_PURPLE],
                             line=dict(color=C_BG, width=2)),
                 textfont=dict(size=12)
             ))
-            fig_d.update_layout(**PLOTLY_BASE, height=250,
-                                margin=dict(l=10,r=10,t=10,b=10),
-                                showlegend=True, legend=dict(font=dict(size=11)))
+            fig_d.update_layout(**{**PLOTLY_BASE, 'margin': dict(l=10,r=10,t=10,b=10)},
+                                height=250, showlegend=True,
+                                legend=dict(font=dict(size=10, family='Courier New')))
             st.plotly_chart(fig_d, width='stretch')
 
     # Graphique prix historique
@@ -505,10 +581,10 @@ elif "CORE" in page:
         hh['MA95'] = hh['Price'].rolling(95).mean()
         fig_c = go.Figure()
         fig_c.add_trace(go.Scatter(x=hh['Date'], y=hh['Price'], name="Prix",
-                                    fill='tozeroy', fillcolor='rgba(139,92,246,0.06)',
-                                    line=dict(color=C_PURPLE, width=2)))
+                                    fill='tozeroy', fillcolor='rgba(255,140,0,0.06)',
+                                    line=dict(color=C_ORANGE, width=1.8)))
         fig_c.add_trace(go.Scatter(x=hh['Date'], y=hh['MA95'], name="MA95",
-                                    line=dict(color=C_YELLOW, width=1.2, dash='dot')))
+                                    line=dict(color=C_YELLOW, width=1, dash='dot')))
         fig_c.update_layout(**PLOTLY_BASE, height=290, yaxis_title="FCFA",
                              xaxis=dict(showgrid=False), yaxis=dict(gridcolor=C_BORDER))
         st.plotly_chart(fig_c, width='stretch')
@@ -532,9 +608,13 @@ elif "CORE" in page:
 # ══════════════════════════════════════════════════════════
 #  PAGE 4 — OBLIGATIONS
 # ══════════════════════════════════════════════════════════
-elif "Obligations" in page:
-    st.markdown("<h2 style='margin:0 0 4px 0;'>🏦 Obligations BRVM Décotées</h2>", unsafe_allow_html=True)
-    st.markdown(f"<p style='color:{C_MUTED}; margin:0 0 18px 0;'>{bond_f}</p>", unsafe_allow_html=True)
+elif "Obligations" in page or "F4" in page:
+    st.markdown(f"""
+    <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between;">
+      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F4  OBLIGATIONS BRVM — SCANNER DÉCOTES & RENDEMENTS</span>
+      <span style="font-size:0.7rem; color:#333; font-family:Courier New;">{bond_f}</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     if bonds_df.empty:
         st.warning("Lance le scanner dans ⚙️ Contrôle pour obtenir les obligations.")
@@ -546,7 +626,7 @@ elif "Obligations" in page:
         best_tick = bonds_df.iloc[0].get('Ticker', '–')   if n_b > 0 else '–'
 
         b1, b2, b3, b4 = st.columns(4)
-        with b1: kpi(str(n_b),          "Obligations détectées", "Décote > 0.5%",          C_BLUE)
+        with b1: kpi(str(n_b),          "Obligations détectées", "Décote > 0.5%",          C_ORANGE)
         with b2: kpi(f"{avg_y:.2f}%",  "Rendement moyen",       "Effectif pondéré",        C_GREEN)
         with b3: kpi(f"{avg_d:.1f}%",  "Décote moyenne",        "% du nominal",            C_YELLOW)
         with b4: kpi(f"{best_y:.2f}%", "Meilleur rendement",    best_tick,                 C_GREEN)
@@ -580,9 +660,10 @@ elif "Obligations" in page:
                 y=top12['Ticker'], x=top12['Effective_Yield_%'],
                 orientation='h',
                 marker=dict(color=top12['Effective_Yield_%'],
-                            colorscale=[[0,C_BLUE],[0.5,C_YELLOW],[1,C_GREEN]],
+                            colorscale=[[0,'#333300'],[0.5,C_YELLOW],[1,C_ORANGE]],
                             showscale=False),
                 text=top12['Effective_Yield_%'].apply(lambda v: f"{v:.2f}%"),
+                textfont=dict(family='Courier New', size=10),
                 textposition='outside'
             ))
             fig_b.update_layout(**PLOTLY_BASE, height=430,
@@ -595,8 +676,8 @@ elif "Obligations" in page:
         st.divider()
         sec("🏆 Podium — Meilleures opportunités")
         top3   = sort_b.head(3) if 'Effective_Yield_%' in bonds_df.columns else bonds_df.head(3)
-        medals = ["🥇", "🥈", "🥉"]
-        cols3  = [C_GREEN, C_YELLOW, C_BLUE]
+        medals = ["#1", "#2", "#3"]
+        cols3  = [C_ORANGE, C_YELLOW, C_MUTED]
         rcols  = st.columns(3)
         for i, (_, rb) in enumerate(top3.iterrows()):
             with rcols[i]:
@@ -606,32 +687,36 @@ elif "Obligations" in page:
                 prix = float(rb.get('Current_Price', 0))
                 cout = float(rb.get('Purchase_Cost_FCFA', 0))
                 st.markdown(f"""
-                <div class="kpi-card" style="border-top:3px solid {cols3[i]}; text-align:left;">
-                  <p style="font-size:1.4rem; margin:0 0 2px 0;">{medals[i]}</p>
-                  <p style="font-size:1.15rem; font-weight:800; color:{cols3[i]}; margin:0;">{rb.get('Ticker','')}</p>
-                  <p style="font-size:0.73rem; color:{C_MUTED}; margin:2px 0 10px 0;">{lib}</p>
-                  <div style="display:flex; justify-content:space-between; margin:3px 0;">
-                    <span style="font-size:0.75rem; color:{C_MUTED};">Rendement</span>
-                    <span style="font-size:0.82rem; font-weight:700; color:{C_GREEN};">{rend:.2f}%</span>
+                <div style="background:#0a0a0a; border:1px solid #1a1a1a; border-left:3px solid {cols3[i]}; padding:12px 14px; font-family:Courier New,monospace;">
+                  <p style="font-size:0.65rem; color:{C_MUTED}; margin:0 0 2px 0; letter-spacing:.08em;">RANG {medals[i]}</p>
+                  <p style="font-size:1.1rem; font-weight:700; color:{cols3[i]}; margin:0; letter-spacing:.05em;">{rb.get('Ticker','')}</p>
+                  <p style="font-size:0.65rem; color:{C_MUTED}; margin:2px 0 10px 0;">{lib}</p>
+                  <div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid #111;">
+                    <span style="font-size:0.68rem; color:{C_MUTED};">YIELD</span>
+                    <span style="font-size:0.78rem; font-weight:700; color:{C_GREEN};">{rend:.2f}%</span>
                   </div>
-                  <div style="display:flex; justify-content:space-between; margin:3px 0;">
-                    <span style="font-size:0.75rem; color:{C_MUTED};">Décote</span>
-                    <span style="font-size:0.82rem; font-weight:700; color:{C_YELLOW};">−{disc:.1f}%</span>
+                  <div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid #111;">
+                    <span style="font-size:0.68rem; color:{C_MUTED};">DECOTE</span>
+                    <span style="font-size:0.78rem; font-weight:700; color:{C_YELLOW};">-{disc:.1f}%</span>
                   </div>
-                  <div style="display:flex; justify-content:space-between; margin:3px 0;">
-                    <span style="font-size:0.75rem; color:{C_MUTED};">Prix marché</span>
-                    <span style="font-size:0.82rem; color:{C_TEXT};">{prix:.2f} FCFA</span>
+                  <div style="display:flex; justify-content:space-between; padding:3px 0;">
+                    <span style="font-size:0.68rem; color:{C_MUTED};">PRICE</span>
+                    <span style="font-size:0.78rem; color:{C_TEXT};">{prix:.2f} FCFA</span>
                   </div>
-                  {"<div style='display:flex; justify-content:space-between; margin:3px 0;'><span style='font-size:0.75rem; color:"+C_MUTED+";'>Coût alloc.</span><span style='font-size:0.82rem; color:"+C_TEXT+";'>"+fcfa(cout)+"</span></div>" if cout else ""}
+                  {"<div style='display:flex; justify-content:space-between; padding:3px 0;'><span style='font-size:0.68rem; color:"+C_MUTED+";'>ALLOC</span><span style='font-size:0.78rem; color:"+C_TEXT+";'>"+fcfa(cout)+"</span></div>" if cout else ""}
                 </div>""", unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════
 #  PAGE 5 — CONTRÔLE
 # ══════════════════════════════════════════════════════════
-elif "Contrôle" in page:
-    st.markdown("<h2 style='margin:0 0 4px 0;'>⚙️ Centre de Contrôle</h2>", unsafe_allow_html=True)
-    st.markdown(f"<p style='color:{C_MUTED}; margin:0 0 18px 0;'>Lance les scripts et consulte les logs</p>", unsafe_allow_html=True)
+elif "Contrôle" in page or "F5" in page:
+    st.markdown(f"""
+    <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between;">
+      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F5  CENTRE DE CONTROLE — EXECUTION & LOGS SYSTEME</span>
+      <span style="font-size:0.7rem; color:#333; font-family:Courier New;">SCRIPTS · AUTOMATION · MONITORING</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     sec("Lancer les scripts")
     a1, a2, a3, a4 = st.columns(4)
@@ -644,7 +729,7 @@ elif "Contrôle" in page:
         )
 
     with a1:
-        if st.button("🚀  Automation complète", type="primary"):
+        if st.button("RUN: AUTOMATION COMPLETE", type="primary"):
             with st.spinner("Exécution des 5 modules (~20s)..."):
                 res = run_script("run_daily_automation.py")
             st.cache_data.clear()
@@ -653,7 +738,7 @@ elif "Contrôle" in page:
             st.rerun()
 
     with a2:
-        if st.button("📡  Signaux Z-Score"):
+        if st.button("RUN: SIGNAUX Z-SCORE"):
             with st.spinner("Scraping BRVM & Z-Score..."):
                 res = run_script("daily_signals.py", 120)
             st.cache_data.clear()
@@ -662,7 +747,7 @@ elif "Contrôle" in page:
             st.rerun()
 
     with a3:
-        if st.button("💰  Portfolio Update"):
+        if st.button("RUN: PORTFOLIO UPDATE"):
             with st.spinner("Mise à jour portfolio..."):
                 res = run_script("daily_market_update.py", 120)
             st.cache_data.clear()
@@ -671,7 +756,7 @@ elif "Contrôle" in page:
             st.rerun()
 
     with a4:
-        if st.button("🏦  Scanner obligations"):
+        if st.button("RUN: BOND SCANNER"):
             with st.spinner("Scan en cours..."):
                 res = run_script("bond_scanner.py", 300)
             st.cache_data.clear()
