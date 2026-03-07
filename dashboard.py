@@ -339,9 +339,11 @@ if "Vue d'ensemble" in page or "F1" in page:
                 ))
             fig.add_hline(y=CAPITAL_INIT, line_dash="dash", line_color="#444444", line_width=1,
                           annotation_text="Capital initial", annotation_font_color="#666666")
-            fig.update_layout(**PLOTLY_BASE, height=310,
-                              legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
-                              xaxis=dict(showgrid=False), yaxis=dict(gridcolor=C_BORDER))
+            fig.update_layout(**{**PLOTLY_BASE,
+                              'xaxis': dict(showgrid=False, gridcolor='#111111', linecolor='#333333'),
+                              'yaxis': dict(gridcolor=C_BORDER, linecolor='#333333')},
+                              height=310,
+                              legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
             st.plotly_chart(fig, width='stretch')
 
         # CORE tiles
@@ -487,10 +489,11 @@ elif "Signaux" in page or "F2" in page:
                               marker_color=zc, opacity=0.75), row=2, col=1)
         for yv, col, d in [(-2,C_GREEN,'dash'),(2,C_RED,'dash'),(0,C_MUTED,'dot')]:
             fig.add_hline(y=yv, line_dash=d, line_color=col, row=2, col=1, line_width=1)
-        fig.update_layout(**PLOTLY_BASE, height=560,
+        fig.update_layout(**{**PLOTLY_BASE,
+                          'yaxis': dict(gridcolor=C_BORDER, linecolor='#333333')},
+                          height=560,
                           legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
-                          xaxis2=dict(showgrid=False),
-                          yaxis=dict(gridcolor=C_BORDER),
+                          xaxis2=dict(showgrid=False, gridcolor='#111111'),
                           yaxis2=dict(gridcolor=C_BORDER))
         st.plotly_chart(fig, width='stretch')
 
@@ -585,8 +588,10 @@ elif "CORE" in page or "F3" in page:
                                     line=dict(color=C_ORANGE, width=1.8)))
         fig_c.add_trace(go.Scatter(x=hh['Date'], y=hh['MA95'], name="MA95",
                                     line=dict(color=C_YELLOW, width=1, dash='dot')))
-        fig_c.update_layout(**PLOTLY_BASE, height=290, yaxis_title="FCFA",
-                             xaxis=dict(showgrid=False), yaxis=dict(gridcolor=C_BORDER))
+        fig_c.update_layout(**{**PLOTLY_BASE,
+                             'xaxis': dict(showgrid=False, linecolor='#333333'),
+                             'yaxis': dict(gridcolor=C_BORDER, linecolor='#333333', title='FCFA')},
+                             height=290)
         st.plotly_chart(fig_c, width='stretch')
 
     # Projection dividendes
@@ -666,10 +671,10 @@ elif "Obligations" in page or "F4" in page:
                 textfont=dict(family='Courier New', size=10),
                 textposition='outside'
             ))
-            fig_b.update_layout(**PLOTLY_BASE, height=430,
-                                xaxis_title="Rendement %",
-                                yaxis=dict(autorange='reversed'),
-                                xaxis=dict(gridcolor=C_BORDER))
+            fig_b.update_layout(**{**PLOTLY_BASE,
+                                'xaxis': dict(gridcolor=C_BORDER, linecolor='#333333', title='Rendement %'),
+                                'yaxis': dict(autorange='reversed', linecolor='#333333')},
+                                height=430)
             st.plotly_chart(fig_b, width='stretch')
 
         # Top 3 podium
