@@ -1,597 +1,706 @@
+"""
+Terminal Altos — Dashboard de Trading BRVM
+Version 2.0 — Design premium dark mode
+"""
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
-import subprocess
-import os
-import sys
-import glob
+import subprocess, os, sys, glob, time
 from datetime import datetime, date
-import time
 
-# ─────────────────────────────────────────────
-#  CONFIG PAGE
-# ─────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════
+#  CONFIG & THEME
+# ══════════════════════════════════════════════════════════
 st.set_page_config(
     page_title="Terminal Altos",
-    page_icon="📊",
+    page_icon="📈",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# ─────────────────────────────────────────────
-#  THEME CSS CUSTOM
-# ─────────────────────────────────────────────
-st.markdown("""
+C_BG     = "#0a0e1a"
+C_CARD   = "#111827"
+C_BORDER = "#1f2937"
+C_BLUE   = "#3b82f6"
+C_GREEN  = "#10b981"
+C_RED    = "#ef4444"
+C_YELLOW = "#f59e0b"
+C_PURPLE = "#8b5cf6"
+C_TEXT   = "#f9fafb"
+C_MUTED  = "#9ca3af"
+
+st.markdown(f"""
 <style>
-    .main { background-color: #0e1117; }
+  .stApp {{ background-color:{C_BG}; color:{C_TEXT}; }}
+  section[data-testid="stSidebar"] {{ background-color:#0d1526; border-right:1px solid {C_BORDER}; }}
+  #MainMenu, footer, header {{ visibility:hidden; }}
+  .block-container {{ padding-top:1.5rem; padding-bottom:2rem; }}
 
-    .metric-card {
-        background: linear-gradient(135deg, #1a1d27 0%, #16213e 100%);
-        border: 1px solid #2d3561;
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
-        margin-bottom: 10px;
-    }
-    .metric-card h1 { font-size: 2rem; margin: 0; }
-    .metric-card p  { font-size: 0.85rem; color: #aaa; margin: 4px 0 0 0; }
+  .kpi-card {{
+    background:linear-gradient(145deg,{C_CARD},#161e2e);
+    border:1px solid {C_BORDER}; border-radius:14px;
+    padding:20px 16px 14px 16px; text-align:center; margin-bottom:8px;
+  }}
+  .kpi-val {{ font-size:1.8rem; font-weight:800; margin:0; line-height:1.1; }}
+  .kpi-lbl {{ font-size:0.73rem; color:{C_MUTED}; margin:5px 0 0 0;
+              letter-spacing:.05em; text-transform:uppercase; }}
+  .kpi-sub {{ font-size:0.8rem; margin:4px 0 0 0; color:{C_MUTED}; }}
 
-    .card-green  { border-color: #00d084 !important; }
-    .card-red    { border-color: #ff4b4b !important; }
-    .card-yellow { border-color: #ffd700 !important; }
-    .card-blue   { border-color: #4da6ff !important; }
-
-    .section-title {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #4da6ff;
-        border-left: 4px solid #4da6ff;
-        padding-left: 10px;
-        margin: 20px 0 12px 0;
-    }
-
-    .status-ok   { color: #00d084; font-weight: bold; }
-    .status-warn { color: #ffd700; font-weight: bold; }
-    .status-bad  { color: #ff4b4b; font-weight: bold; }
-
-    .stButton>button {
-        width: 100%;
-        border-radius: 8px;
-        font-weight: 600;
-        height: 48px;
-    }
-
-    /* masque les menus hamburger inutiles */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+  .sec-title {{
+    font-size:0.75rem; font-weight:700; letter-spacing:.12em;
+    text-transform:uppercase; color:{C_MUTED};
+    border-bottom:1px solid {C_BORDER}; padding-bottom:5px; margin:20px 0 12px 0;
+  }}
+  .stButton>button {{
+    background:linear-gradient(135deg,{C_BLUE},#1d4ed8);
+    color:white; border:none; border-radius:8px;
+    font-weight:600; height:44px; width:100%;
+  }}
+  .stDataFrame {{ border-radius:10px; overflow:hidden; }}
+  div[data-testid="stRadio"] label {{ font-size:0.88rem; }}
 </style>
 """, unsafe_allow_html=True)
 
-# ─────────────────────────────────────────────
-#  HELPERS — CHARGEMENT DONNÉES
-# ─────────────────────────────────────────────
-BASE = os.path.dirname(os.path.abspath(__file__))
+# ══════════════════════════════════════════════════════════
+#  CONSTANTES
+# ══════════════════════════════════════════════════════════
+BASE         = os.path.dirname(os.path.abspath(__file__))
+CAPITAL_INIT = 1_000_000
+CORE_STOCKS  = ['SNTS', 'ORGT', 'ONTBF', 'SAFC', 'ABJC']
+PLOTLY_BASE  = dict(
+    template="plotly_dark",
+    plot_bgcolor="rgba(0,0,0,0)",
+    paper_bgcolor="rgba(0,0,0,0)",
+    font=dict(family="Inter, sans-serif", color=C_TEXT),
+    margin=dict(l=30, r=20, t=35, b=25),
+)
 
+# ══════════════════════════════════════════════════════════
+#  DATA LOADERS
+# ══════════════════════════════════════════════════════════
+@st.cache_data(ttl=60)
 def load_ytd():
-    path = os.path.join(BASE, "YTD_2026.csv")
-    if not os.path.exists(path):
-        return pd.DataFrame()
-    df = pd.read_csv(path)
-    df.columns = [c.strip() for c in df.columns]
-    df['Date'] = pd.to_datetime(df['Date'], dayfirst=True, errors='coerce')
+    p = os.path.join(BASE, "YTD_2026.csv")
+    if not os.path.exists(p): return pd.DataFrame()
+    df = pd.read_csv(p); df.columns = df.columns.str.strip()
+    df['Date'] = pd.to_datetime(df['Date'], format='mixed', dayfirst=True, errors='coerce')
     df = df.dropna(subset=['Date']).sort_values('Date')
-    # garder la dernière entrée de chaque jour
-    df = df.groupby('Date').last().reset_index()
-    return df
+    return df.groupby('Date').last().reset_index()
 
-def load_signals_today():
-    today_str = date.today().strftime("%Y%m%d")
-    path = os.path.join(BASE, "output", "signals", f"signals_{today_str}.csv")
-    # fallback: fichier le plus récent
-    if not os.path.exists(path):
+@st.cache_data(ttl=30)
+def load_signals():
+    today = date.today().strftime("%Y%m%d")
+    p = os.path.join(BASE, "output", "signals", f"signals_{today}.csv")
+    if not os.path.exists(p):
         files = sorted(glob.glob(os.path.join(BASE, "output", "signals", "signals_*.csv")))
-        if not files:
-            return pd.DataFrame(), "aucun fichier"
-        path = files[-1]
-    df = pd.read_csv(path)
-    df.columns = [c.strip() for c in df.columns]
-    fname = os.path.basename(path)
-    return df, fname
+        if not files: return pd.DataFrame(), "–"
+        p = files[-1]
+    df = pd.read_csv(p); df.columns = df.columns.str.strip()
+    return df, os.path.basename(p)
 
-def load_core_alloc():
-    path = os.path.join(BASE, "core_allocation.csv")
-    if not os.path.exists(path):
-        return pd.DataFrame()
-    return pd.read_csv(path)
+@st.cache_data(ttl=120)
+def load_core():
+    p = os.path.join(BASE, "core_allocation.csv")
+    if not os.path.exists(p): return pd.DataFrame()
+    return pd.read_csv(p)
 
+@st.cache_data(ttl=120)
 def load_bonds():
     files = sorted(glob.glob(os.path.join(BASE, "bond_opportunities_*.csv")))
-    if not files:
-        return pd.DataFrame(), ""
-    df = pd.read_csv(files[-1])
-    df.columns = [c.strip() for c in df.columns]
+    if not files: return pd.DataFrame(), "–"
+    df = pd.read_csv(files[-1]); df.columns = df.columns.str.strip()
     return df, os.path.basename(files[-1])
 
+@st.cache_data(ttl=300)
 def load_historical(ticker):
-    path = os.path.join(BASE, "data", "cours_boursiers_fusion.csv")
-    if not os.path.exists(path):
-        path = os.path.join(BASE, "cours_boursiers_fusion.csv")
-    if not os.path.exists(path):
-        return pd.DataFrame()
-    df = pd.read_csv(path, low_memory=False)
-    df.columns = [c.strip() for c in df.columns]
-    # detecter colonne date
-    date_col = next((c for c in df.columns if 'date' in c.lower()), df.columns[0])
-    df[date_col] = pd.to_datetime(df[date_col], dayfirst=True, errors='coerce')
-    df = df.dropna(subset=[date_col]).sort_values(date_col)
-    # filtrer par ticker
-    ticker_col = next((c for c in df.columns if 'ticker' in c.lower()), None)
-    price_col  = next((c for c in df.columns if 'close' in c.lower() or 'prix' in c.lower() or 'price' in c.lower()), None)
-    if ticker_col is None or price_col is None:
-        return pd.DataFrame()
-    sub = df[df[ticker_col] == ticker][[date_col, price_col]].copy()
+    for p in [os.path.join(BASE, "data", "cours_boursiers_fusion.csv"),
+              os.path.join(BASE, "cours_boursiers_fusion.csv")]:
+        if os.path.exists(p): break
+    else: return pd.DataFrame()
+    df = pd.read_csv(p, low_memory=False); df.columns = df.columns.str.strip()
+    dc = next((c for c in df.columns if 'date'   in c.lower()), df.columns[0])
+    tc = next((c for c in df.columns if 'ticker' in c.lower()), None)
+    pc = next((c for c in df.columns if any(x in c.lower() for x in ['close','prix','price'])), None)
+    if not tc or not pc: return pd.DataFrame()
+    df[dc] = pd.to_datetime(df[dc], format='mixed', dayfirst=True, errors='coerce')
+    sub = df[df[tc] == ticker][[dc, pc]].copy()
     sub.columns = ['Date', 'Price']
-    sub = sub[sub['Price'] > 0].dropna()
-    return sub
-
-def load_open_positions():
-    path = os.path.join(BASE, "open_positions.csv")
-    if not os.path.exists(path):
-        return pd.DataFrame()
-    df = pd.read_csv(path)
-    df.columns = [c.strip() for c in df.columns]
-    return df
+    return sub.dropna().sort_values('Date')
 
 def load_last_log():
     files = sorted(glob.glob(os.path.join(BASE, "logs", "automation_*.log")))
-    if not files:
-        return "Aucun log trouvé."
+    if not files: return "Aucun log.", "–"
     with open(files[-1], "r", encoding="utf-8", errors="ignore") as f:
         lines = f.readlines()
-    return "".join(lines[-40:]), os.path.basename(files[-1])
+    return "".join(lines[-50:]), os.path.basename(files[-1])
 
-# ─────────────────────────────────────────────
-#  HEADER
-# ─────────────────────────────────────────────
-col_title, col_time = st.columns([4, 1])
-with col_title:
-    st.markdown("# 📊 Terminal Altos — BRVM Trading")
-with col_time:
-    st.markdown(f"<br><p style='color:#aaa;text-align:right'>{datetime.now().strftime('%d/%m/%Y %H:%M')}</p>", unsafe_allow_html=True)
+# ══════════════════════════════════════════════════════════
+#  DONNÉES LIVE
+# ══════════════════════════════════════════════════════════
+ytd_df            = load_ytd()
+signals_df, sig_f = load_signals()
+core_df           = load_core()
+bonds_df, bond_f  = load_bonds()
 
-st.divider()
-
-# ─────────────────────────────────────────────
-#  CHARGEMENT DONNÉES
-# ─────────────────────────────────────────────
-ytd_df        = load_ytd()
-signals_df, sig_file = load_signals_today()
-core_df       = load_core_alloc()
-bonds_df, bond_file  = load_bonds()
-positions_df  = load_open_positions()
-
-# Dernières valeurs portfolio
 if not ytd_df.empty:
-    last = ytd_df.iloc[-1]
-    total_val  = float(last.get('Total_Value', 0))
-    core_val   = float(last.get('Core_Value', 0))
-    sat_val    = float(last.get('Satellite_Value', 0))
-    ytd_ret    = float(last.get('YTD_Return_%', 0))
-    start_val  = 1_000_000
-    gain_abs   = total_val - start_val
+    row       = ytd_df.iloc[-1]
+    prev_row  = ytd_df.iloc[-2] if len(ytd_df) > 1 else row
+    total_val = float(row.get('Total_Value',    0))
+    core_val  = float(row.get('Core_Value',     0))
+    sat_val   = float(row.get('Satellite_Value',0))
+    ytd_ret   = float(row.get('YTD_Return_%',   0))
+    prev_tot  = float(prev_row.get('Total_Value', total_val))
+    day_chg   = total_val - prev_tot
+    day_pct   = day_chg / prev_tot * 100 if prev_tot else 0
 else:
-    total_val = core_val = sat_val = ytd_ret = gain_abs = 0
+    total_val = core_val = sat_val = ytd_ret = day_chg = day_pct = 0
 
-n_buy  = len(signals_df[signals_df['Signal'].str.contains('Buy',  na=False)]) if not signals_df.empty else 0
-n_sell = len(signals_df[signals_df['Signal'].str.contains('Sell', na=False)]) if not signals_df.empty else 0
+gain_abs = total_val - CAPITAL_INIT
+n_buy    = len(signals_df[signals_df['Signal'].str.contains('Buy',  na=False)]) if not signals_df.empty and 'Signal' in signals_df.columns else 0
+n_sell   = len(signals_df[signals_df['Signal'].str.contains('Sell', na=False)]) if not signals_df.empty and 'Signal' in signals_df.columns else 0
+n_total  = len(signals_df) if not signals_df.empty else 0
 
-# ─────────────────────────────────────────────
-#  ONGLETS PRINCIPAUX
-# ─────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs([
-    "⚙️  Contrôle & Mise à jour",
-    "🎯  Radar & Signaux",
-    "💼  Portfolio & Risque"
-])
+# ══════════════════════════════════════════════════════════
+#  HELPERS
+# ══════════════════════════════════════════════════════════
+def kpi(val, label, sub="", color=C_BLUE, border=None):
+    bc = border or color
+    st.markdown(f"""
+    <div class="kpi-card" style="border-top:3px solid {bc};">
+      <p class="kpi-val" style="color:{color};">{val}</p>
+      <p class="kpi-lbl">{label}</p>
+      {"<p class='kpi-sub'>"+sub+"</p>" if sub else ""}
+    </div>""", unsafe_allow_html=True)
 
-# ══════════════════════════════════════════════
-#  TAB 1 — CONTRÔLE
-# ══════════════════════════════════════════════
-with tab1:
-    st.markdown('<p class="section-title">KPI du jour</p>', unsafe_allow_html=True)
+def sec(title):
+    st.markdown(f'<p class="sec-title">{title}</p>', unsafe_allow_html=True)
 
-    c1, c2, c3, c4 = st.columns(4)
-    sign = "+" if gain_abs >= 0 else ""
-    color_ytd = "card-green" if ytd_ret >= 0 else "card-red"
-    color_gain = "card-green" if gain_abs >= 0 else "card-red"
+def fcfa(v):  return f"{v:,.0f} FCFA".replace(",", " ")
+def pct(v):   return f"{v:+.2f}%"
 
-    with c1:
-        st.markdown(f"""<div class="metric-card {color_ytd}">
-            <h1 style="color:{'#00d084' if ytd_ret>=0 else '#ff4b4b'}">{ytd_ret:+.2f}%</h1>
-            <p>YTD 2026</p></div>""", unsafe_allow_html=True)
-    with c2:
-        st.markdown(f"""<div class="metric-card card-blue">
-            <h1 style="color:#4da6ff">{total_val:,.0f}</h1>
-            <p>Valeur totale (FCFA)</p></div>""", unsafe_allow_html=True)
-    with c3:
-        st.markdown(f"""<div class="metric-card {color_gain}">
-            <h1 style="color:{'#00d084' if gain_abs>=0 else '#ff4b4b'}">{sign}{gain_abs:,.0f}</h1>
-            <p>Gain net (FCFA)</p></div>""", unsafe_allow_html=True)
-    with c4:
-        color_sig = "card-green" if n_buy > 0 else "card-yellow"
-        label_sig = f"{n_buy} BUY / {n_sell} SELL"
-        st.markdown(f"""<div class="metric-card {color_sig}">
-            <h1 style="color:{'#00d084' if n_buy>0 else '#ffd700'}">{n_buy}</h1>
-            <p>Signaux BUY | {n_sell} SELL</p></div>""", unsafe_allow_html=True)
+# ══════════════════════════════════════════════════════════
+#  SIDEBAR
+# ══════════════════════════════════════════════════════════
+with st.sidebar:
+    st.markdown(f"""
+    <div style="text-align:center; padding:8px 0 18px 0;">
+      <p style="font-size:1.7rem; font-weight:900; margin:0;
+         background:linear-gradient(90deg,{C_BLUE},{C_GREEN});
+         -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+        📈 ALTOS
+      </p>
+      <p style="font-size:0.68rem; color:{C_MUTED}; margin:2px 0 0 0;
+         letter-spacing:.14em;">TRADING TERMINAL · BRVM</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.markdown('<p class="section-title">Lancer les scripts</p>', unsafe_allow_html=True)
+    page = st.radio("", [
+        "🏠  Vue d'ensemble",
+        "🎯  Signaux & Z-Score",
+        "💼  Portfolio CORE",
+        "🏦  Obligations",
+        "⚙️  Contrôle"
+    ], label_visibility="collapsed")
 
-    btn1, btn2, btn3 = st.columns(3)
+    st.divider()
 
-    with btn1:
-        if st.button("🚀 Automation complète", type="primary"):
-            with st.spinner("Exécution des 5 modules... (~20 secondes)"):
-                result = subprocess.run(
-                    [sys.executable, os.path.join(BASE, "run_daily_automation.py")],
-                    capture_output=True, text=True, cwd=BASE,
-                    encoding="utf-8", errors="replace", timeout=600
-                )
-            if result.returncode == 0:
-                st.success("✅ Automation terminée avec succès !")
-            else:
-                st.error("❌ Erreur dans un module — voir log ci-dessous")
-            st.code(result.stdout[-3000:] if result.stdout else result.stderr[-2000:])
-            st.rerun()
+    sig_col = C_GREEN if n_buy > 0 else C_YELLOW
+    ytd_col = C_GREEN if ytd_ret >= 0 else C_RED
+    st.markdown(f"""
+    <div style="background:{C_CARD}; border:1px solid {C_BORDER}; border-radius:10px; padding:14px;">
+      <p style="margin:0 0 10px 0; font-size:0.68rem; color:{C_MUTED};
+         text-transform:uppercase; letter-spacing:.08em;">Live status</p>
 
-    with btn2:
-        if st.button("📡 Signaux Z-Score uniquement"):
-            with st.spinner("Scraping BRVM & calcul Z-Score..."):
-                result = subprocess.run(
-                    [sys.executable, os.path.join(BASE, "daily_signals.py")],
-                    capture_output=True, text=True, cwd=BASE,
-                    encoding="utf-8", errors="replace", timeout=120
-                )
-            if result.returncode == 0:
-                st.success("✅ Signaux mis à jour !")
-            else:
-                st.error("❌ Erreur")
-            st.code(result.stdout[-2000:])
-            st.rerun()
+      <div style="display:flex; justify-content:space-between; margin:4px 0;">
+        <span style="font-size:0.78rem; color:{C_MUTED};">Portefeuille</span>
+        <span style="font-size:0.8rem; font-weight:700; color:{C_TEXT};">{fcfa(total_val)}</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin:4px 0;">
+        <span style="font-size:0.78rem; color:{C_MUTED};">YTD 2026</span>
+        <span style="font-size:0.8rem; font-weight:700; color:{ytd_col};">{pct(ytd_ret)}</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin:4px 0;">
+        <span style="font-size:0.78rem; color:{C_MUTED};">Signaux BUY</span>
+        <span style="font-size:0.8rem; font-weight:700; color:{sig_col};">{n_buy} / {n_total}</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin:4px 0;">
+        <span style="font-size:0.78rem; color:{C_MUTED};">Màj</span>
+        <span style="font-size:0.78rem; color:{C_TEXT};">{datetime.now().strftime('%d/%m %H:%M')}</span>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    with btn3:
-        if st.button("🏦 Scanner obligations"):
-            with st.spinner("Scan des obligations en cours..."):
-                result = subprocess.run(
-                    [sys.executable, os.path.join(BASE, "bond_scanner.py")],
-                    capture_output=True, text=True, cwd=BASE,
-                    encoding="utf-8", errors="replace", timeout=300
-                )
-            if result.returncode == 0:
-                st.success("✅ Obligations mises à jour !")
-            else:
-                st.error("❌ Erreur")
-            st.code(result.stdout[-2000:])
-            st.rerun()
-
-    # ─── Dernier log ──────────────────────────
-    st.markdown('<p class="section-title">Dernier log d\'automation</p>', unsafe_allow_html=True)
-    try:
-        log_text, log_name = load_last_log()
-        st.caption(f"Fichier : {log_name}")
-        st.code(log_text, language=None)
-    except Exception as e:
-        st.info("Aucun log disponible.")
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("🔄  Rafraîchir"):
+        st.cache_data.clear()
+        st.rerun()
 
 
-# ══════════════════════════════════════════════
-#  TAB 2 — SIGNAUX & RADAR
-# ══════════════════════════════════════════════
-with tab2:
-    st.markdown(f'<p class="section-title">Signaux du jour — {sig_file}</p>', unsafe_allow_html=True)
+# ══════════════════════════════════════════════════════════
+#  PAGE 1 — VUE D'ENSEMBLE
+# ══════════════════════════════════════════════════════════
+if "Vue d'ensemble" in page:
+    st.markdown(f"<h2 style='margin:0 0 4px 0;'>Vue d'ensemble</h2>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color:{C_MUTED}; margin:0 0 18px 0;'>Capital initial : 1 000 000 FCFA — BRVM, {datetime.now().strftime('%d %B %Y')}</p>", unsafe_allow_html=True)
+
+    # ── KPI row 1 ──
+    c1, c2, c3, c4, c5 = st.columns(5)
+    with c1: kpi(fcfa(total_val),            "Valeur totale",      pct(ytd_ret)+" YTD",               C_BLUE)
+    with c2: kpi(fcfa(gain_abs),             "Gain net",           "Depuis 01/01/2026",                C_GREEN if gain_abs>=0 else C_RED)
+    with c3: kpi(pct(day_pct),               "Variation du jour",  fcfa(day_chg),                     C_GREEN if day_chg>=0 else C_RED)
+    with c4: kpi(fcfa(core_val),             "🛡 CORE (70%)",      f"{core_val/total_val*100:.0f}% du portfolio" if total_val else "–", C_PURPLE)
+    with c5: kpi(str(n_buy)+" BUY",          "Signaux actifs",     f"{n_sell} SELL · {n_total} analysés", C_GREEN if n_buy>0 else C_YELLOW)
+
+    st.divider()
+    left, right = st.columns([2.2, 1])
+
+    with left:
+        sec("Évolution du portefeuille YTD 2026")
+        if not ytd_df.empty and 'Total_Value' in ytd_df.columns:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=ytd_df['Date'], y=ytd_df['Total_Value'], name="Valeur totale",
+                mode='lines', line=dict(color=C_BLUE, width=2.5),
+                fill='tozeroy', fillcolor='rgba(59,130,246,0.07)'
+            ))
+            if 'Core_Value' in ytd_df.columns:
+                fig.add_trace(go.Scatter(
+                    x=ytd_df['Date'], y=ytd_df['Core_Value'], name="CORE",
+                    mode='lines', line=dict(color=C_GREEN, width=1.5, dash='dot')
+                ))
+            fig.add_hline(y=CAPITAL_INIT, line_dash="dash", line_color=C_YELLOW, line_width=1.2,
+                          annotation_text="Capital initial", annotation_font_color=C_YELLOW)
+            fig.update_layout(**PLOTLY_BASE, height=310,
+                              legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+                              xaxis=dict(showgrid=False), yaxis=dict(gridcolor=C_BORDER))
+            st.plotly_chart(fig, width='stretch')
+
+        # CORE tiles
+        sec("Prix CORE en direct")
+        if not signals_df.empty and 'Ticker' in signals_df.columns:
+            cols5 = st.columns(5)
+            for i, ticker in enumerate(CORE_STOCKS):
+                rs = signals_df[signals_df['Ticker'] == ticker]
+                price  = float(rs.iloc[0]['Price'])   if len(rs) and 'Price'   in rs.columns else 0
+                zscore = float(rs.iloc[0]['Z_Score'])  if len(rs) and 'Z_Score' in rs.columns else 0
+                zc = C_RED if zscore > 2 else (C_GREEN if zscore < -2 else C_TEXT)
+                with cols5[i]:
+                    st.markdown(f"""
+                    <div class="kpi-card" style="border-top:3px solid {C_PURPLE};">
+                      <p style="font-size:1rem; font-weight:800; color:{C_PURPLE}; margin:0;">{ticker}</p>
+                      <p style="font-size:1.25rem; font-weight:700; color:{C_TEXT}; margin:4px 0;">{price:,.0f}</p>
+                      <p style="font-size:0.72rem; color:{zc}; margin:0;">Z = {zscore:+.2f}</p>
+                    </div>""", unsafe_allow_html=True)
+
+    with right:
+        sec("Statistiques backtest 2017–2025")
+        stats = [
+            ("Win Rate",        "58 %",   C_GREEN),
+            ("Profit Factor",   "1.8",    C_GREEN),
+            ("Sharpe Ratio",    "1.8",    C_GREEN),
+            ("Sortino Ratio",   "2.2",    C_GREEN),
+            ("Max Drawdown",    "−12 %",  C_YELLOW),
+            ("Total Trades",    "1 800",  C_BLUE),
+            ("CAGR estimé",     "18 %",   C_GREEN),
+            ("Recovery Factor", "2.87",   C_GREEN),
+        ]
+        for label, val, color in stats:
+            st.markdown(f"""
+            <div style="display:flex; justify-content:space-between;
+                 padding:6px 0; border-bottom:1px solid {C_BORDER};">
+              <span style="font-size:0.78rem; color:{C_MUTED};">{label}</span>
+              <span style="font-size:0.82rem; font-weight:700; color:{color};">{val}</span>
+            </div>""", unsafe_allow_html=True)
+
+        sec("Dernier run automation")
+        log_txt, log_name = load_last_log()
+        ok_lines = [l.strip() for l in log_txt.split('\n') if ('OK:' in l or 'SUCCES' in l or 'ERROR' in l) and l.strip()]
+        for line in ok_lines[-7:]:
+            c = C_GREEN if ('OK' in line or 'SUCCES' in line) else C_RED
+            icon = "✅" if ('OK' in line or 'SUCCES' in line) else "❌"
+            msg = line.replace('[','').replace(']','').strip()[:52]
+            st.markdown(f"<p style='font-size:0.75rem; margin:2px 0; color:{c};'>{icon} {msg}</p>", unsafe_allow_html=True)
+        st.caption(log_name)
+
+
+# ══════════════════════════════════════════════════════════
+#  PAGE 2 — SIGNAUX & Z-SCORE
+# ══════════════════════════════════════════════════════════
+elif "Signaux" in page:
+    st.markdown("<h2 style='margin:0 0 4px 0;'>🎯 Radar & Signaux Z-Score</h2>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color:{C_MUTED}; margin:0 0 18px 0;'>Fichier : {sig_f}</p>", unsafe_allow_html=True)
 
     if signals_df.empty:
-        st.warning("Aucun signal disponible. Lance d'abord l'automation dans l'onglet ⚙️")
+        st.warning("Aucun signal. Lance l'automation dans ⚙️ Contrôle")
     else:
-        # ─── Filtres ──────────────────────────
-        fcol1, fcol2 = st.columns([2, 2])
-        with fcol1:
-            filter_signal = st.multiselect(
-                "Filtrer par signal",
-                options=signals_df['Signal'].unique().tolist() if 'Signal' in signals_df.columns else [],
-                default=[]
-            )
-        with fcol2:
-            show_only_buy = st.checkbox("📈 Afficher uniquement les BUY", value=False)
+        k1, k2, k3, k4 = st.columns(4)
+        strong_b = len(signals_df[signals_df['Signal'] == 'Strong Buy'])  if 'Signal' in signals_df.columns else 0
+        strong_s = len(signals_df[signals_df['Signal'] == 'Strong Sell']) if 'Signal' in signals_df.columns else 0
+        with k1: kpi(str(n_buy),    "Signaux BUY",    "Opportunités d'achat", C_GREEN)
+        with k2: kpi(str(strong_b), "Strong BUY",     "Z-Score ≤ −2",         C_GREEN)
+        with k3: kpi(str(n_sell),   "Signaux SELL",   "Vendre / Éviter",      C_RED)
+        with k4: kpi(str(n_total),  "Total analysés", "Actions BRVM scrapées",C_BLUE)
 
-        filtered = signals_df.copy()
-        if show_only_buy:
-            filtered = filtered[filtered['Signal'].str.contains('Buy', na=False)]
-        if filter_signal:
-            filtered = filtered[filtered['Signal'].isin(filter_signal)]
+        st.divider()
+        f1, f2, f3 = st.columns([2.5, 1.5, 1.5])
+        with f1:
+            opts = sorted(signals_df['Signal'].dropna().unique()) if 'Signal' in signals_df.columns else []
+            sel  = st.multiselect("Filtrer par type de signal", opts)
+        with f2:
+            buy_only = st.checkbox("📈 BUY seulement", False)
+        with f3:
+            sort_col = st.selectbox("Trier par", ["Z_Score","Price","Ticker"])
 
-        # ─── Colorisation ─────────────────────
-        def color_signal(val):
-            if 'Strong Buy' in str(val):  return 'color: #00d084; font-weight: bold'
-            if 'Buy' in str(val):         return 'color: #7fff7f'
-            if 'Strong Sell' in str(val): return 'color: #ff4b4b; font-weight: bold'
-            if 'Sell' in str(val):        return 'color: #ff9999'
-            return ''
+        filt = signals_df.copy()
+        if buy_only: filt = filt[filt['Signal'].str.contains('Buy', na=False)]
+        if sel:      filt = filt[filt['Signal'].isin(sel)]
+        if sort_col in filt.columns:
+            filt = filt.sort_values(sort_col, ascending=(sort_col == 'Ticker'))
 
-        def color_zscore(val):
-            try:
-                v = float(val)
-                if v <= -2:  return 'color: #00d084; font-weight: bold'
-                if v <= -1:  return 'color: #7fff7f'
-                if v >= 2:   return 'color: #ff4b4b'
-                return ''
-            except: return ''
+        sec(f"{len(filt)} signal(s) · {n_buy} BUY / {n_sell} SELL")
+        show_cols = [c for c in ['Ticker','Signal','Z_Score','Price','Action','Qty','TP_Pct','SL_Pct'] if c in filt.columns]
+        disp = filt[show_cols].copy()
+        if 'Z_Score' in disp.columns:
+            disp['Z_Score'] = disp['Z_Score'].apply(lambda x: f"{x:+.2f}" if pd.notnull(x) else "–")
 
-        cols_display = [c for c in ['Ticker','Signal','Z_Score','Price','Action','Qty','TP_Price','SL_Price','TP_Pct','SL_Pct'] if c in filtered.columns]
-        styled = filtered[cols_display].style\
-            .map(color_signal, subset=['Signal'] if 'Signal' in cols_display else [])\
-            .map(color_zscore, subset=['Z_Score'] if 'Z_Score' in cols_display else [])
+        def hl_row(row):
+            sig = str(row.get('Signal',''))
+            if   'Strong Buy'  in sig: s = f'background-color:#064e3b30; color:#34d399'
+            elif 'Buy'         in sig: s = f'background-color:#065f4620; color:#6ee7b7'
+            elif 'Strong Sell' in sig: s = f'background-color:#450a0a30; color:#fca5a5'
+            elif 'Sell'        in sig: s = f'background-color:#7f1d1d20; color:#fecaca'
+            else:                       s = ''
+            return [s] * len(row)
 
-        st.dataframe(styled, use_container_width=True, height=400)
+        st.dataframe(disp.style.apply(hl_row, axis=1), width='stretch', height=380)
 
-        st.caption(f"Total : **{len(filtered)}** signaux affichés | BUY: **{n_buy}** | SELL: **{n_sell}**")
+    # ── Graphique Z-Score ──
+    st.divider()
+    sec("Graphique interactif Z-Score")
+    all_t = sorted(set(CORE_STOCKS + (signals_df['Ticker'].dropna().unique().tolist() if not signals_df.empty and 'Ticker' in signals_df.columns else [])))
 
-    # ─── Graphique Z-Score interactif ─────────
-    st.markdown('<p class="section-title">Graphique Z-Score — Choisir une action</p>', unsafe_allow_html=True)
+    g1, g2, g3 = st.columns([2, 1, 1])
+    with g1: sel_t = st.selectbox("Choisir une action", all_t)
+    with g2: win   = st.selectbox("Fenêtre (jours)", [95, 200, 50])
+    with g3: nb    = st.slider("Historique (jours)", 100, 1000, 400, 50)
 
-    available_tickers = signals_df['Ticker'].dropna().unique().tolist() if (not signals_df.empty and 'Ticker' in signals_df.columns) else []
-
-    from config import CORE_STOCKS
-    all_tickers = list(set(CORE_STOCKS + available_tickers))
-    all_tickers.sort()
-
-    if all_tickers:
-        selected_ticker = st.selectbox("Action", all_tickers, index=0)
-        hist = load_historical(selected_ticker)
-
-        if hist.empty:
-            st.info(f"Données historiques non disponibles pour {selected_ticker}")
-        else:
-            # Calcul Z-Score 95 jours
-            window = 95
-            hist = hist.tail(500)  # derniers 500 jours
-            hist['MA']     = hist['Price'].rolling(window).mean()
-            hist['STD']    = hist['Price'].rolling(window).std()
-            hist['ZScore'] = (hist['Price'] - hist['MA']) / hist['STD']
-
-            fig = make_subplots(
-                rows=2, cols=1,
-                shared_xaxes=True,
-                row_heights=[0.65, 0.35],
-                vertical_spacing=0.05,
-                subplot_titles=(f"{selected_ticker} — Prix & Moyenne Mobile", "Z-Score")
-            )
-
-            # Prix
-            fig.add_trace(go.Scatter(
-                x=hist['Date'], y=hist['Price'],
-                name="Prix", line=dict(color='#4da6ff', width=1.5)
-            ), row=1, col=1)
-
-            # Moyenne mobile
-            fig.add_trace(go.Scatter(
-                x=hist['Date'], y=hist['MA'],
-                name=f"MM {window}j", line=dict(color='#ffd700', width=1, dash='dash')
-            ), row=1, col=1)
-
-            # Bandes ±2σ
-            fig.add_trace(go.Scatter(
-                x=hist['Date'], y=hist['MA'] + 2 * hist['STD'],
-                name="+2σ", line=dict(color='rgba(255,75,75,0.3)', width=0.5), showlegend=False
-            ), row=1, col=1)
-            fig.add_trace(go.Scatter(
-                x=hist['Date'], y=hist['MA'] - 2 * hist['STD'],
-                name="-2σ", line=dict(color='rgba(0,208,132,0.3)', width=0.5),
-                fill='tonexty', fillcolor='rgba(100,100,100,0.05)', showlegend=False
-            ), row=1, col=1)
-
-            # Z-Score
-            z_colors = hist['ZScore'].apply(lambda z:
-                '#00d084' if z <= -2 else ('#7fff7f' if z <= -1 else ('#ff4b4b' if z >= 2 else '#aaaaaa'))
-            )
-            fig.add_trace(go.Bar(
-                x=hist['Date'], y=hist['ZScore'],
-                name="Z-Score", marker_color=z_colors
-            ), row=2, col=1)
-
-            # Lignes référence Z-Score
-            for y_val, color, dash in [(-2,'#00d084','dash'), (2,'#ff4b4b','dash'), (0,'#aaaaaa','dot')]:
-                fig.add_hline(y=y_val, line_dash=dash, line_color=color, row=2, col=1, line_width=1)
-
-            fig.update_layout(
-                height=550,
-                template="plotly_dark",
-                plot_bgcolor='#0e1117',
-                paper_bgcolor='#0e1117',
-                legend=dict(orientation="h", yanchor="bottom", y=1.02),
-                margin=dict(l=40, r=20, t=40, b=20)
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-            # Signal actuel
-            if not signals_df.empty and 'Ticker' in signals_df.columns:
-                row_sig = signals_df[signals_df['Ticker'] == selected_ticker]
-                if not row_sig.empty:
-                    sig = row_sig.iloc[0]
-                    z = float(sig.get('Z_Score', 0))
-                    signal_name = sig.get('Signal', 'N/A')
-                    if 'Strong Buy' in signal_name:
-                        st.success(f"Signal actuel : **{signal_name}** (Z={z:.2f}) → ACHETER")
-                    elif 'Buy' in signal_name:
-                        st.success(f"Signal actuel : **{signal_name}** (Z={z:.2f}) → Opportunité d'achat")
-                    elif 'Strong Sell' in signal_name:
-                        st.error(f"Signal actuel : **{signal_name}** (Z={z:.2f}) → VENDRE / Éviter")
-                    else:
-                        st.warning(f"Signal actuel : **{signal_name}** (Z={z:.2f})")
+    hist = load_historical(sel_t)
+    if hist.empty:
+        st.info(f"Pas de données historiques pour {sel_t}")
     else:
-        st.info("Lance d'abord l'automation pour générer les signaux du jour.")
+        h = hist.tail(nb).copy()
+        h['MA']    = h['Price'].rolling(win).mean()
+        h['STD']   = h['Price'].rolling(win).std()
+        h['Z']     = (h['Price'] - h['MA']) / h['STD']
+        h['BB_UP'] = h['MA'] + 2 * h['STD']
+        h['BB_DN'] = h['MA'] - 2 * h['STD']
+
+        fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
+                            row_heights=[0.65, 0.35], vertical_spacing=0.04,
+                            subplot_titles=[f"{sel_t} — Prix & Bandes de Bollinger",
+                                            f"Z-Score (fenêtre {win} jours)"])
+        fig.add_trace(go.Scatter(x=h['Date'], y=h['Price'], name="Prix",
+                                  line=dict(color=C_BLUE, width=2)), row=1, col=1)
+        fig.add_trace(go.Scatter(x=h['Date'], y=h['MA'], name=f"MM{win}",
+                                  line=dict(color=C_YELLOW, width=1.2, dash='dash')), row=1, col=1)
+        fig.add_trace(go.Scatter(x=h['Date'], y=h['BB_UP'], name="+2σ",
+                                  line=dict(color='rgba(239,68,68,0.35)', width=0.8)), row=1, col=1)
+        fig.add_trace(go.Scatter(x=h['Date'], y=h['BB_DN'], name="−2σ",
+                                  line=dict(color='rgba(16,185,129,0.35)', width=0.8),
+                                  fill='tonexty', fillcolor='rgba(120,120,120,0.04)'), row=1, col=1)
+        zc = h['Z'].apply(lambda z: C_GREEN if z<=-2 else(C_BLUE if z<=0 else(C_YELLOW if z<=2 else C_RED)))
+        fig.add_trace(go.Bar(x=h['Date'], y=h['Z'], name="Z-Score",
+                              marker_color=zc, opacity=0.75), row=2, col=1)
+        for yv, col, d in [(-2,C_GREEN,'dash'),(2,C_RED,'dash'),(0,C_MUTED,'dot')]:
+            fig.add_hline(y=yv, line_dash=d, line_color=col, row=2, col=1, line_width=1)
+        fig.update_layout(**PLOTLY_BASE, height=560,
+                          legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+                          xaxis2=dict(showgrid=False),
+                          yaxis=dict(gridcolor=C_BORDER),
+                          yaxis2=dict(gridcolor=C_BORDER))
+        st.plotly_chart(fig, width='stretch')
+
+        if not signals_df.empty and 'Ticker' in signals_df.columns:
+            rs = signals_df[signals_df['Ticker'] == sel_t]
+            if not rs.empty:
+                sn = rs.iloc[0].get('Signal','')
+                zn = float(rs.iloc[0].get('Z_Score', 0))
+                sc = C_GREEN if 'Buy' in sn else (C_RED if 'Sell' in sn else C_MUTED)
+                act = "→ ACHETER" if 'Buy' in sn else ("→ ÉVITER" if 'Sell' in sn else "→ Attendre")
+                st.markdown(f"""
+                <div style='background:{C_CARD}; border:1px solid {sc}; border-radius:10px; padding:12px 18px; margin-top:8px;'>
+                  <span style='font-size:1.05rem; font-weight:800; color:{sc};'>{sn}</span>
+                  <span style='color:{C_MUTED}; font-size:0.88rem;'>&nbsp; Z = {zn:+.2f} &nbsp;·&nbsp; {act}</span>
+                </div>""", unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════════
-#  TAB 3 — PORTFOLIO & RISQUE
-# ══════════════════════════════════════════════
-with tab3:
+# ══════════════════════════════════════════════════════════
+#  PAGE 3 — PORTFOLIO CORE
+# ══════════════════════════════════════════════════════════
+elif "CORE" in page:
+    st.markdown("<h2 style='margin:0 0 4px 0;'>💼 Portfolio CORE</h2>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color:{C_MUTED}; margin:0 0 18px 0;'>Bouclier dividendes — 5 big caps BRVM détenues depuis 2017</p>", unsafe_allow_html=True)
 
-    # ─── KPI haut de page ────────────────────
-    st.markdown('<p class="section-title">Vue d\'ensemble du portefeuille</p>', unsafe_allow_html=True)
+    c1, c2, c3, c4 = st.columns(4)
+    core_gain = core_val - 700_000
+    with c1: kpi(fcfa(core_val),                "Valeur CORE actuelle", "",            C_PURPLE)
+    with c2: kpi(fcfa(700_000),                 "Capital investi",      "",            C_MUTED)
+    with c3: kpi(fcfa(core_gain),               "Gain CORE",            pct(core_gain/700_000*100) if 700_000 else "–", C_GREEN if core_gain>=0 else C_RED)
+    with c4: kpi("~8.5 % / an",                "Dividendes estimés",   "≈ 59 500 FCFA/an", C_GREEN)
 
-    pk1, pk2, pk3, pk4 = st.columns(4)
-    with pk1:
-        pct_core = (core_val / total_val * 100) if total_val else 0
-        st.markdown(f"""<div class="metric-card card-blue">
-            <h1 style="color:#4da6ff">{core_val:,.0f}</h1>
-            <p>🛡️ CORE ({pct_core:.0f}%)</p></div>""", unsafe_allow_html=True)
-    with pk2:
-        pct_sat = (sat_val / total_val * 100) if total_val else 0
-        st.markdown(f"""<div class="metric-card card-yellow">
-            <h1 style="color:#ffd700">{sat_val:,.0f}</h1>
-            <p>⚔️ SATELLITE ({pct_sat:.0f}%)</p></div>""", unsafe_allow_html=True)
-    with pk3:
-        st.markdown(f"""<div class="metric-card {'card-green' if ytd_ret>=0 else 'card-red'}">
-            <h1 style="color:{'#00d084' if ytd_ret>=0 else '#ff4b4b'}">{ytd_ret:+.2f}%</h1>
-            <p>YTD Return</p></div>""", unsafe_allow_html=True)
-    with pk4:
-        n_pos = len(positions_df[positions_df.get('Status', pd.Series())==True]) if not positions_df.empty else 0
-        st.markdown(f"""<div class="metric-card card-blue">
-            <h1 style="color:#4da6ff">{len(positions_df)}</h1>
-            <p>Positions ouvertes</p></div>""", unsafe_allow_html=True)
+    st.divider()
+    t1, t2 = st.columns([2, 1])
 
-    # ─── Graphique évolution YTD ──────────────
-    st.markdown('<p class="section-title">Évolution du portefeuille YTD 2026</p>', unsafe_allow_html=True)
+    with t1:
+        sec("Détail des 5 positions CORE")
+        if not core_df.empty:
+            cols_c = [c for c in ['Ticker','Entry_Price','Current_Price','Qty','Current_Value','P&L','P&L_%','Dividend_Yield_%','Status'] if c in core_df.columns]
+            disp   = core_df[cols_c].copy()
 
-    if not ytd_df.empty and 'Total_Value' in ytd_df.columns:
-        fig_ytd = go.Figure()
+            def hl_core(row):
+                try:
+                    v = float(str(row.get('P&L_%',0)).replace('%',''))
+                    s = 'background-color:#064e3b20' if v>=0 else 'background-color:#450a0a20'
+                except: s = ''
+                return [s]*len(row)
 
-        fig_ytd.add_trace(go.Scatter(
-            x=ytd_df['Date'], y=ytd_df['Total_Value'],
-            name="Valeur totale", fill='tozeroy',
-            line=dict(color='#4da6ff', width=2),
-            fillcolor='rgba(77,166,255,0.1)'
-        ))
-        if 'Core_Value' in ytd_df.columns:
-            fig_ytd.add_trace(go.Scatter(
-                x=ytd_df['Date'], y=ytd_df['Core_Value'],
-                name="CORE", line=dict(color='#00d084', width=1.5, dash='dot')
-            ))
-
-        # Ligne capital de départ
-        fig_ytd.add_hline(
-            y=1_000_000, line_dash="dash", line_color="#ffd700",
-            annotation_text="Capital initial 1 000 000 FCFA", annotation_font_color="#ffd700"
-        )
-
-        fig_ytd.update_layout(
-            height=380,
-            template="plotly_dark",
-            plot_bgcolor='#0e1117',
-            paper_bgcolor='#0e1117',
-            yaxis_title="Valeur (FCFA)",
-            xaxis_title="",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02),
-            margin=dict(l=40, r=20, t=20, b=20)
-        )
-        st.plotly_chart(fig_ytd, use_container_width=True)
-
-    # ─── Répartition CORE ────────────────────
-    col_core, col_bonds = st.columns(2)
-
-    with col_core:
-        st.markdown('<p class="section-title">Détail CORE stocks</p>', unsafe_allow_html=True)
-        if not core_df.empty and 'Ticker' in core_df.columns:
-            from config import CORE_STOCKS
-            core_display = core_df[['Ticker','Current_Price','Current_Value','P&L_%','Status']].copy() if 'Current_Value' in core_df.columns else core_df.head()
-
-            def color_pnl(val):
+            def col_pnl(val):
                 try:
                     v = float(str(val).replace('%',''))
-                    return 'color: #00d084' if v >= 0 else 'color: #ff4b4b'
+                    return f'color:{C_GREEN}; font-weight:700' if v>=0 else f'color:{C_RED}; font-weight:700'
                 except: return ''
 
-            st.dataframe(
-                core_display.style.map(color_pnl, subset=['P&L_%'] if 'P&L_%' in core_display.columns else []),
-                use_container_width=True
-            )
-
-            # Donut chart
-            if 'Current_Value' in core_df.columns:
-                fig_donut = go.Figure(go.Pie(
-                    labels=core_df['Ticker'],
-                    values=core_df['Current_Value'],
-                    hole=0.55,
-                    marker_colors=['#4da6ff','#00d084','#ffd700','#ff9f43','#ee5a24']
-                ))
-                fig_donut.update_layout(
-                    height=280,
-                    template="plotly_dark",
-                    paper_bgcolor='#0e1117',
-                    margin=dict(l=0, r=0, t=20, b=0),
-                    showlegend=True,
-                    legend=dict(font=dict(size=11))
-                )
-                st.plotly_chart(fig_donut, use_container_width=True)
+            styled = disp.style.apply(hl_core, axis=1)
+            if 'P&L_%' in cols_c:
+                styled = styled.map(col_pnl, subset=['P&L_%'])
+            st.dataframe(styled, width='stretch', height=220)
         else:
-            st.info("Données CORE non disponibles.")
+            st.info("Données non disponibles.")
 
-    with col_bonds:
-        st.markdown('<p class="section-title">Top obligations décotées</p>', unsafe_allow_html=True)
-        if not bonds_df.empty:
-            st.caption(f"Source : {bond_file}")
-            cols_b = [c for c in ['Ticker','Libelle','Current_Price','Discount_%','Effective_Yield_%'] if c in bonds_df.columns]
+    with t2:
+        sec("Répartition CORE")
+        if not core_df.empty and 'Current_Value' in core_df.columns:
+            fig_d = go.Figure(go.Pie(
+                labels=core_df['Ticker'],
+                values=core_df['Current_Value'].astype(float),
+                hole=0.6,
+                marker=dict(colors=[C_BLUE, C_GREEN, C_YELLOW, '#ec4899', C_PURPLE],
+                            line=dict(color=C_BG, width=2)),
+                textfont=dict(size=12)
+            ))
+            fig_d.update_layout(**PLOTLY_BASE, height=250,
+                                margin=dict(l=10,r=10,t=10,b=10),
+                                showlegend=True, legend=dict(font=dict(size=11)))
+            st.plotly_chart(fig_d, width='stretch')
 
-            def color_yield(val):
+    # Graphique prix historique
+    st.divider()
+    sec("Évolution prix historique")
+    sel_c = st.selectbox("Action CORE", CORE_STOCKS, key="core_sel")
+    h2    = load_historical(sel_c)
+    if not h2.empty:
+        hh = h2.tail(500).copy()
+        hh['MA95'] = hh['Price'].rolling(95).mean()
+        fig_c = go.Figure()
+        fig_c.add_trace(go.Scatter(x=hh['Date'], y=hh['Price'], name="Prix",
+                                    fill='tozeroy', fillcolor='rgba(139,92,246,0.06)',
+                                    line=dict(color=C_PURPLE, width=2)))
+        fig_c.add_trace(go.Scatter(x=hh['Date'], y=hh['MA95'], name="MA95",
+                                    line=dict(color=C_YELLOW, width=1.2, dash='dot')))
+        fig_c.update_layout(**PLOTLY_BASE, height=290, yaxis_title="FCFA",
+                             xaxis=dict(showgrid=False), yaxis=dict(gridcolor=C_BORDER))
+        st.plotly_chart(fig_c, width='stretch')
+
+    # Projection dividendes
+    st.divider()
+    sec("Projection dividendes annuels")
+    div_rate = 0.085
+    d1, d2, d3 = st.columns(3)
+    with d1:
+        proj_div = core_val * div_rate
+        kpi(fcfa(proj_div), "Dividendes projetés", f"{div_rate*100:.1f}% × {fcfa(core_val)}", C_GREEN)
+    with d2:
+        mensuel = proj_div / 12
+        kpi(fcfa(mensuel), "Équivalent mensuel", "Si versés chaque mois", C_BLUE)
+    with d3:
+        total_return = (gain_abs + proj_div) / CAPITAL_INIT * 100
+        kpi(pct(total_return), "Rendement total estimé", "Plusvalue + Dividendes", C_GREEN)
+
+
+# ══════════════════════════════════════════════════════════
+#  PAGE 4 — OBLIGATIONS
+# ══════════════════════════════════════════════════════════
+elif "Obligations" in page:
+    st.markdown("<h2 style='margin:0 0 4px 0;'>🏦 Obligations BRVM Décotées</h2>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color:{C_MUTED}; margin:0 0 18px 0;'>{bond_f}</p>", unsafe_allow_html=True)
+
+    if bonds_df.empty:
+        st.warning("Lance le scanner dans ⚙️ Contrôle pour obtenir les obligations.")
+    else:
+        n_b       = len(bonds_df)
+        avg_y     = bonds_df['Effective_Yield_%'].mean()  if 'Effective_Yield_%' in bonds_df.columns else 0
+        avg_d     = bonds_df['Discount_%'].mean()          if 'Discount_%'        in bonds_df.columns else 0
+        best_y    = bonds_df['Effective_Yield_%'].max()    if 'Effective_Yield_%' in bonds_df.columns else 0
+        best_tick = bonds_df.iloc[0].get('Ticker', '–')   if n_b > 0 else '–'
+
+        b1, b2, b3, b4 = st.columns(4)
+        with b1: kpi(str(n_b),          "Obligations détectées", "Décote > 0.5%",          C_BLUE)
+        with b2: kpi(f"{avg_y:.2f}%",  "Rendement moyen",       "Effectif pondéré",        C_GREEN)
+        with b3: kpi(f"{avg_d:.1f}%",  "Décote moyenne",        "% du nominal",            C_YELLOW)
+        with b4: kpi(f"{best_y:.2f}%", "Meilleur rendement",    best_tick,                 C_GREEN)
+
+        st.divider()
+        l_t, r_b = st.columns([2, 1])
+
+        with l_t:
+            sec("Toutes les obligations — triées par rendement")
+            cols_b = [c for c in ['Ticker','Libelle','Current_Price','Discount_%','Coupon_Rate_%','Effective_Yield_%'] if c in bonds_df.columns]
+            sort_b = bonds_df.sort_values('Effective_Yield_%', ascending=False) if 'Effective_Yield_%' in bonds_df.columns else bonds_df
+
+            def col_y(val):
                 try:
                     v = float(val)
-                    if v >= 7.5: return 'color: #00d084; font-weight: bold'
-                    if v >= 6.5: return 'color: #7fff7f'
-                    return ''
+                    if v >= 7.5: return f'color:{C_GREEN}; font-weight:800'
+                    if v >= 6.5: return f'color:#34d399'
+                    if v >= 6.0: return f'color:{C_YELLOW}'
+                    return f'color:{C_MUTED}'
                 except: return ''
 
-            top10 = bonds_df.head(10)
-            styled_bonds = top10[cols_b].style
-            if 'Effective_Yield_%' in cols_b:
-                styled_bonds = styled_bonds.map(color_yield, subset=['Effective_Yield_%'])
+            sb = sort_b[cols_b].style
+            if 'Effective_Yield_%' in cols_b: sb = sb.map(col_y, subset=['Effective_Yield_%'])
+            if 'Discount_%'        in cols_b: sb = sb.map(col_y, subset=['Discount_%'])
+            st.dataframe(sb, width='stretch', height=430)
 
-            st.dataframe(styled_bonds, use_container_width=True, height=320)
+        with r_b:
+            sec("Top 12 — Rendement effectif")
+            top12 = sort_b.head(12) if 'Effective_Yield_%' in bonds_df.columns else bonds_df.head(12)
+            fig_b = go.Figure(go.Bar(
+                y=top12['Ticker'], x=top12['Effective_Yield_%'],
+                orientation='h',
+                marker=dict(color=top12['Effective_Yield_%'],
+                            colorscale=[[0,C_BLUE],[0.5,C_YELLOW],[1,C_GREEN]],
+                            showscale=False),
+                text=top12['Effective_Yield_%'].apply(lambda v: f"{v:.2f}%"),
+                textposition='outside'
+            ))
+            fig_b.update_layout(**PLOTLY_BASE, height=430,
+                                xaxis_title="Rendement %",
+                                yaxis=dict(autorange='reversed'),
+                                xaxis=dict(gridcolor=C_BORDER))
+            st.plotly_chart(fig_b, width='stretch')
 
-            # Bar chart rendements
-            if 'Effective_Yield_%' in bonds_df.columns and 'Ticker' in bonds_df.columns:
-                fig_bonds = px.bar(
-                    bonds_df.head(10),
-                    x='Ticker', y='Effective_Yield_%',
-                    color='Effective_Yield_%',
-                    color_continuous_scale=['#4da6ff', '#00d084'],
-                    labels={'Effective_Yield_%': 'Rendement %'},
-                    title="Top 10 — Rendement effectif (%)"
-                )
-                fig_bonds.update_layout(
-                    height=260,
-                    template="plotly_dark",
-                    paper_bgcolor='#0e1117',
-                    plot_bgcolor='#0e1117',
-                    showlegend=False,
-                    margin=dict(l=20, r=20, t=40, b=20),
-                    coloraxis_showscale=False
-                )
-                st.plotly_chart(fig_bonds, use_container_width=True)
-        else:
-            st.info("Lance le Bond Scanner dans l'onglet ⚙️")
+        # Top 3 podium
+        st.divider()
+        sec("🏆 Podium — Meilleures opportunités")
+        top3   = sort_b.head(3) if 'Effective_Yield_%' in bonds_df.columns else bonds_df.head(3)
+        medals = ["🥇", "🥈", "🥉"]
+        cols3  = [C_GREEN, C_YELLOW, C_BLUE]
+        rcols  = st.columns(3)
+        for i, (_, rb) in enumerate(top3.iterrows()):
+            with rcols[i]:
+                lib  = str(rb.get('Libelle','')).strip('"')[:48]
+                disc = float(rb.get('Discount_%', 0))
+                rend = float(rb.get('Effective_Yield_%', 0))
+                prix = float(rb.get('Current_Price', 0))
+                cout = float(rb.get('Purchase_Cost_FCFA', 0))
+                st.markdown(f"""
+                <div class="kpi-card" style="border-top:3px solid {cols3[i]}; text-align:left;">
+                  <p style="font-size:1.4rem; margin:0 0 2px 0;">{medals[i]}</p>
+                  <p style="font-size:1.15rem; font-weight:800; color:{cols3[i]}; margin:0;">{rb.get('Ticker','')}</p>
+                  <p style="font-size:0.73rem; color:{C_MUTED}; margin:2px 0 10px 0;">{lib}</p>
+                  <div style="display:flex; justify-content:space-between; margin:3px 0;">
+                    <span style="font-size:0.75rem; color:{C_MUTED};">Rendement</span>
+                    <span style="font-size:0.82rem; font-weight:700; color:{C_GREEN};">{rend:.2f}%</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; margin:3px 0;">
+                    <span style="font-size:0.75rem; color:{C_MUTED};">Décote</span>
+                    <span style="font-size:0.82rem; font-weight:700; color:{C_YELLOW};">−{disc:.1f}%</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; margin:3px 0;">
+                    <span style="font-size:0.75rem; color:{C_MUTED};">Prix marché</span>
+                    <span style="font-size:0.82rem; color:{C_TEXT};">{prix:.2f} FCFA</span>
+                  </div>
+                  {"<div style='display:flex; justify-content:space-between; margin:3px 0;'><span style='font-size:0.75rem; color:"+C_MUTED+";'>Coût alloc.</span><span style='font-size:0.82rem; color:"+C_TEXT+";'>"+fcfa(cout)+"</span></div>" if cout else ""}
+                </div>""", unsafe_allow_html=True)
 
-    # ─── Auto-refresh ─────────────────────────
+
+# ══════════════════════════════════════════════════════════
+#  PAGE 5 — CONTRÔLE
+# ══════════════════════════════════════════════════════════
+elif "Contrôle" in page:
+    st.markdown("<h2 style='margin:0 0 4px 0;'>⚙️ Centre de Contrôle</h2>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color:{C_MUTED}; margin:0 0 18px 0;'>Lance les scripts et consulte les logs</p>", unsafe_allow_html=True)
+
+    sec("Lancer les scripts")
+    a1, a2, a3, a4 = st.columns(4)
+
+    def run_script(script, timeout=600):
+        return subprocess.run(
+            [sys.executable, os.path.join(BASE, script)],
+            capture_output=True, text=True, cwd=BASE,
+            encoding="utf-8", errors="replace", timeout=timeout
+        )
+
+    with a1:
+        if st.button("🚀  Automation complète", type="primary"):
+            with st.spinner("Exécution des 5 modules (~20s)..."):
+                res = run_script("run_daily_automation.py")
+            st.cache_data.clear()
+            st.success("✅ Terminé !") if res.returncode == 0 else st.error("❌ Erreur")
+            st.code(res.stdout[-3000:] or res.stderr[-1500:])
+            st.rerun()
+
+    with a2:
+        if st.button("📡  Signaux Z-Score"):
+            with st.spinner("Scraping BRVM & Z-Score..."):
+                res = run_script("daily_signals.py", 120)
+            st.cache_data.clear()
+            st.success("✅ Signaux mis à jour !") if res.returncode == 0 else st.error("❌ Erreur")
+            st.code(res.stdout[-2000:])
+            st.rerun()
+
+    with a3:
+        if st.button("💰  Portfolio Update"):
+            with st.spinner("Mise à jour portfolio..."):
+                res = run_script("daily_market_update.py", 120)
+            st.cache_data.clear()
+            st.success("✅ Portfolio mis à jour !") if res.returncode == 0 else st.error("❌ Erreur")
+            st.code(res.stdout[-2000:])
+            st.rerun()
+
+    with a4:
+        if st.button("🏦  Scanner obligations"):
+            with st.spinner("Scan en cours..."):
+                res = run_script("bond_scanner.py", 300)
+            st.cache_data.clear()
+            st.success("✅ Obligations mises à jour !") if res.returncode == 0 else st.error("❌ Erreur")
+            st.code(res.stdout[-2000:])
+            st.rerun()
+
+    # ── Log viewer ──
     st.divider()
-    st.markdown('<p class="section-title">Auto-refresh</p>', unsafe_allow_html=True)
-    r1, r2 = st.columns([1, 3])
-    with r1:
-        auto_refresh = st.checkbox("🔄 Rafraîchir automatiquement", value=False)
-    with r2:
-        refresh_interval = st.slider("Intervalle (secondes)", 10, 300, 60, step=10, disabled=not auto_refresh)
+    log_txt, log_name = load_last_log()
+    sec(f"Dernier log — {log_name}")
 
-    if auto_refresh:
-        st.caption(f"Prochain refresh dans {refresh_interval}s...")
-        time.sleep(refresh_interval)
-        st.rerun()
+    entries = []
+    for line in log_txt.split('\n'):
+        line = line.strip()
+        if not line: continue
+        if   'SUCCESS:' in line: stat, msg = '✅', line.split('SUCCESS:')[-1].strip()[:90]
+        elif 'INFO:'     in line: stat, msg = 'ℹ️',  line.split('INFO:')[-1].strip()[:90]
+        elif 'ERROR:'    in line: stat, msg = '❌',  line.split('ERROR:')[-1].strip()[:90]
+        else:                      stat, msg = '·',   line[:90]
+        entries.append({'Status': stat, 'Message': msg})
+    if entries:
+        st.dataframe(pd.DataFrame(entries), width='stretch', height=360)
+    else:
+        st.code(log_txt)
+
+    st.divider()
+    sec("Tous les logs disponibles")
+    log_files = sorted(glob.glob(os.path.join(BASE, "logs", "automation_*.log")), reverse=True)
+    for lf in log_files[:12]:
+        size = os.path.getsize(lf) // 1024
+        st.markdown(f"<p style='font-size:0.78rem; color:{C_MUTED}; margin:2px 0;'>📄 {os.path.basename(lf)} · {size} KB</p>", unsafe_allow_html=True)
