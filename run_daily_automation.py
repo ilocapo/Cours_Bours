@@ -30,11 +30,12 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Modules à exécuter dans l'ordre
 MODULES = [
-    ('daily_signals.py', 'Génération des signaux Z-Score'),
-    ('daily_market_update.py', 'Mise à jour du portefeuille'),
-    ('portfolio_manager.py', 'Gestion des positions'),
-    ('core_rebalancing.py', 'Monitor CORE stocks'),
-    ('bond_scanner.py', 'Scan des obligations'),
+    ('daily_signals.py',         'Génération des signaux Z-Score'),
+    ('daily_market_update.py',   'Mise à jour du portefeuille'),
+    ('portfolio_manager.py',     'Gestion des positions'),
+    ('core_rebalancing.py',      'Monitor CORE stocks'),
+    ('bond_scanner.py',          'Scan des obligations'),
+    ('patch_dashboard_json.py',  'Mise à jour dashboard web (GitHub Pages)'),
 ]
 
 # Fichier de log
