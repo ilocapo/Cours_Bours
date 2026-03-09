@@ -1,6 +1,6 @@
 """
-Terminal Altos - Dashboard de Trading BRVM
-Version 3.0 - Bloomberg Terminal Style
+Terminal Altos — Dashboard de Trading BRVM
+Version 4.0 — TERMINUS v2 Style
 """
 import streamlit as st
 import pandas as pd
@@ -20,107 +20,179 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-C_BG     = "#000000"
-C_CARD   = "#0a0a0a"
-C_BORDER = "#1a1a1a"
-C_ORANGE = "#FF8C00"
-C_BLUE   = "#00BFFF"   # cyan/teal pour graphiques
-C_GREEN  = "#00E676"
-C_RED    = "#FF4040"
-C_YELLOW = "#FFD700"
-C_PURPLE = "#CC44FF"
-C_TEXT   = "#F0F0F0"
-C_MUTED  = "#666666"
-FONT     = "'Courier New', 'Consolas', monospace"
+C_BG     = "#02040a"
+C_BG1    = "#06090f"
+C_CARD   = "#0b1018"
+C_CARD2  = "#111a26"
+C_BORDER = "#1c2a3a"
+C_BORDER2= "#243648"
+C_GREEN  = "#00e57a"   # accent primaire
+C_GREEN2 = "#00b860"
+C_ORANGE = "#ffb700"   # amber secondaire
+C_ORANGE2= "#cc9200"
+C_RED    = "#ff2d55"
+C_BLUE   = "#00aaff"
+C_CYAN   = "#00eeff"
+C_PURPLE = "#b060ff"
+C_TEXT   = "#b8cfe0"
+C_BRIGHT = "#e8f6ff"
+C_MUTED  = "#3d5a72"
+FONT     = "'IBM Plex Mono', 'Courier New', monospace"
 
 st.markdown(f"""
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Rajdhani:wght@400;600;700&display=swap');
 
-  * {{ font-family:{FONT} !important; }}
-  .stApp {{ background-color:{C_BG}; color:{C_TEXT}; }}
+  html, body, * {{ font-family:'IBM Plex Mono','Courier New',monospace !important; box-sizing:border-box; }}
+
+  /* ── Fond + scanlines ── */
+  .stApp {{
+    background-color:{C_BG};
+    color:{C_TEXT};
+  }}
+  .stApp::before {{
+    content:'';
+    position:fixed; inset:0; z-index:9998; pointer-events:none;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);
+  }}
+
+  /* ── Grille en fond ── */
+  .stApp::after {{
+    content:'';
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(rgba(0,229,122,0.03) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(0,229,122,0.03) 1px,transparent 1px);
+    background-size:48px 48px;
+  }}
+
   section[data-testid="stSidebar"] {{
-    background-color:#000000;
-    border-right:1px solid {C_ORANGE};
+    background-color:{C_BG1};
+    border-right:1px solid {C_GREEN};
   }}
   #MainMenu, footer, header {{ visibility:hidden; }}
-  .block-container {{ padding-top:0.5rem; padding-bottom:2rem; }}
+  .block-container {{ padding-top:0.4rem; padding-bottom:2rem; position:relative; z-index:1; }}
 
-  /* ── KPI Bloomberg ── */
-  .blm-kpi {{
+  /* ── KPI card (style métrique TERMINUS) ── */
+  .trm-kpi {{
     background:{C_CARD};
-    border:1px solid #1a1a1a;
-    border-left:3px solid {C_ORANGE};
-    padding:10px 12px 8px;
-    margin-bottom:6px;
+    border:1px solid {C_BORDER};
+    border-left:2px solid {C_GREEN};
+    padding:8px 12px 7px;
+    margin-bottom:5px;
   }}
-  .blm-kpi-val {{
-    font-size:1.55rem; font-weight:700; margin:0;
-    line-height:1.1; font-family:{FONT};
+  .trm-kpi-val {{
+    font-size:1.45rem; font-weight:600; margin:0; line-height:1.1;
+    letter-spacing:0.02em;
   }}
-  .blm-kpi-lbl {{
-    font-size:0.62rem; color:{C_MUTED}; margin:4px 0 0 0;
-    letter-spacing:.1em; text-transform:uppercase; font-family:{FONT};
+  .trm-kpi-lbl {{
+    font-size:0.58rem; color:{C_MUTED}; margin:4px 0 0 0;
+    letter-spacing:.14em; text-transform:uppercase;
   }}
-  .blm-kpi-sub {{
-    font-size:0.7rem; margin:3px 0 0 0; color:#888888; font-family:{FONT};
+  .trm-kpi-sub {{
+    font-size:0.67rem; margin:2px 0 0 0; color:#4a708a;
+    letter-spacing:.03em;
   }}
 
-  /* ── Section header: barre orange Bloomberg ── */
-  .blm-sec {{
-    background:{C_ORANGE};
-    color:#000000;
-    font-size:0.65rem; font-weight:700;
-    letter-spacing:.12em; text-transform:uppercase;
-    padding:2px 8px; margin:16px 0 8px 0;
-    font-family:{FONT};
+  /* ── Section title style TERMINUS ── */
+  .trm-sec {{
+    font-size:0.6rem; font-weight:700;
+    letter-spacing:.18em; text-transform:uppercase; color:{C_MUTED};
+    padding:10px 0 6px; margin:4px 0 8px 0;
+    border-bottom:1px solid {C_BORDER};
+    display:flex; align-items:center; gap:8px;
+  }}
+  .trm-sec::before {{
+    content:''; width:14px; height:1px; background:{C_GREEN}; display:inline-block;
   }}
 
   /* ── Scrollbar ── */
-  ::-webkit-scrollbar {{ width:4px; background:#000; }}
-  ::-webkit-scrollbar-thumb {{ background:{C_ORANGE}; }}
+  ::-webkit-scrollbar {{ width:2px; background:{C_BG}; }}
+  ::-webkit-scrollbar-thumb {{ background:{C_BORDER2}; }}
+
+  /* ── TERMINUS header bar (replaces h2) ── */
+  .trm-hdr {{
+    background:{C_BG1};
+    border-bottom:1px solid {C_GREEN};
+    border-left:3px solid {C_GREEN};
+    padding:8px 14px 7px;
+    margin-bottom:14px;
+  }}
+  .trm-hdr-title {{
+    font-size:0.82rem; font-weight:700; color:{C_BRIGHT};
+    letter-spacing:.06em; text-transform:uppercase; margin:0;
+  }}
+  .trm-hdr-sub {{
+    font-size:0.58rem; color:{C_MUTED}; margin:2px 0 0 0;
+    letter-spacing:.08em;
+  }}
+
+  /* ── Signal badges ── */
+  .sig-buy  {{ font-size:0.6rem; padding:1px 6px; letter-spacing:2px; font-weight:700; text-transform:uppercase;
+              border:1px solid rgba(0,229,122,0.4); color:{C_GREEN}; background:rgba(0,229,122,0.1); }}
+  .sig-sell {{ font-size:0.6rem; padding:1px 6px; letter-spacing:2px; font-weight:700; text-transform:uppercase;
+              border:1px solid rgba(255,45,85,0.4); color:{C_RED}; background:rgba(255,45,85,0.1); }}
+  .sig-hold {{ font-size:0.6rem; padding:1px 6px; letter-spacing:2px; font-weight:700; text-transform:uppercase;
+              border:1px solid rgba(255,183,0,0.4); color:{C_ORANGE}; background:rgba(255,183,0,0.1); }}
+  .sig-watch {{ font-size:0.6rem; padding:1px 6px; letter-spacing:2px; font-weight:700; text-transform:uppercase;
+               border:1px solid rgba(0,170,255,0.4); color:{C_BLUE}; background:rgba(0,170,255,0.1); }}
+
+  /* ── Carte TERMINUS avec accent gauche ── */
+  .trm-card {{
+    background:{C_CARD}; border:1px solid {C_BORDER};
+    border-left:2px solid {C_GREEN};
+    padding:10px 12px; margin-bottom:7px;
+  }}
 
   /* ── Buttons ── */
   .stButton>button {{
-    background:{C_ORANGE};
-    color:#000000;
-    border:none;
-    border-radius:0px;
-    font-weight:700;
-    height:42px; width:100%;
-    font-family:{FONT};
-    font-size:0.85rem;
-    letter-spacing:.05em;
+    background:{C_GREEN};
+    color:{C_BG};
+    border:none; border-radius:0;
+    font-weight:700; height:40px; width:100%;
+    font-size:0.78rem; letter-spacing:.08em; text-transform:uppercase;
   }}
   .stButton>button:hover {{
-    background:#FFA333;
-    color:#000000;
+    background:{C_GREEN2};
+    color:{C_BG};
   }}
 
-  /* ── Sidebar nav radio ── */
+  /* ── Sidebar radio ── */
   div[data-testid="stRadio"] label {{
-    font-size:0.82rem; color:{C_TEXT}; font-family:{FONT};
+    font-size:0.78rem; color:{C_TEXT};
   }}
-  div[data-testid="stRadio"] label:hover {{ color:{C_ORANGE}; }}
+  div[data-testid="stRadio"] label:hover {{ color:{C_GREEN}; }}
 
   /* ── Tables ── */
   .stDataFrame {{ overflow:hidden; }}
   .stDataFrame th {{
-    background:{C_ORANGE} !important;
-    color:#000000 !important;
-    font-family:{FONT} !important;
-    font-size:0.7rem !important;
+    background:{C_CARD2} !important;
+    color:{C_GREEN} !important;
+    font-size:0.62rem !important;
     font-weight:700 !important;
+    letter-spacing:.1em;
     text-transform:uppercase;
+    border-bottom:1px solid {C_GREEN} !important;
   }}
 
-  /* ── Selectbox / Multiselect / Slider ── */
+  /* ── Selectbox / Inputs ── */
   .stSelectbox>div>div, .stMultiSelect>div>div {{
-    background:{C_CARD}; border:1px solid #333; border-radius:0;
+    background:{C_CARD}; border:1px solid {C_BORDER}; border-radius:0;
   }}
 
   /* ── Divider ── */
-  hr {{ border-color:{C_ORANGE}; opacity:0.25; }}
+  hr {{ border-color:{C_BORDER}; opacity:1; }}
+
+  /* ── Pulse dot ── */
+  .trm-pulse {{
+    display:inline-block; width:5px; height:5px;
+    background:{C_GREEN}; border-radius:50%;
+    animation:trm-pulse 2s infinite;
+    vertical-align:middle; margin-right:4px;
+  }}
+  @keyframes trm-pulse {{
+    0%,100%{{opacity:1;transform:scale(1)}} 50%{{opacity:0.4;transform:scale(0.7)}}
+  }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -132,12 +204,12 @@ CAPITAL_INIT = 1_000_000
 CORE_STOCKS  = ['SNTS', 'ORGT', 'ONTBF', 'SAFC', 'ABJC']
 PLOTLY_BASE  = dict(
     template="plotly_dark",
-    plot_bgcolor="#000000",
-    paper_bgcolor="#000000",
-    font=dict(family="Courier New, monospace", color=C_TEXT, size=11),
+    plot_bgcolor="#06090f",
+    paper_bgcolor="#06090f",
+    font=dict(family="IBM Plex Mono, monospace", color=C_TEXT, size=10),
     margin=dict(l=40, r=15, t=35, b=30),
-    xaxis=dict(gridcolor="#111111", linecolor="#333333", tickfont=dict(family="Courier New")),
-    yaxis=dict(gridcolor="#111111", linecolor="#333333", tickfont=dict(family="Courier New")),
+    xaxis=dict(gridcolor="#111a26", linecolor="#1c2a3a", tickfont=dict(color=C_MUTED)),
+    yaxis=dict(gridcolor="#111a26", linecolor="#1c2a3a", tickfont=dict(color=C_MUTED)),
 )
 
 # ══════════════════════════════════════════════════════════
@@ -228,17 +300,17 @@ n_total  = len(signals_df) if not signals_df.empty else 0
 # ══════════════════════════════════════════════════════════
 #  HELPERS
 # ══════════════════════════════════════════════════════════
-def kpi(val, label, sub="", color=C_ORANGE, border=None):
+def kpi(val, label, sub="", color=C_GREEN, border=None):
     bc = border or color
     st.markdown(f"""
-    <div class="blm-kpi" style="border-left:3px solid {bc};">
-      <p class="blm-kpi-val" style="color:{color};">{val}</p>
-      <p class="blm-kpi-lbl">{label}</p>
-      {"<p class='blm-kpi-sub'>&gt; "+sub+"</p>" if sub else ""}
+    <div class="trm-kpi" style="border-left:2px solid {bc};">
+      <p class="trm-kpi-val" style="color:{color};">{val}</p>
+      <p class="trm-kpi-lbl">{label}</p>
+      {"<p class='trm-kpi-sub'>" + sub + "</p>" if sub else ""}
     </div>""", unsafe_allow_html=True)
 
 def sec(title):
-    st.markdown(f'<div class="blm-sec">&gt;&gt; {title}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="trm-sec">{title}</div>', unsafe_allow_html=True)
 
 def fcfa(v):  return f"{v:,.0f} FCFA".replace(",", " ")
 def pct(v):   return f"{v:+.2f}%"
@@ -248,17 +320,15 @@ def pct(v):   return f"{v:+.2f}%"
 # ══════════════════════════════════════════════════════════
 with st.sidebar:
     st.markdown(f"""
-    <div style="background:{C_ORANGE}; padding:8px 12px; margin:-1rem -1rem 12px -1rem;">
-      <p style="font-size:0.65rem; font-weight:700; margin:0; color:#000;
-         letter-spacing:.15em; font-family:Courier New,monospace;">ALTOS TRADING TERMINAL</p>
-      <p style="font-size:1.4rem; font-weight:700; margin:0; color:#000;
-         font-family:Courier New,monospace; letter-spacing:.05em;">BRVM</p>
-      <p style="font-size:0.58rem; color:#333; margin:2px 0 0 0;
-         font-family:Courier New,monospace;">{datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
+    <div style="border-bottom:1px solid {C_GREEN};padding:10px 14px 12px;margin:-1rem -1rem 12px -1rem;background:{C_BG1};">
+      <p style="font-size:0.52rem;color:{C_MUTED};letter-spacing:.22em;margin:0;text-transform:uppercase;">ALTOS TRADING TERMINAL</p>
+      <p style="font-size:1.45rem;font-weight:700;margin:2px 0 0 0;color:{C_GREEN};letter-spacing:.04em;">BRVM<span style="color:{C_BRIGHT};font-size:1rem;"> v4</span></p>
+      <p style="font-size:0.55rem;color:{C_MUTED};margin:4px 0 0 0;">
+        <span class="trm-pulse"></span>{datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown(f'<p style="font-size:0.6rem; color:{C_ORANGE}; letter-spacing:.1em; margin:4px 0 2px 0;">F1-F5 NAVIGATION</p>', unsafe_allow_html=True)
+    st.markdown(f'<p style="font-size:0.56rem;color:{C_MUTED};letter-spacing:.14em;margin:4px 0 2px 0;text-transform:uppercase;">Navigation</p>', unsafe_allow_html=True)
     page = st.radio("", [
         "F1  Vue d'ensemble",
         "F2  Signaux & Z-Score",
@@ -269,28 +339,28 @@ with st.sidebar:
 
     st.divider()
 
-    sig_col = C_GREEN if n_buy > 0 else C_YELLOW
+    sig_col = C_GREEN if n_buy > 0 else C_ORANGE
     ytd_col = C_GREEN if ytd_ret >= 0 else C_RED
     st.markdown(f"""
-    <div style="background:#0a0a0a; border:1px solid #1a1a1a; border-left:2px solid {C_ORANGE}; padding:10px 12px;">
-      <p style="margin:0 0 8px 0; font-size:0.6rem; color:{C_ORANGE};
-         text-transform:uppercase; letter-spacing:.1em; font-family:Courier New;">LIVE STATUS</p>
+    <div style="background:{C_CARD};border:1px solid {C_BORDER};border-left:2px solid {C_GREEN};padding:10px 12px;">
+      <p style="margin:0 0 8px 0;font-size:0.56rem;color:{C_GREEN};
+         text-transform:uppercase;letter-spacing:.14em;">LIVE STATUS</p>
 
-      <div style="display:flex; justify-content:space-between; margin:3px 0; border-bottom:1px solid #111; padding-bottom:3px;">
-        <span style="font-size:0.72rem; color:{C_MUTED}; font-family:Courier New;">PORTFOLIO</span>
-        <span style="font-size:0.75rem; font-weight:700; color:{C_TEXT}; font-family:Courier New;">{fcfa(total_val)}</span>
+      <div style="display:flex;justify-content:space-between;margin:3px 0;border-bottom:1px solid {C_BORDER};padding-bottom:3px;">
+        <span style="font-size:0.68rem;color:{C_MUTED};">PORTFOLIO</span>
+        <span style="font-size:0.72rem;font-weight:600;color:{C_BRIGHT};">{fcfa(total_val)}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; margin:3px 0; border-bottom:1px solid #111; padding-bottom:3px;">
-        <span style="font-size:0.72rem; color:{C_MUTED}; font-family:Courier New;">YTD 2026</span>
-        <span style="font-size:0.75rem; font-weight:700; color:{ytd_col}; font-family:Courier New;">{pct(ytd_ret)}</span>
+      <div style="display:flex;justify-content:space-between;margin:3px 0;border-bottom:1px solid {C_BORDER};padding-bottom:3px;">
+        <span style="font-size:0.68rem;color:{C_MUTED};">YTD 2026</span>
+        <span style="font-size:0.72rem;font-weight:600;color:{ytd_col};">{pct(ytd_ret)}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; margin:3px 0; border-bottom:1px solid #111; padding-bottom:3px;">
-        <span style="font-size:0.72rem; color:{C_MUTED}; font-family:Courier New;">BUY SIG</span>
-        <span style="font-size:0.75rem; font-weight:700; color:{sig_col}; font-family:Courier New;">{n_buy} / {n_total}</span>
+      <div style="display:flex;justify-content:space-between;margin:3px 0;border-bottom:1px solid {C_BORDER};padding-bottom:3px;">
+        <span style="font-size:0.68rem;color:{C_MUTED};">BUY SIG</span>
+        <span style="font-size:0.72rem;font-weight:600;color:{sig_col};">{n_buy} / {n_total}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; margin:3px 0;">
-        <span style="font-size:0.72rem; color:{C_MUTED}; font-family:Courier New;">TIME</span>
-        <span style="font-size:0.72rem; color:{C_ORANGE}; font-family:Courier New;">{datetime.now().strftime('%d/%m %H:%M:%S')}</span>
+      <div style="display:flex;justify-content:space-between;margin:3px 0;">
+        <span style="font-size:0.68rem;color:{C_MUTED};">TIME</span>
+        <span style="font-size:0.68rem;color:{C_GREEN};">{datetime.now().strftime('%d/%m %H:%M:%S')}</span>
       </div>
     </div>
     """, unsafe_allow_html=True)
@@ -306,18 +376,19 @@ with st.sidebar:
 # ══════════════════════════════════════════════════════════
 if "Vue d'ensemble" in page or "F1" in page:
     st.markdown(f"""
-    <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New; letter-spacing:.05em;">F1  VUE D'ENSEMBLE - BRVM TRADING TERMINAL</span>
-      <span style="font-size:0.7rem; color:#333; font-family:Courier New;">{datetime.now().strftime('%d/%m/%Y %H:%M:%S')} · CAP: 1 000 000 FCFA</span>
+    <div class="trm-hdr">
+      <p class="trm-hdr-sub">F1 / VUE D'ENSEMBLE</p>
+      <p class="trm-hdr-title">BRVM TRADING TERMINAL &nbsp;·&nbsp; PORTFOLIO OVERVIEW</p>
+      <p style="font-size:0.55rem;color:{C_MUTED};margin:2px 0 0 0;letter-spacing:.06em;">{datetime.now().strftime('%d/%m/%Y %H:%M:%S')} &nbsp;·&nbsp; CAP: 1 000 000 FCFA</p>
     </div>
     """, unsafe_allow_html=True)
 
     # ── KPI row 1 ──
     c1, c2, c3, c4, c5 = st.columns(5)
-    with c1: kpi(fcfa(total_val),            "Valeur totale",      pct(ytd_ret)+" YTD",               C_ORANGE)
+    with c1: kpi(fcfa(total_val),            "Valeur totale",      pct(ytd_ret)+" YTD",               C_GREEN)
     with c2: kpi(fcfa(gain_abs),             "Gain net",           "Depuis 01/01/2026",                C_GREEN if gain_abs>=0 else C_RED)
     with c3: kpi(pct(day_pct),               "Variation du jour",  fcfa(day_chg),                     C_GREEN if day_chg>=0 else C_RED)
-    with c4: kpi(fcfa(core_val),             "CORE Shield (70%)",  f"{core_val/total_val*100:.0f}% du portfolio" if total_val else "–", C_YELLOW)
+    with c4: kpi(fcfa(core_val),             "CORE Shield (70%)",  f"{core_val/total_val*100:.0f}% du portfolio" if total_val else "–", C_ORANGE)
     with c5: kpi(str(n_buy)+" BUY",          "Signaux actifs",     f"{n_sell} SELL · {n_total} analysés", C_GREEN if n_buy>0 else C_ORANGE)
 
     st.divider()
@@ -357,11 +428,11 @@ if "Vue d'ensemble" in page or "F1" in page:
                 zc = C_RED if zscore > 2 else (C_GREEN if zscore < -2 else C_TEXT)
                 with cols5[i]:
                     st.markdown(f"""
-                    <div style="background:#0a0a0a; border:1px solid #1a1a1a; border-top:2px solid {C_ORANGE};
-                         padding:8px 10px; font-family:Courier New,monospace;">
-                      <p style="font-size:0.75rem; font-weight:700; color:{C_ORANGE}; margin:0; letter-spacing:.05em;">{ticker}</p>
-                      <p style="font-size:1.2rem; font-weight:700; color:{C_TEXT}; margin:3px 0; font-family:Courier New;">{price:,.0f}</p>
-                      <p style="font-size:0.68rem; color:{zc}; margin:0; font-family:Courier New;">Z={zscore:+.2f}</p>
+                    <div style="background:{C_CARD};border:1px solid {C_BORDER};border-top:2px solid {C_GREEN};
+                         padding:8px 10px;">
+                      <p style="font-size:0.75rem;font-weight:700;color:{C_GREEN};margin:0;letter-spacing:.05em;">{ticker}</p>
+                      <p style="font-size:1.2rem;font-weight:700;color:{C_BRIGHT};margin:3px 0;">{price:,.0f}</p>
+                      <p style="font-size:0.68rem;color:{zc};margin:0;">Z={zscore:+.2f}</p>
                     </div>""", unsafe_allow_html=True)
 
     with right:
@@ -400,9 +471,10 @@ if "Vue d'ensemble" in page or "F1" in page:
 # ══════════════════════════════════════════════════════════
 elif "Signaux" in page or "F2" in page:
     st.markdown(f"""
-    <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between;">
-      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F2  SIGNAUX Z-SCORE - RADAR DE MARCHE BRVM</span>
-      <span style="font-size:0.7rem; color:#333; font-family:Courier New;">{sig_f}</span>
+    <div class="trm-hdr">
+      <p class="trm-hdr-sub">F2 / SIGNAUX &amp; Z-SCORE</p>
+      <p class="trm-hdr-title">RADAR DE MARCHE BRVM</p>
+      <p style="font-size:0.55rem;color:{C_MUTED};margin:2px 0 0 0;letter-spacing:.06em;">{sig_f}</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -505,9 +577,9 @@ elif "Signaux" in page or "F2" in page:
                 sc = C_GREEN if 'Buy' in sn else (C_RED if 'Sell' in sn else C_MUTED)
                 act = ">> ACHETER" if 'Buy' in sn else (">> EVITER" if 'Sell' in sn else ">> ATTENDRE")
                 st.markdown(f"""
-                <div style='background:#0a0a0a; border:1px solid #1a1a1a; border-left:3px solid {sc}; padding:10px 14px; margin-top:8px; font-family:Courier New,monospace;'>
-                  <span style='font-size:1rem; font-weight:700; color:{sc}; font-family:Courier New;'>{sn}</span>
-                  <span style='color:{C_MUTED}; font-size:0.82rem; font-family:Courier New;'>&nbsp;&nbsp;Z={zn:+.2f} &nbsp;|&nbsp; {act}</span>
+                <div style='background:{C_CARD};border:1px solid {C_BORDER};border-left:3px solid {sc};padding:10px 14px;margin-top:8px;'>
+                  <span style='font-size:1rem;font-weight:700;color:{sc};'>{sn}</span>
+                  <span style='color:{C_TEXT};font-size:0.82rem;'>&nbsp;&nbsp;Z={zn:+.2f} &nbsp;|  {act}</span>
                 </div>""", unsafe_allow_html=True)
 
 
@@ -516,16 +588,17 @@ elif "Signaux" in page or "F2" in page:
 # ══════════════════════════════════════════════════════════
 elif "CORE" in page or "F3" in page:
     st.markdown(f"""
-    <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between;">
-      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F3  PORTFOLIO CORE - BOUCLIER DIVIDENDES BRVM</span>
-      <span style="font-size:0.7rem; color:#333; font-family:Courier New;">5 BIG CAPS · DÉTENUES DEPUIS 2017</span>
+    <div class="trm-hdr">
+      <p class="trm-hdr-sub">F3 / PORTFOLIO CORE</p>
+      <p class="trm-hdr-title">BOUCLIER DIVIDENDES BRVM</p>
+      <p style="font-size:0.55rem;color:{C_MUTED};margin:2px 0 0 0;">5 BIG CAPS · DÉTENUES DEPUIS 2017</p>
     </div>
     """, unsafe_allow_html=True)
 
     c1, c2, c3, c4 = st.columns(4)
     core_gain = core_val - 700_000
-    with c1: kpi(fcfa(core_val),                "Valeur CORE actuelle", "",            C_ORANGE)
-    with c2: kpi(fcfa(700_000),                 "Capital investi",      "",            C_MUTED)
+    with c1: kpi(fcfa(core_val),                "Valeur CORE actuelle", "",            C_GREEN)
+    with c2: kpi(fcfa(700_000),                 "Capital investi",      "",            C_TEXT)
     with c3: kpi(fcfa(core_gain),               "Gain CORE",            pct(core_gain/700_000*100) if 700_000 else "–", C_GREEN if core_gain>=0 else C_RED)
     with c4: kpi("~8.5 % / an",                "Dividendes estimés",   "≈ 59 500 FCFA/an", C_GREEN)
 
@@ -571,7 +644,7 @@ elif "CORE" in page or "F3" in page:
             ))
             fig_d.update_layout(**{**PLOTLY_BASE, 'margin': dict(l=10,r=10,t=10,b=10)},
                                 height=250, showlegend=True,
-                                legend=dict(font=dict(size=10, family='Courier New')))
+                                legend=dict(font=dict(size=10, family='IBM Plex Mono')))
             st.plotly_chart(fig_d, width='stretch')
 
     # Graphique prix historique
@@ -615,9 +688,10 @@ elif "CORE" in page or "F3" in page:
 # ══════════════════════════════════════════════════════════
 elif "Obligations" in page or "F4" in page:
     st.markdown(f"""
-    <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between;">
-      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F4  OBLIGATIONS BRVM - SCANNER DÉCOTES & RENDEMENTS</span>
-      <span style="font-size:0.7rem; color:#333; font-family:Courier New;">{bond_f}</span>
+    <div class="trm-hdr">
+      <p class="trm-hdr-sub">F4 / OBLIGATIONS</p>
+      <p class="trm-hdr-title">SCANNER DÉCOTES &amp; RENDEMENTS BRVM</p>
+      <p style="font-size:0.55rem;color:{C_MUTED};margin:2px 0 0 0;letter-spacing:.06em;">{bond_f}</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -668,7 +742,7 @@ elif "Obligations" in page or "F4" in page:
                             colorscale=[[0,'#333300'],[0.5,C_YELLOW],[1,C_ORANGE]],
                             showscale=False),
                 text=top12['Effective_Yield_%'].apply(lambda v: f"{v:.2f}%"),
-                textfont=dict(family='Courier New', size=10),
+                textfont=dict(family='IBM Plex Mono', size=10),
                 textposition='outside'
             ))
             fig_b.update_layout(**{**PLOTLY_BASE,
@@ -692,17 +766,17 @@ elif "Obligations" in page or "F4" in page:
                 prix = float(rb.get('Current_Price', 0))
                 cout = float(rb.get('Purchase_Cost_FCFA', 0))
                 st.markdown(f"""
-                <div style="background:#0a0a0a; border:1px solid #1a1a1a; border-left:3px solid {cols3[i]}; padding:12px 14px; font-family:Courier New,monospace;">
+                <div style="background:{C_CARD};border:1px solid {C_BORDER};border-left:3px solid {cols3[i]};padding:12px 14px;">
                   <p style="font-size:0.65rem; color:{C_MUTED}; margin:0 0 2px 0; letter-spacing:.08em;">RANG {medals[i]}</p>
                   <p style="font-size:1.1rem; font-weight:700; color:{cols3[i]}; margin:0; letter-spacing:.05em;">{rb.get('Ticker','')}</p>
                   <p style="font-size:0.65rem; color:{C_MUTED}; margin:2px 0 10px 0;">{lib}</p>
-                  <div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid #111;">
-                    <span style="font-size:0.68rem; color:{C_MUTED};">YIELD</span>
-                    <span style="font-size:0.78rem; font-weight:700; color:{C_GREEN};">{rend:.2f}%</span>
+                  <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid {C_BORDER};">
+                    <span style="font-size:0.68rem;color:{C_MUTED};">YIELD</span>
+                    <span style="font-size:0.78rem;font-weight:700;color:{C_GREEN};">{rend:.2f}%</span>
                   </div>
-                  <div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid #111;">
+                  <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid {C_BORDER};">
                     <span style="font-size:0.68rem; color:{C_MUTED};">DECOTE</span>
-                    <span style="font-size:0.78rem; font-weight:700; color:{C_YELLOW};">-{disc:.1f}%</span>
+                    <span style="font-size:0.78rem;font-weight:700;color:{C_ORANGE};">-{disc:.1f}%</span>
                   </div>
                   <div style="display:flex; justify-content:space-between; padding:3px 0;">
                     <span style="font-size:0.68rem; color:{C_MUTED};">PRICE</span>
@@ -717,9 +791,10 @@ elif "Obligations" in page or "F4" in page:
 # ══════════════════════════════════════════════════════════
 elif "Contrôle" in page or "F5" in page:
     st.markdown(f"""
-    <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between;">
-      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F5  CENTRE DE CONTROLE - EXECUTION & LOGS SYSTEME</span>
-      <span style="font-size:0.7rem; color:#333; font-family:Courier New;">SCRIPTS · AUTOMATION · MONITORING</span>
+    <div class="trm-hdr">
+      <p class="trm-hdr-sub">F5 / CONTRÔLE</p>
+      <p class="trm-hdr-title">CENTRE D'EXÉCUTION &amp; LOGS SYSTÈME</p>
+      <p style="font-size:0.55rem;color:{C_MUTED};margin:2px 0 0 0;">SCRIPTS · AUTOMATION · MONITORING</p>
     </div>
     """, unsafe_allow_html=True)
 
