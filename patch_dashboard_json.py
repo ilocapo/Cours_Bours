@@ -170,7 +170,8 @@ def main():
     if ytd:
         total_val = ytd["total"]
         core_val  = ytd["core"]
-        sat_val   = ytd["satellite"]
+        sat_val   = int(INITIAL_CAPITAL * SATELLITE_PCT)   # 20% fixe de config, pas du CSV
+        cash_val  = int(INITIAL_CAPITAL * CASH_PCT)        # 10% fixe de config
         ytd_ret   = ytd["ytd_pct"]
 
         # Gain journalier : différence avec l'avant-dernière ligne
@@ -196,8 +197,8 @@ def main():
             "dailyPnl":          int(daily_pnl),
             "dailyPnlPct":       daily_pct,
             "coreValue":         int(core_val),
-            "satelliteValue":    int(sat_val),
-            "cashAvailable":     int(INITIAL_CAPITAL * CASH_PCT),
+            "satelliteValue":    sat_val,
+            "cashAvailable":     cash_val,
             "openPositions":     len(core_pos) if core_pos else data["overview"].get("openPositions", 5),
             "corePositions":     len(core_pos) if core_pos else data["overview"].get("corePositions", 5),
             "satellitePositions":0,

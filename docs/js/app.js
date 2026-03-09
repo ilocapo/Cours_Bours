@@ -243,7 +243,7 @@ function renderAllocation() {
   if(legend) {
     legend.innerHTML = `
       <div class="dl-item"><span><span class="dl-dot" style="background:${c.green}"></span>CORE 70%</span><span class="pos">${fmt.fcfa(o.coreValue)}</span></div>
-      <div class="dl-item"><span><span class="dl-dot" style="background:${c.blue}"></span>SATELLITE 30%</span><span style="color:${c.blue}">${fmt.fcfa(o.satelliteValue)}</span></div>
+      <div class="dl-item"><span><span class="dl-dot" style="background:${c.blue}"></span>SATELLITE 20%</span><span style="color:${c.blue}">${fmt.fcfa(o.satelliteValue)}</span></div>
       <div class="dl-item"><span><span class="dl-dot" style="background:${c.border}"></span>CASH</span><span>${fmt.fcfa(o.cashAvailable||0)}</span></div>`;
   }
 }
