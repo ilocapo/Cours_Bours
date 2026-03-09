@@ -127,13 +127,25 @@ def read_core_positions():
         if not line.strip():
             continue
         row = [x.strip() for x in line.split(",")]
+        total_val_pos = safe_float(col(row, "Current_Value") or col(row, "Value"))
+        pnl_val       = safe_float(col(row, "P&L"))
+        pnl_pct       = safe_float(col(row, "P&L_%") or col(row, "Return_%"))
+        qty            = safe_float(col(row, "Qty") or col(row, "Quantity"))
+        entry_price    = safe_float(col(row, "Entry_Price") or col(row, "Buy_Price"))
+        cur_price      = safe_float(col(row, "Current_Price") or col(row, "Last_Price"))
+        weight         = safe_float(col(row, "Allocation_%"))
+        # Recalculer le poids réel en % du portfolio si non dispo
         positions.append({
-            "ticker":    col(row, "Ticker"),
-            "quantity":  safe_float(col(row, "Quantity")),
-            "buyPrice":  safe_float(col(row, "Buy_Price")),
-            "lastPrice": safe_float(col(row, "Current_Price") or col(row, "Last_Price")),
-            "value":     safe_float(col(row, "Current_Value") or col(row, "Value")),
-            "pnlPct":    safe_float(col(row, "PnL_%") or col(row, "Return_%")),
+            "symbol":       col(row, "Ticker"),
+            "sector":       col(row, "Sector") or "-",
+            "shares":       qty,
+            "avgPrice":     entry_price,
+            "currentPrice": cur_price,
+            "value":        total_val_pos,
+            "pnl":          pnl_val,
+            "pnlPct":       pnl_pct,
+            "weight":       weight,
+            "entryPrice":   entry_price,   # alias pour le graphique weights
         })
     return positions
 
