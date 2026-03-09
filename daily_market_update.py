@@ -29,23 +29,26 @@ try:
         REAL_PORTFOLIO_CAPITAL,
         REAL_CORE_CAPITAL,
         REAL_SATELLITE_CAPITAL,
+        REAL_CASH_CAPITAL,
         REAL_CAPITAL_PER_CORE_STOCK,
         CORE_STOCKS
     )
-    CORE_TICKERS = CORE_STOCKS
-    INITIAL_CAPITAL = REAL_PORTFOLIO_CAPITAL
-    CORE_VALUE_INITIAL = REAL_CORE_CAPITAL
+    CORE_TICKERS            = CORE_STOCKS
+    INITIAL_CAPITAL         = REAL_PORTFOLIO_CAPITAL
+    CORE_VALUE_INITIAL      = REAL_CORE_CAPITAL
     SATELLITE_VALUE_INITIAL = REAL_SATELLITE_CAPITAL
-    CORE_PER_STOCK = REAL_CAPITAL_PER_CORE_STOCK
+    CASH_VALUE              = REAL_CASH_CAPITAL
+    CORE_PER_STOCK          = REAL_CAPITAL_PER_CORE_STOCK
 except ImportError:
     # Fallback si config.py non disponible
-    CORE_TICKERS = ["SNTS", "ORGT", "ONTBF", "SAFC", "ABJC"]
-    INITIAL_CAPITAL = 1_000_000
-    CORE_ALLOCATION = 0.70
-    SATELLITE_ALLOCATION = 0.30
-    CORE_VALUE_INITIAL = INITIAL_CAPITAL * CORE_ALLOCATION
+    CORE_TICKERS            = ["SNTS", "ORGT", "ONTBF", "SAFC", "ABJC"]
+    INITIAL_CAPITAL         = 1_000_000
+    CORE_ALLOCATION         = 0.70
+    SATELLITE_ALLOCATION    = 0.20
+    CORE_VALUE_INITIAL      = INITIAL_CAPITAL * CORE_ALLOCATION
     SATELLITE_VALUE_INITIAL = INITIAL_CAPITAL * SATELLITE_ALLOCATION
-    CORE_PER_STOCK = CORE_VALUE_INITIAL / len(CORE_TICKERS)
+    CASH_VALUE              = int(INITIAL_CAPITAL * 0.10)
+    CORE_PER_STOCK          = CORE_VALUE_INITIAL / len(CORE_TICKERS)
 
 # URL BRVM pour scraper
 BRVM_URL = "https://www.brvm.org"
@@ -218,8 +221,9 @@ def calculate_portfolio_value() -> dict:
     # Valeur satellite (simplifié: on suppose croissance constante)
     # À améliorer avec trading réel
     satellite_value = SATELLITE_VALUE_INITIAL  # Placeholder
-    
-    total_value = core_value + satellite_value
+
+    # Total = core + satellite + cash (réserve non investie)
+    total_value = core_value + satellite_value + CASH_VALUE
     ytd_return_pct = ((total_value / INITIAL_CAPITAL) - 1) * 100 if INITIAL_CAPITAL > 0 else 0
     
     return {
