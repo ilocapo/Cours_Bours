@@ -16,7 +16,12 @@
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-row">
-    <div class="logo">ALTOS TERMINAL<em>TRAINING</em> <span class="version">BRVM v2.0</span></div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <button class="hamburger" id="hamburger-btn" onclick="toggleMenu()">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="logo">ALTOS TERMINAL<em>TRAINING</em> <span class="version">BRVM v2.0</span></div>
+    </div>
     <div class="hdr-right">
       <button class="theme-btn" onclick="toggleTheme()">☀ LIGHT</button>
       <div class="clock-badge"><span class="status-dot"></span> <b id="clock">--:--</b></div>
@@ -27,15 +32,27 @@
   </div>
 </div>
 
-<!-- TABS -->
-<div class="tabs">
-  <div class="tab active" onclick="showTab('overview')" data-tab="overview"><span class="tab-ic">◈</span>APERÇU</div>
-  <div class="tab" onclick="showTab('portfolio')" data-tab="portfolio"><span class="tab-ic">◉</span>PORTFOLIO</div>
-  <div class="tab" onclick="showTab('signals')" data-tab="signals"><span class="tab-ic">◇</span>SIGNAUX</div>
-  <div class="tab" onclick="showTab('backtests')" data-tab="backtests"><span class="tab-ic">◆</span>BACKTESTS</div>
-  <div class="tab" onclick="showTab('bonds')" data-tab="bonds"><span class="tab-ic">◍</span>OBLIG.</div>
-  <div class="tab" onclick="showTab('logs')" data-tab="logs"><span class="tab-ic">▤</span>HISTORIQUE</div>
-</div>
+<!-- OVERLAY -->
+<div class="nav-overlay" id="nav-overlay" onclick="closeMenu()"></div>
+
+<!-- MAIN AREA -->
+<div class="main-area">
+
+<!-- SIDEBAR / DRAWER -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-head">
+    <div class="logo">TERMIN<em>US</em></div>
+    <button class="sidebar-close" onclick="closeMenu()">✕</button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('overview')" data-tab="overview"><span class="tab-ic">◈</span>APERÇU</div>
+    <div class="tab" onclick="showTab('portfolio')" data-tab="portfolio"><span class="tab-ic">◉</span>PORTFOLIO</div>
+    <div class="tab" onclick="showTab('signals')" data-tab="signals"><span class="tab-ic">◇</span>SIGNAUX</div>
+    <div class="tab" onclick="showTab('backtests')" data-tab="backtests"><span class="tab-ic">◆</span>BACKTESTS</div>
+    <div class="tab" onclick="showTab('bonds')" data-tab="bonds"><span class="tab-ic">◍</span>OBLIG.</div>
+    <div class="tab" onclick="showTab('logs')" data-tab="logs"><span class="tab-ic">▤</span>HISTORIQUE</div>
+  </div>
+</nav>
 
 <!-- CONTENT -->
 <div class="content">
@@ -279,6 +296,7 @@
 </div>
 
 </div><!-- /content -->
+</div><!-- /main-area -->
 </div><!-- /app -->
 
 <script src="js/data.js"></script>

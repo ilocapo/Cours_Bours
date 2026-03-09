@@ -49,6 +49,27 @@ function toggleTheme() {
 }
 
 // ═══════════════════════════════════════════
+// SIDEBAR / MENU
+// ═══════════════════════════════════════════
+function toggleMenu() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('nav-overlay');
+  const hb = document.getElementById('hamburger-btn');
+  const isOpen = sb.classList.contains('open');
+  if(isOpen) closeMenu(); else openMenu();
+}
+function openMenu() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('nav-overlay').classList.add('open');
+  document.getElementById('hamburger-btn').classList.add('open');
+}
+function closeMenu() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('nav-overlay').classList.remove('open');
+  document.getElementById('hamburger-btn').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════
 // TABS
 // ═══════════════════════════════════════════
 function showTab(name) {
@@ -57,6 +78,8 @@ function showTab(name) {
   document.getElementById('panel-' + name)?.classList.add('active');
   document.querySelector(`[data-tab="${name}"]`)?.classList.add('active');
   document.querySelector('.content').scrollTo({top:0,behavior:'smooth'});
+  // Auto-close menu on mobile
+  if(window.innerWidth < 768) closeMenu();
   renderPage(name);
 }
 
