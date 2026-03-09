@@ -1,6 +1,6 @@
 @echo off
 :: ============================================
-:: BRVM Portfolio — Tâche quotidienne automatisée
+:: BRVM Portfolio - Tâche quotidienne automatisée
 :: Lance les backtests, génère les données du dashboard,
 :: et pousse sur GitHub.
 :: Exécuter via le Planificateur de tâches Windows.

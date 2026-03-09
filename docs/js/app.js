@@ -1,5 +1,5 @@
 /* =============================================
-   BRVM Portfolio Dashboard — Main Application
+   BRVM Portfolio Dashboard - Main Application
    Handles navigation, data rendering, Chart.js
    ============================================= */
 
@@ -29,6 +29,19 @@ async function tryLoadRealData() {
     }
   } catch (e) {
     console.log('[Dashboard] Using sample data');
+  }
+  // Also load full historical logs
+  try {
+    const resp2 = await fetch('data/backtest_logs.json');
+    if (resp2.ok) {
+      const logsJson = await resp2.json();
+      if (logsJson && logsJson.length) {
+        DATA.allLogs = logsJson;
+        console.log('[Dashboard] Logs loaded:', logsJson.length, 'entries');
+      }
+    }
+  } catch (e) {
+    console.log('[Dashboard] No historical logs');
   }
 }
 
@@ -107,14 +120,15 @@ function renderPage(page) {
     case 'backtests': renderBacktests(); break;
     case 'signals':   renderSignals();   break;
     case 'bonds':     renderBonds();     break;
+    case 'logs':      renderLogs();      break;
   }
 }
 
 // ── Format helpers ────────────────────────────
 const fmt = {
-  num:  (v) => v == null ? '—' : Number(v).toLocaleString('fr-FR'),
-  pct:  (v) => v == null ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2) + '%',
-  fcfa: (v) => v == null ? '—' : Number(v).toLocaleString('fr-FR') + ' FCFA',
+  num:  (v) => v == null ? '-' : Number(v).toLocaleString('fr-FR'),
+  pct:  (v) => v == null ? '-' : (v >= 0 ? '+' : '') + v.toFixed(2) + '%',
+  fcfa: (v) => v == null ? '-' : Number(v).toLocaleString('fr-FR') + ' FCFA',
   sign: (v) => v >= 0 ? 'up' : 'down',
   arrow:(v) => v >= 0 ? '▲' : '▼',
   badge:(signal) => {
@@ -136,7 +150,7 @@ function renderOverview() {
   setText('kpi-total-change', `${fmt.arrow(o.ytdReturn)} ${fmt.pct(o.ytdReturn)} YTD`);
   setClass('kpi-total-change', o.ytdReturn >= 0 ? 'kpi-sub up' : 'kpi-sub down');
   setText('kpi-ytd', fmt.pct(o.ytdReturn));
-  setText('kpi-ytd-sub', `Sharpe ${o.sharpeRatio?.toFixed(2) || '—'}`);
+  setText('kpi-ytd-sub', `Sharpe ${o.sharpeRatio?.toFixed(2) || '-'}`);
   setText('kpi-daily-pnl', fmt.fcfa(o.dailyPnl));
   setText('kpi-daily-sub', `${fmt.arrow(o.dailyPnlPct)} ${fmt.pct(o.dailyPnlPct)}`);
   setClass('kpi-daily-sub', o.dailyPnlPct >= 0 ? 'kpi-sub up' : 'kpi-sub down');
@@ -221,7 +235,7 @@ function renderOverviewSignals() {
     <tr>
       <td><strong class="text-accent">${s.symbol}</strong></td>
       <td>${fmt.badge(s.signal)}</td>
-      <td class="num">${s.zScore?.toFixed(2) || '—'}</td>
+      <td class="num">${s.zScore?.toFixed(2) || '-'}</td>
       <td class="num nowrap">${fmt.num(s.price)}</td>
     </tr>
   `).join('') || '<tr><td colspan="4" class="text-muted text-center">Aucun signal actif</td></tr>';
@@ -236,9 +250,9 @@ function renderOverviewTrades() {
       <td class="nowrap">${t.date}</td>
       <td><span class="badge ${t.action === 'BUY' ? 'badge-buy' : 'badge-sell'}">${t.action}</span></td>
       <td><strong>${t.symbol}</strong></td>
-      <td class="num ${t.pnl != null ? (t.pnl >= 0 ? 'text-up' : 'text-down') : ''}">${t.pnl != null ? fmt.fcfa(t.pnl) : '—'}</td>
+      <td class="num ${t.pnl != null ? (t.pnl >= 0 ? 'text-up' : 'text-down') : ''}">${t.pnl != null ? fmt.fcfa(t.pnl) : '-'}</td>
     </tr>
-  `).join('') || '<tr><td colspan="4" class="text-muted text-center">Aucun trade récent</td></tr>';
+  `).join('') || '<tr><td colspan="4" class="text-muted text-center">Aucun trade recent</td></tr>';
 }
 
 // ═══════════════════════════════════════════════
@@ -255,38 +269,43 @@ function renderCoreTable() {
   const tbody = document.querySelector('#table-core tbody');
   if (!tbody) return;
   const core = DATA.core || [];
-  tbody.innerHTML = core.map(c => `
+  tbody.innerHTML = core.map(c => {
+    const z = c.zScore != null ? c.zScore : 0;
+    return `
     <tr>
       <td><strong class="text-accent">${c.symbol}</strong><br><small class="text-muted">${c.name}</small></td>
       <td>${c.sector}</td>
       <td class="num">${c.shares}</td>
       <td class="num">${fmt.num(c.avgPrice)}</td>
       <td class="num">${fmt.num(c.currentPrice)}</td>
-      <td class="num">${c.weight.toFixed(1)}%</td>
+      <td class="num" style="color:${zScoreColor(z)}">${z.toFixed(2)}</td>
+      <td class="num">${(c.weight || 0).toFixed(1)}%</td>
       <td class="num ${c.pnl >= 0 ? 'text-up' : 'text-down'}">${fmt.fcfa(c.pnl)}</td>
       <td class="num ${c.pnlPct >= 0 ? 'text-up' : 'text-down'}">${fmt.pct(c.pnlPct)}</td>
-      <td class="num">${c.dividendYield.toFixed(1)}%</td>
     </tr>
-  `).join('');
+  `}).join('');
 }
 
 function renderSatelliteTable() {
   const tbody = document.querySelector('#table-satellite tbody');
   if (!tbody) return;
   const sat = DATA.satellite || [];
-  tbody.innerHTML = sat.map(s => `
+  tbody.innerHTML = sat.map(s => {
+    const z = s.zScore != null ? s.zScore : 0;
+    return `
     <tr>
-      <td><strong class="text-accent">${s.symbol}</strong><br><small class="text-muted">${s.name}</small></td>
+      <td><strong class="text-accent">${s.symbol}</strong><br><small class="text-muted">${s.name || ''}</small></td>
       <td>${fmt.badge(s.signal)}</td>
+      <td class="num" style="color:${zScoreColor(z)}">${z.toFixed(2)}</td>
       <td class="num">${s.shares}</td>
       <td class="num">${fmt.num(s.entryPrice)}</td>
       <td class="num">${fmt.num(s.currentPrice)}</td>
       <td class="num">${fmt.num(s.stopLoss)}</td>
       <td class="num">${fmt.num(s.takeProfit)}</td>
-      <td class="num ${s.pnl >= 0 ? 'text-up' : 'text-down'}">${fmt.pct(s.pnlPct)}</td>
-      <td class="num">${s.daysHeld}j</td>
+      <td class="num ${(s.pnlPct||0) >= 0 ? 'text-up' : 'text-down'}">${fmt.pct(s.pnlPct)}</td>
+      <td class="num">${s.daysHeld || 0}j</td>
     </tr>
-  `).join('') || '<tr><td colspan="9" class="text-muted text-center">Aucune position satellite</td></tr>';
+  `}).join('') || '<tr><td colspan="10" class="text-muted text-center">Aucune position satellite</td></tr>';
 }
 
 function renderWeightsChart() {
@@ -327,7 +346,7 @@ function renderPortfolioMetrics() {
     ['Cash disponible',      fmt.fcfa(o.cashAvailable)],
     ['Drawdown max',         fmt.pct(o.maxDrawdown)],
     ['Taux de gain',         o.winRate + '%'],
-    ['Ratio de Sharpe',      o.sharpeRatio?.toFixed(2) || '—']
+    ['Ratio de Sharpe',      o.sharpeRatio?.toFixed(2) || '-']
   ];
   const el = document.getElementById('portfolio-metrics');
   if (!el) return;
@@ -341,6 +360,7 @@ function renderPortfolioMetrics() {
 // ═══════════════════════════════════════════════
 function renderBacktests() {
   renderBacktestKPIs();
+  renderBacktestTickers();
   renderEquityCurve();
   renderMonthlyReturns();
   renderTradeLog();
@@ -351,14 +371,34 @@ function renderBacktestKPIs() {
   const b = DATA.backtests?.buyHold || {};
   setText('bt-total-return', fmt.pct(s.totalReturn));
   setText('bt-annual-return', fmt.pct(s.annualReturn));
-  setText('bt-sharpe', s.sharpe?.toFixed(2) || '—');
+  setText('bt-sharpe', s.sharpe?.toFixed(2) || '-');
   setText('bt-max-dd', fmt.pct(s.maxDrawdown));
   setText('bt-win-rate', (s.winRate || 0) + '%');
-  setText('bt-profit-factor', s.profitFactor?.toFixed(2) || '—');
+  setText('bt-profit-factor', s.profitFactor?.toFixed(2) || '-');
   setText('bt-total-trades', s.totalTrades || 0);
   setText('bt-avg-duration', (s.avgDuration || 0) + ' jours');
   setText('bt-bh-return', fmt.pct(b.totalReturn));
   setText('bt-rf-return', fmt.pct(DATA.backtests?.riskFree?.annualReturn));
+  setText('bt-best-ticker', s.bestTicker || '-');
+}
+
+function renderBacktestTickers() {
+  const tbody = document.querySelector('#table-bt-tickers tbody');
+  if (!tbody) return;
+  const tickers = DATA.backtests?.perTicker || [];
+  tbody.innerHTML = tickers.map(t => `
+    <tr>
+      <td><strong class="text-accent">${t.ticker}</strong></td>
+      <td class="num ${t.totalReturn >= 0 ? 'text-up' : 'text-down'}">${fmt.pct(t.totalReturn)}</td>
+      <td class="num">${fmt.pct(t.annualReturn)}</td>
+      <td class="num text-accent">${(t.sharpe || 0).toFixed(2)}</td>
+      <td class="num text-down">${fmt.pct(t.maxDrawdown)}</td>
+      <td class="num">${(t.winRate || 0).toFixed(1)}%</td>
+      <td class="num">${t.nTrades || 0}</td>
+      <td class="num">${fmt.pct(t.buyHoldReturn)}</td>
+      <td class="nowrap text-muted" style="font-size:0.8rem">${t.period || '-'}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="9" class="text-muted text-center">Aucun backtest disponible</td></tr>';
 }
 
 function renderEquityCurve() {
@@ -436,9 +476,9 @@ function renderTradeLog() {
       <td><strong>${t.symbol}</strong></td>
       <td class="num">${t.qty}</td>
       <td class="num">${fmt.num(t.entry)}</td>
-      <td class="num">${t.exit ? fmt.num(t.exit) : '—'}</td>
+      <td class="num">${t.exit ? fmt.num(t.exit) : '-'}</td>
       <td class="num ${t.pnl != null ? (t.pnl >= 0 ? 'text-up' : 'text-down') : ''}">${t.pnl != null ? fmt.fcfa(t.pnl) : 'En cours'}</td>
-      <td class="num ${t.pnlPct != null ? (t.pnlPct >= 0 ? 'text-up' : 'text-down') : ''}">${t.pnlPct != null ? fmt.pct(t.pnlPct) : '—'}</td>
+      <td class="num ${t.pnlPct != null ? (t.pnlPct >= 0 ? 'text-up' : 'text-down') : ''}">${t.pnlPct != null ? fmt.pct(t.pnlPct) : '-'}</td>
       <td class="text-muted">${t.reason || ''}</td>
     </tr>
   `).join('');
@@ -470,10 +510,10 @@ function renderSignalTable() {
     <tr>
       <td><strong class="text-accent">${s.symbol}</strong><br><small class="text-muted">${s.name}</small></td>
       <td class="num">${fmt.num(s.price)}</td>
-      <td class="num" style="color:${zScoreColor(s.zScore)}">${s.zScore?.toFixed(2) || '—'}</td>
+      <td class="num" style="color:${zScoreColor(s.zScore)}">${s.zScore?.toFixed(2) || '-'}</td>
       <td>${fmt.badge(s.signal)}</td>
       <td class="num">${fmt.num(s.volume)}</td>
-      <td class="num">${s.volatility?.toFixed(1) || '—'}%</td>
+      <td class="num">${s.volatility?.toFixed(1) || '-'}%</td>
     </tr>
   `).join('');
 }
@@ -583,6 +623,95 @@ function renderYieldChart() {
       scales: {
         x:{ ticks:{ color:'#6b6566', font:{ family:'Georgia', size:10 }, maxRotation:45 }, grid:{ color:'rgba(58,53,54,0.3)' } },
         y:{ ticks:{ color:'#6b6566', callback:v=>v+'%' }, grid:{ color:'rgba(58,53,54,0.3)' }, beginAtZero:true }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// PAGE: Logs / Historique
+// ═══════════════════════════════════════════════
+function renderLogs() {
+  const logs = DATA.allLogs || DATA.logs || [];
+
+  // KPIs
+  setText('log-total-runs', logs.length);
+  if (logs.length > 0) {
+    const lastEntry = logs[logs.length - 1];
+    setText('log-last-date', lastEntry.date || '-');
+    const bestRet = Math.max(...logs.map(l => l.totalReturn || 0));
+    setText('log-best-return', fmt.pct(bestRet));
+    const bestSharpe = Math.max(...logs.map(l => l.sharpe || 0));
+    setText('log-best-sharpe', bestSharpe.toFixed(2));
+  }
+
+  // Table
+  const tbody = document.querySelector('#table-logs tbody');
+  if (tbody) {
+    const recent = logs.slice(-15).reverse();
+    tbody.innerHTML = recent.map(l => `
+      <tr>
+        <td class="nowrap">${l.date || '-'}</td>
+        <td><strong class="text-accent">${l.ticker || '-'}</strong></td>
+        <td class="num ${(l.totalReturn||0) >= 0 ? 'text-up' : 'text-down'}">${fmt.pct(l.totalReturn)}</td>
+        <td class="num">${fmt.pct(l.annualReturn)}</td>
+        <td class="num text-accent">${(l.sharpe || 0).toFixed(2)}</td>
+        <td class="num text-down">${fmt.pct(l.maxDrawdown)}</td>
+        <td class="num">${(l.winRate || 0).toFixed(1)}%</td>
+        <td class="num">${l.nTrades || 0}</td>
+        <td class="num">${(l.profitFactor || 0).toFixed(2)}</td>
+        <td class="num">${fmt.pct(l.buyHoldReturn)}</td>
+        <td class="num">${fmt.fcfa(l.capitalFinal)}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="11" class="text-muted text-center">Aucun historique disponible - Executez generate_dashboard_data.py</td></tr>';
+  }
+
+  // Chart: bar chart of returns by ticker (latest run per ticker)
+  renderLogReturnsChart(logs);
+}
+
+function renderLogReturnsChart(logs) {
+  const ctx = document.getElementById('chart-log-returns');
+  if (!ctx) return;
+  if (charts.logReturns) charts.logReturns.destroy();
+
+  // Group by ticker, take latest entry per ticker
+  const byTicker = {};
+  for (const l of logs) {
+    byTicker[l.ticker] = l;
+  }
+  const tickers = Object.values(byTicker).sort((a, b) => (b.totalReturn||0) - (a.totalReturn||0));
+
+  charts.logReturns = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: tickers.map(t => t.ticker),
+      datasets: [
+        {
+          label: 'Rendement Strategie',
+          data: tickers.map(t => t.totalReturn || 0),
+          backgroundColor: tickers.map(t => (t.totalReturn||0) >= 0 ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)'),
+          borderColor: tickers.map(t => (t.totalReturn||0) >= 0 ? '#22c55e' : '#ef4444'),
+          borderWidth: 1, borderRadius: 3
+        },
+        {
+          label: 'Buy & Hold',
+          data: tickers.map(t => t.buyHoldReturn || 0),
+          backgroundColor: 'rgba(107,101,102,0.4)',
+          borderColor: '#6b6566',
+          borderWidth: 1, borderRadius: 3
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color:'#a09a96', font:{ family:'Georgia', size:11 }, usePointStyle:true } },
+        tooltip: tooltipStyle()
+      },
+      scales: {
+        x: { ticks:{ color:'#6b6566', font:{ family:'Georgia' } }, grid:{ color:'rgba(58,53,54,0.3)' } },
+        y: { ticks:{ color:'#6b6566', callback:v=>v+'%' }, grid:{ color:'rgba(58,53,54,0.3)' } }
       }
     }
   });

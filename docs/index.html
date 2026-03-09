@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BRVM Portfolio — Hedge Fund Dashboard</title>
-  <meta name="description" content="Dashboard de gestion de portefeuille BRVM - Stratégie Core-Satellite avec Z-Score">
+  <title>BRVM Portfolio - Hedge Fund Dashboard</title>
+  <meta name="description" content="Dashboard de gestion de portefeuille BRVM - Strategie Core-Satellite avec Z-Score">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231b191a'/><text x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-size='18' fill='%23e94e00'>B</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,16 +42,15 @@
       <a class="nav-item" data-page="bonds" href="#bonds">
         <span class="nav-icon">◍</span> Obligations
       </a>
-      <div class="nav-group-label" style="margin-top:24px">Paramètres</div>
-      <a class="nav-item" style="opacity:0.5;cursor:default">
-        <span class="nav-icon">⚙</span> Configuration
+      <a class="nav-item" data-page="logs" href="#logs">
+        <span class="nav-icon">▤</span> Historique
       </a>
     </nav>
     <div class="sidebar-footer">
       <span>BRVM Trading System v2.0</span>
       <div class="status-line">
         <span class="pulse"></span>
-        <span id="last-update">—</span>
+        <span id="last-update">-</span>
       </div>
     </div>
   </aside>
@@ -69,7 +68,7 @@
           <div class="header-date" id="header-date"></div>
           <div class="header-market-status">
             <span class="pulse" style="width:6px;height:6px;background:var(--warning)"></span>
-            <span class="text-muted">BRVM — Marché fermé</span>
+            <span class="text-muted">BRVM - Marche ferme</span>
           </div>
         </div>
       </div>
@@ -78,23 +77,23 @@
       <div class="kpi-grid">
         <div class="kpi-card">
           <div class="kpi-label">Valeur du portefeuille</div>
-          <div class="kpi-value" id="kpi-total-value">—</div>
-          <div class="kpi-sub up" id="kpi-total-change">—</div>
+          <div class="kpi-value" id="kpi-total-value">-</div>
+          <div class="kpi-sub up" id="kpi-total-change">-</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Performance YTD</div>
-          <div class="kpi-value" id="kpi-ytd">—</div>
-          <div class="kpi-sub flat" id="kpi-ytd-sub">—</div>
+          <div class="kpi-value" id="kpi-ytd">-</div>
+          <div class="kpi-sub flat" id="kpi-ytd-sub">-</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">P&amp;L du jour</div>
-          <div class="kpi-value" id="kpi-daily-pnl">—</div>
-          <div class="kpi-sub flat" id="kpi-daily-sub">—</div>
+          <div class="kpi-value" id="kpi-daily-pnl">-</div>
+          <div class="kpi-sub flat" id="kpi-daily-sub">-</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Positions ouvertes</div>
-          <div class="kpi-value" id="kpi-positions">—</div>
-          <div class="kpi-sub flat" id="kpi-positions-sub">—</div>
+          <div class="kpi-value" id="kpi-positions">-</div>
+          <div class="kpi-sub flat" id="kpi-positions-sub">-</div>
         </div>
       </div>
 
@@ -102,7 +101,7 @@
       <div class="grid-2">
         <div class="card">
           <div class="card-header">
-            <h3>Évolution du portefeuille</h3>
+            <h3>Evolution du portefeuille</h3>
             <span class="card-badge">90 jours</span>
           </div>
           <div class="chart-box h300">
@@ -112,7 +111,7 @@
         <div class="card">
           <div class="card-header">
             <h3>Allocation d'actifs</h3>
-            <span class="card-badge">Répartition</span>
+            <span class="card-badge">Repartition</span>
           </div>
           <div class="chart-box h300">
             <canvas id="chart-allocation"></canvas>
@@ -138,7 +137,7 @@
         </div>
         <div class="card">
           <div class="card-header">
-            <h3>Activité récente</h3>
+            <h3>Activite recente</h3>
             <span class="card-badge">Trades</span>
           </div>
           <div class="table-wrap">
@@ -167,16 +166,16 @@
       <!-- CORE Holdings -->
       <div class="card">
         <div class="card-header">
-          <h3>Poche CORE — 70% du capital</h3>
+          <h3>Poche CORE - 70% du capital</h3>
           <span class="card-badge">5 valeurs dividendes</span>
         </div>
         <div class="table-wrap">
           <table id="table-core">
             <thead>
               <tr>
-                <th>Valeur</th><th>Secteur</th><th>Qté</th>
-                <th>PRU</th><th>Cours</th><th>Poids</th>
-                <th>P&amp;L</th><th>%</th><th>Div. Yield</th>
+                <th>Valeur</th><th>Secteur</th><th>Qte</th>
+                <th>PRU</th><th>Cours</th><th>Z-Score</th><th>Poids</th>
+                <th>P&amp;L</th><th>%</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -187,16 +186,16 @@
       <!-- Satellite -->
       <div class="card">
         <div class="card-header">
-          <h3>Poche SATELLITE — 30% du capital</h3>
+          <h3>Poche SATELLITE - 30% du capital</h3>
           <span class="card-badge">Z-Score Trading</span>
         </div>
         <div class="table-wrap">
           <table id="table-satellite">
             <thead>
               <tr>
-                <th>Valeur</th><th>Signal</th><th>Qté</th>
-                <th>Entrée</th><th>Cours</th><th>SL</th>
-                <th>TP</th><th>P&amp;L %</th><th>Durée</th>
+                <th>Valeur</th><th>Signal</th><th>Z-Score</th><th>Qte</th>
+                <th>Entree</th><th>Cours</th><th>SL</th>
+                <th>TP</th><th>P&amp;L %</th><th>Duree</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -208,7 +207,7 @@
       <div class="grid-2">
         <div class="card">
           <div class="card-header">
-            <h3>Répartition par position</h3>
+            <h3>Repartition par position</h3>
             <span class="card-badge">Poids</span>
           </div>
           <div class="chart-box h300">
@@ -217,8 +216,8 @@
         </div>
         <div class="card">
           <div class="card-header">
-            <h3>Métriques clés</h3>
-            <span class="card-badge">Résumé</span>
+            <h3>Metriques cles</h3>
+            <span class="card-badge">Resume</span>
           </div>
           <div id="portfolio-metrics"></div>
         </div>
@@ -232,7 +231,7 @@
       <div class="page-header">
         <h1>Backtests</h1>
         <div class="header-right">
-          <span class="header-date">Stratégie Z-Score · 2017-2025</span>
+          <span class="header-date">Strategie Z-Score - 2017-2025</span>
         </div>
       </div>
 
@@ -240,50 +239,70 @@
       <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
         <div class="kpi-card">
           <div class="kpi-label">Rendement total</div>
-          <div class="kpi-value text-up" id="bt-total-return">—</div>
+          <div class="kpi-value text-up" id="bt-total-return">-</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Rendement annualisé</div>
-          <div class="kpi-value" id="bt-annual-return">—</div>
+          <div class="kpi-label">Rendement annualise</div>
+          <div class="kpi-value" id="bt-annual-return">-</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Ratio de Sharpe</div>
-          <div class="kpi-value text-accent" id="bt-sharpe">—</div>
+          <div class="kpi-value text-accent" id="bt-sharpe">-</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Drawdown max</div>
-          <div class="kpi-value text-down" id="bt-max-dd">—</div>
+          <div class="kpi-value text-down" id="bt-max-dd">-</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Taux de gain</div>
-          <div class="kpi-value" id="bt-win-rate">—</div>
+          <div class="kpi-value" id="bt-win-rate">-</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Profit Factor</div>
-          <div class="kpi-value" id="bt-profit-factor">—</div>
+          <div class="kpi-value" id="bt-profit-factor">-</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Trades exécutés</div>
-          <div class="kpi-value" id="bt-total-trades">—</div>
+          <div class="kpi-label">Trades executes</div>
+          <div class="kpi-value" id="bt-total-trades">-</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Durée moyenne</div>
-          <div class="kpi-value" id="bt-avg-duration">—</div>
+          <div class="kpi-label">Duree moyenne</div>
+          <div class="kpi-value" id="bt-avg-duration">-</div>
         </div>
       </div>
 
       <!-- Comparisons -->
-      <div class="card mb-2" style="display:flex;gap:32px;padding:16px 24px">
+      <div class="card mb-2" style="display:flex;gap:32px;padding:16px 24px;flex-wrap:wrap">
         <span class="text-muted">Comparaisons :</span>
-        <span>Buy &amp; Hold : <strong id="bt-bh-return">—</strong></span>
-        <span>Taux sans risque : <strong id="bt-rf-return">—</strong></span>
+        <span>Buy &amp; Hold : <strong id="bt-bh-return">-</strong></span>
+        <span>Taux sans risque : <strong id="bt-rf-return">-</strong></span>
+        <span>Meilleur ticker : <strong class="text-accent" id="bt-best-ticker">-</strong></span>
+      </div>
+
+      <!-- Per-ticker backtest results -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Resultats par ticker</h3>
+          <span class="card-badge">Comparaison</span>
+        </div>
+        <div class="table-wrap">
+          <table id="table-bt-tickers">
+            <thead>
+              <tr>
+                <th>Ticker</th><th>Rendement</th><th>Annualise</th><th>Sharpe</th>
+                <th>Max DD</th><th>Win Rate</th><th>Trades</th><th>B&amp;H</th><th>Periode</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Equity Curve -->
       <div class="card">
         <div class="card-header">
-          <h3>Courbe d'équité</h3>
-          <span class="card-badge">Stratégie vs Buy&amp;Hold</span>
+          <h3>Courbe d'equite</h3>
+          <span class="card-badge">Strategie vs Buy&amp;Hold</span>
         </div>
         <div class="chart-box h400">
           <canvas id="chart-equity"></canvas>
@@ -304,14 +323,14 @@
         <div class="card">
           <div class="card-header">
             <h3>Journal des trades</h3>
-            <span class="card-badge">Récents</span>
+            <span class="card-badge">Recents</span>
           </div>
-          <div class="table-wrap">
+          <div class="table-wrap" style="max-height:400px;overflow-y:auto">
             <table id="table-trades">
               <thead>
                 <tr>
-                  <th>Date</th><th>Action</th><th>Symbole</th><th>Qté</th>
-                  <th>Entrée</th><th>Sortie</th><th>P&amp;L</th><th>%</th><th>Raison</th>
+                  <th>Date</th><th>Symbole</th>
+                  <th>Entree</th><th>Sortie</th><th>P&amp;L %</th><th>Raison</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -328,7 +347,8 @@
       <div class="page-header">
         <h1>Signaux de trading</h1>
         <div class="header-right">
-          <span class="header-date">Algorithme Z-Score · Filtres : Vol + Volume + Trend</span>
+          <span class="header-date">Algorithme Z-Score - Filtres : Vol + Volume + Trend</span>
+          <div class="text-muted mt-1" id="signals-data-date"></div>
         </div>
       </div>
 
@@ -361,14 +381,14 @@
         <div class="card">
           <div class="card-header">
             <h3>Tableau des signaux</h3>
-            <span class="card-badge">Toutes les valeurs</span>
+            <span class="card-badge" id="sig-total-badge">Toutes les valeurs</span>
           </div>
           <div class="table-wrap" style="max-height:500px;overflow-y:auto">
             <table id="table-signals">
               <thead>
                 <tr>
                   <th>Valeur</th><th>Prix</th><th>Z-Score</th>
-                  <th>Signal</th><th>Volume</th><th>Volatilité</th>
+                  <th>Signal</th><th>Volume</th><th>Volatilite</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -394,22 +414,22 @@
       <div class="page-header">
         <h1>Obligations &amp; Taux</h1>
         <div class="header-right">
-          <span class="header-date">Scanner d'opportunités obligataires</span>
+          <span class="header-date">Scanner d'opportunites obligataires</span>
         </div>
       </div>
 
       <!-- Bond Table -->
       <div class="card">
         <div class="card-header">
-          <h3>Opportunités obligataires</h3>
-          <span class="card-badge">Décote &amp; Rendement</span>
+          <h3>Opportunites obligataires</h3>
+          <span class="card-badge">Decote &amp; Rendement</span>
         </div>
         <div class="table-wrap">
           <table id="table-bonds">
             <thead>
               <tr>
-                <th>Obligation</th><th>Coupon</th><th>Maturité</th>
-                <th>Prix</th><th>Rdt effectif</th><th>Décote</th><th>Rating</th>
+                <th>Obligation</th><th>Coupon</th><th>Maturite</th>
+                <th>Prix</th><th>Rdt effectif</th><th>Decote</th><th>Rating</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -425,6 +445,69 @@
         </div>
         <div class="chart-box h350">
           <canvas id="chart-yields"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────── -->
+    <!-- PAGE: HISTORIQUE / LOGS               -->
+    <!-- ──────────────────────────────────── -->
+    <section id="page-logs" class="page-section">
+      <div class="page-header">
+        <h1>Historique des backtests</h1>
+        <div class="header-right">
+          <span class="header-date">Derniers resultats d'execution</span>
+        </div>
+      </div>
+
+      <!-- Log Stats -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Executions enregistrees</div>
+          <div class="kpi-value" id="log-total-runs">-</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Derniere execution</div>
+          <div class="kpi-value" id="log-last-date" style="font-size:1.1rem">-</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Meilleur rendement</div>
+          <div class="kpi-value text-up" id="log-best-return">-</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Meilleur Sharpe</div>
+          <div class="kpi-value text-accent" id="log-best-sharpe">-</div>
+        </div>
+      </div>
+
+      <!-- Full Log Table -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Journal des executions</h3>
+          <span class="card-badge">Resultats complets</span>
+        </div>
+        <div class="table-wrap" style="max-height:600px;overflow-y:auto">
+          <table id="table-logs">
+            <thead>
+              <tr>
+                <th>Date</th><th>Ticker</th><th>Rendement</th><th>Annualise</th>
+                <th>Sharpe</th><th>Max DD</th><th>Win Rate</th><th>Trades</th>
+                <th>Profit Factor</th><th>B&amp;H</th><th>Capital Final</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Log Return Chart -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Rendements par ticker</h3>
+          <span class="card-badge">Historique</span>
+        </div>
+        <div class="chart-box h350">
+          <canvas id="chart-log-returns"></canvas>
         </div>
       </div>
     </section>

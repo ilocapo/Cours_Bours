@@ -1,6 +1,6 @@
 """
-Terminal Altos — Dashboard de Trading BRVM
-Version 3.0 — Bloomberg Terminal Style
+Terminal Altos - Dashboard de Trading BRVM
+Version 3.0 - Bloomberg Terminal Style
 """
 import streamlit as st
 import pandas as pd
@@ -302,12 +302,12 @@ with st.sidebar:
 
 
 # ══════════════════════════════════════════════════════════
-#  PAGE 1 — VUE D'ENSEMBLE
+#  PAGE 1 - VUE D'ENSEMBLE
 # ══════════════════════════════════════════════════════════
 if "Vue d'ensemble" in page or "F1" in page:
     st.markdown(f"""
     <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New; letter-spacing:.05em;">F1  VUE D'ENSEMBLE — BRVM TRADING TERMINAL</span>
+      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New; letter-spacing:.05em;">F1  VUE D'ENSEMBLE - BRVM TRADING TERMINAL</span>
       <span style="font-size:0.7rem; color:#333; font-family:Courier New;">{datetime.now().strftime('%d/%m/%Y %H:%M:%S')} · CAP: 1 000 000 FCFA</span>
     </div>
     """, unsafe_allow_html=True)
@@ -396,12 +396,12 @@ if "Vue d'ensemble" in page or "F1" in page:
 
 
 # ══════════════════════════════════════════════════════════
-#  PAGE 2 — SIGNAUX & Z-SCORE
+#  PAGE 2 - SIGNAUX & Z-SCORE
 # ══════════════════════════════════════════════════════════
 elif "Signaux" in page or "F2" in page:
     st.markdown(f"""
     <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between;">
-      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F2  SIGNAUX Z-SCORE — RADAR DE MARCHE BRVM</span>
+      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F2  SIGNAUX Z-SCORE - RADAR DE MARCHE BRVM</span>
       <span style="font-size:0.7rem; color:#333; font-family:Courier New;">{sig_f}</span>
     </div>
     """, unsafe_allow_html=True)
@@ -473,7 +473,7 @@ elif "Signaux" in page or "F2" in page:
 
         fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
                             row_heights=[0.65, 0.35], vertical_spacing=0.04,
-                            subplot_titles=[f"{sel_t} — Prix & Bandes de Bollinger",
+                            subplot_titles=[f"{sel_t} - Prix & Bandes de Bollinger",
                                             f"Z-Score (fenêtre {win} jours)"])
         fig.add_trace(go.Scatter(x=h['Date'], y=h['Price'], name="Prix",
                                   line=dict(color=C_ORANGE, width=1.8)), row=1, col=1)
@@ -512,12 +512,12 @@ elif "Signaux" in page or "F2" in page:
 
 
 # ══════════════════════════════════════════════════════════
-#  PAGE 3 — PORTFOLIO CORE
+#  PAGE 3 - PORTFOLIO CORE
 # ══════════════════════════════════════════════════════════
 elif "CORE" in page or "F3" in page:
     st.markdown(f"""
     <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between;">
-      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F3  PORTFOLIO CORE — BOUCLIER DIVIDENDES BRVM</span>
+      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F3  PORTFOLIO CORE - BOUCLIER DIVIDENDES BRVM</span>
       <span style="font-size:0.7rem; color:#333; font-family:Courier New;">5 BIG CAPS · DÉTENUES DEPUIS 2017</span>
     </div>
     """, unsafe_allow_html=True)
@@ -611,12 +611,12 @@ elif "CORE" in page or "F3" in page:
 
 
 # ══════════════════════════════════════════════════════════
-#  PAGE 4 — OBLIGATIONS
+#  PAGE 4 - OBLIGATIONS
 # ══════════════════════════════════════════════════════════
 elif "Obligations" in page or "F4" in page:
     st.markdown(f"""
     <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between;">
-      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F4  OBLIGATIONS BRVM — SCANNER DÉCOTES & RENDEMENTS</span>
+      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F4  OBLIGATIONS BRVM - SCANNER DÉCOTES & RENDEMENTS</span>
       <span style="font-size:0.7rem; color:#333; font-family:Courier New;">{bond_f}</span>
     </div>
     """, unsafe_allow_html=True)
@@ -640,7 +640,7 @@ elif "Obligations" in page or "F4" in page:
         l_t, r_b = st.columns([2, 1])
 
         with l_t:
-            sec("Toutes les obligations — triées par rendement")
+            sec("Toutes les obligations - triées par rendement")
             cols_b = [c for c in ['Ticker','Libelle','Current_Price','Discount_%','Coupon_Rate_%','Effective_Yield_%'] if c in bonds_df.columns]
             sort_b = bonds_df.sort_values('Effective_Yield_%', ascending=False) if 'Effective_Yield_%' in bonds_df.columns else bonds_df
 
@@ -659,7 +659,7 @@ elif "Obligations" in page or "F4" in page:
             st.dataframe(sb, width='stretch', height=430)
 
         with r_b:
-            sec("Top 12 — Rendement effectif")
+            sec("Top 12 - Rendement effectif")
             top12 = sort_b.head(12) if 'Effective_Yield_%' in bonds_df.columns else bonds_df.head(12)
             fig_b = go.Figure(go.Bar(
                 y=top12['Ticker'], x=top12['Effective_Yield_%'],
@@ -679,7 +679,7 @@ elif "Obligations" in page or "F4" in page:
 
         # Top 3 podium
         st.divider()
-        sec("🏆 Podium — Meilleures opportunités")
+        sec("🏆 Podium - Meilleures opportunités")
         top3   = sort_b.head(3) if 'Effective_Yield_%' in bonds_df.columns else bonds_df.head(3)
         medals = ["#1", "#2", "#3"]
         cols3  = [C_ORANGE, C_YELLOW, C_MUTED]
@@ -713,12 +713,12 @@ elif "Obligations" in page or "F4" in page:
 
 
 # ══════════════════════════════════════════════════════════
-#  PAGE 5 — CONTRÔLE
+#  PAGE 5 - CONTRÔLE
 # ══════════════════════════════════════════════════════════
 elif "Contrôle" in page or "F5" in page:
     st.markdown(f"""
     <div style="background:{C_ORANGE}; padding:6px 14px; margin-bottom:14px; display:flex; justify-content:space-between;">
-      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F5  CENTRE DE CONTROLE — EXECUTION & LOGS SYSTEME</span>
+      <span style="font-size:0.95rem; font-weight:700; color:#000; font-family:Courier New;">F5  CENTRE DE CONTROLE - EXECUTION & LOGS SYSTEME</span>
       <span style="font-size:0.7rem; color:#333; font-family:Courier New;">SCRIPTS · AUTOMATION · MONITORING</span>
     </div>
     """, unsafe_allow_html=True)
@@ -772,7 +772,7 @@ elif "Contrôle" in page or "F5" in page:
     # ── Log viewer ──
     st.divider()
     log_txt, log_name = load_last_log()
-    sec(f"Dernier log — {log_name}")
+    sec(f"Dernier log - {log_name}")
 
     entries = []
     for line in log_txt.split('\n'):

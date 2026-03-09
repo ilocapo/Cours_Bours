@@ -1,5 +1,5 @@
 # ============================================
-# BRVM Portfolio — Configuration du Planificateur de tâches Windows
+# BRVM Portfolio - Configuration du Planificateur de tâches Windows
 # Exécuter ce script en tant qu'Administrateur dans PowerShell :
 #   Right-click PowerShell > "Exécuter en tant qu'administrateur"
 #   cd "C:\chemin\vers\Cours Boursier"

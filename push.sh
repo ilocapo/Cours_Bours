@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================
-# BRVM Portfolio — Push rapide vers main
+# BRVM Portfolio - Push rapide vers main
 # Usage: ./push.sh
 #        ./push.sh "mon message de commit"
 # ============================================
@@ -16,7 +16,7 @@ NC='\033[0m'
 
 echo ""
 echo -e "${ORANGE}════════════════════════════════════════${NC}"
-echo -e "${ORANGE}  BRVM Portfolio — Push vers main${NC}"
+echo -e "${ORANGE}  BRVM Portfolio - Push vers main${NC}"
 echo -e "${ORANGE}════════════════════════════════════════${NC}"
 echo ""
 
