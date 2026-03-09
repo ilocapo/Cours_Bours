@@ -16,7 +16,7 @@
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-row">
-    <div class="logo">TERMIN<em>US</em> <span class="version">BRVM v2.0</span></div>
+    <div class="logo">ALTOS TERMINAL<em>TRAINING</em> <span class="version">BRVM v2.0</span></div>
     <div class="hdr-right">
       <button class="theme-btn" onclick="toggleTheme()">☀ LIGHT</button>
       <div class="clock-badge"><span class="status-dot"></span> <b id="clock">--:--</b></div>
@@ -73,6 +73,7 @@
     </div>
   </div>
 
+  <div class="desk-2col">
   <!-- EQUITY CURVE -->
   <div class="chart-wrap">
     <div class="chart-toolbar">
@@ -85,6 +86,7 @@
   </div>
 
   <!-- ALLOCATION -->
+  <div>
   <div class="stitle">ALLOCATION CORE / SATELLITE</div>
   <div class="card">
     <div class="ch"><span class="ct">RÉPARTITION DU CAPITAL</span><span class="cbadge a">1M FCFA</span></div>
@@ -96,6 +98,8 @@
         <div class="donut-legend" id="alloc-legend"></div>
       </div>
     </div>
+  </div>
+  </div>
   </div>
 
   <!-- RISK GAUGES -->
@@ -137,6 +141,7 @@
     </div>
   </div>
 
+  <div class="desk-2col">
   <!-- WEIGHTS CHART -->
   <div class="chart-wrap">
     <div class="chart-toolbar">
@@ -147,6 +152,16 @@
     </div>
   </div>
 
+  <!-- METRICS SUMMARY -->
+  <div>
+  <div class="stitle">MÉTRIQUES PORTEFEUILLE</div>
+  <div class="card">
+    <div class="ch"><span class="ct">RÉSUMÉ</span></div>
+    <div class="cb" id="portfolio-metrics"></div>
+  </div>
+  </div>
+  </div>
+
   <!-- CORE TABLE -->
   <div class="stitle">POSITIONS CORE · DIVIDENDES</div>
   <div id="portfolio-core-table"></div>
@@ -154,13 +169,6 @@
   <!-- SATELLITE TABLE -->
   <div class="stitle">POSITIONS SATELLITE · Z-SCORE</div>
   <div id="portfolio-sat-table"></div>
-
-  <!-- METRICS SUMMARY -->
-  <div class="stitle">MÉTRIQUES PORTEFEUILLE</div>
-  <div class="card">
-    <div class="ch"><span class="ct">RÉSUMÉ</span></div>
-    <div class="cb" id="portfolio-metrics"></div>
-  </div>
 </div>
 
 <!-- ═══════════ SIGNAUX ═══════════ -->
@@ -170,9 +178,12 @@
   <!-- SIGNAL SUMMARY -->
   <div class="kpi-row" id="signal-summary" style="grid-template-columns:repeat(5,1fr);"></div>
 
+  <div class="desk-2col">
   <!-- HEATMAP -->
+  <div>
   <div class="stitle">HEATMAP SIGNAUX</div>
   <div class="heatmap" id="signal-heatmap"></div>
+  </div>
 
   <!-- Z-SCORE CHART -->
   <div class="chart-wrap">
@@ -183,6 +194,7 @@
     <div class="chart-canvas-wrap" style="height:280px">
       <canvas id="chart-zscore"></canvas>
     </div>
+  </div>
   </div>
 
   <!-- SIGNAL TABLE -->

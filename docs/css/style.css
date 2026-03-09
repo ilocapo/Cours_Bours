@@ -38,7 +38,7 @@ body:not(.light)::before{content:'';position:fixed;inset:0;z-index:9998;pointer-
   background-size:48px 48px;}
 .light .grid-bg{background-image:linear-gradient(rgba(0,100,80,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,100,80,0.05) 1px,transparent 1px);}
 
-.app{position:relative;z-index:1;height:100dvh;display:flex;flex-direction:column;max-width:640px;margin:0 auto;}
+.app{position:relative;z-index:1;height:100dvh;display:flex;flex-direction:column;margin:0 auto;}
 
 /* ── HEADER ── */
 .hdr{background:var(--bg1);border-bottom:1px solid var(--g);padding:6px 10px 4px;flex-shrink:0;position:relative;overflow:hidden;}
@@ -243,7 +243,10 @@ body:not(.light)::before{content:'';position:fixed;inset:0;z-index:9998;pointer-
 .zs-s{color:#fca5a5;}
 .zs-ss{color:var(--r);font-weight:700;}
 
-/* RESPONSIVE */
+/* ── Desktop layout helper ── */
+.desk-2col{display:block;}
+
+/* ═══ RESPONSIVE ═══ */
 @media(max-width:420px){
   .mgrid{grid-template-columns:repeat(2,1fr);}
   .kpi-row.three,.kpi-row.four{grid-template-columns:repeat(2,1fr);}
@@ -251,4 +254,145 @@ body:not(.light)::before{content:'';position:fixed;inset:0;z-index:9998;pointer-
   .tab{font-size:7px;letter-spacing:0.5px;padding:6px 1px 5px;}
   .risk-gauges{flex-wrap:wrap;}
   .rg{min-width:calc(50% - 3px);}
+}
+
+/* ═══ TABLET & DESKTOP (768px+) ═══ */
+@media(min-width:768px){
+  /* Header */
+  .hdr{padding:10px 24px 8px;}
+  .logo{font-size:24px;letter-spacing:6px;}
+  .logo .version{font-size:10px;letter-spacing:3px;}
+  .hdr-right{gap:14px;}
+  .theme-btn{font-size:12px;padding:5px 14px;}
+  .clock-badge{font-size:11px;}
+  .ti{font-size:11px;gap:6px;}
+  .ticker{gap:30px;}
+
+  /* Tabs */
+  .tab{font-size:10px;letter-spacing:2px;padding:10px 8px 9px;}
+  .tab-ic{display:inline;margin-right:4px;margin-bottom:0;}
+
+  /* Content */
+  .panel{padding:16px 24px;}
+  .content::-webkit-scrollbar{width:4px;}
+
+  /* Typography */
+  .kpi-val{font-size:28px;}
+  .kpi-label{font-size:8px;letter-spacing:2px;}
+  .kpi-box{padding:14px 16px;}
+  .kpi-sub{font-size:8px;}
+  .stitle{font-size:11px;letter-spacing:5px;padding:14px 0 8px;margin-bottom:10px;}
+  .ct{font-size:11px;}
+  .cbadge{font-size:8px;padding:3px 8px;}
+  .ml{font-size:8px;}
+  .mv{font-size:13px;}
+
+  /* Cards */
+  .card{margin-bottom:10px;}
+  .card::before{width:4px;}
+  .ch{padding:8px 16px 7px 18px;}
+  .cb{padding:12px 16px 12px 18px;}
+  .mgrid{margin:10px -16px -12px -18px;}
+  .mcel{padding:8px 12px;}
+
+  /* Charts */
+  .chart-wrap{margin-bottom:12px;}
+  .chart-toolbar{padding:8px 14px;}
+  .chart-sym{font-size:16px;}
+  .chart-canvas-wrap{height:300px !important;padding:10px 14px 8px;}
+
+  /* Tables */
+  .sig-table{font-size:11px;}
+  .sig-table th{font-size:9px;padding:8px 12px;letter-spacing:2px;}
+  .sig-table td{padding:6px 12px;}
+
+  /* KPI rows */
+  .kpi-row{gap:8px;}
+  .kpi-row.three{grid-template-columns:repeat(3,1fr);}
+  .kpi-row.four{grid-template-columns:repeat(4,1fr);}
+
+  /* Heatmap */
+  .heatmap{grid-template-columns:repeat(7,1fr);gap:4px;}
+  .hm-sym{font-size:14px;}
+  .hm-chg{font-size:11px;}
+  .hm-sub{font-size:8px;}
+
+  /* Risk */
+  .rg{padding:12px 10px;}
+  .rg-label{font-size:8px;}
+  .rg-val{font-size:28px;}
+  .rg-sub{font-size:8px;}
+
+  /* Signals */
+  .sig{font-size:8px;padding:3px 10px;}
+
+  /* PNL */
+  .pnl-sym{font-size:18px;}
+  .pnl-info{font-size:9px;}
+  .pnl-row{padding:7px 0;font-size:12px;}
+
+  /* BT cards */
+  .bt-ticker{font-size:22px;}
+  .bt-return{font-size:24px;}
+  .bt-period{font-size:8px;}
+  .bt-head{padding:10px 14px 8px 16px;}
+  .bt-details{padding:8px 14px 12px 16px;}
+
+  /* Trade items */
+  .trade-item{font-size:11px;padding:7px 0;gap:10px;}
+  .trade-date{font-size:10px;min-width:85px;}
+  .trade-badge{font-size:8px;padding:2px 8px;}
+
+  /* Donut */
+  .donut-wrap .chart-canvas-wrap{width:120px !important;height:120px !important;}
+  .dl-item{font-size:11px;padding:5px 0;}
+  .dl-dot{width:9px;height:9px;}
+
+  /* Ratio bars */
+  .rbar-label{font-size:10px;}
+  .rbar-track{height:6px;}
+  .rbar-block{margin-bottom:8px;}
+
+  /* Export */
+  .export-btn{font-size:10px;padding:8px 16px;}
+
+  /* Footer */
+  .footer-info{font-size:9px;padding:20px 16px;}
+
+  /* ── Desktop 2-col layout ── */
+  .desk-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-bottom:12px;}
+  .desk-2col>.chart-wrap,.desk-2col>.card{margin-bottom:0;}
+
+  /* Card grids */
+  #core-positions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  #core-positions>.card{margin-bottom:0;}
+  #bt-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  #bt-cards>.bt-card{margin-bottom:0;}
+  #bond-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  #bond-cards>.card{margin-bottom:0;}
+}
+
+/* ═══ LARGE DESKTOP (1200px+) ═══ */
+@media(min-width:1200px){
+  .app{max-width:1440px;}
+  .hdr{padding:12px 32px 10px;}
+  .logo{font-size:28px;letter-spacing:8px;}
+  .panel{padding:20px 32px;}
+  .tab{font-size:12px;letter-spacing:3px;padding:12px 16px;}
+  .chart-canvas-wrap{height:360px !important;}
+  .kpi-val{font-size:34px;}
+  .kpi-box{padding:18px 20px;}
+  .rg-val{font-size:34px;}
+  .heatmap{grid-template-columns:repeat(10,1fr);}
+  #core-positions{grid-template-columns:repeat(3,1fr);}
+  #bt-cards{grid-template-columns:repeat(3,1fr);}
+  #bond-cards{grid-template-columns:repeat(3,1fr);}
+  .desk-2col{gap:24px;}
+  .sig-table{font-size:12px;}
+  .sig-table th{font-size:9px;padding:8px 14px;}
+  .sig-table td{padding:7px 14px;}
+  .bt-ticker{font-size:26px;}
+  .bt-return{font-size:28px;}
+  .pnl-sym{font-size:20px;}
+  .donut-wrap .chart-canvas-wrap{width:140px !important;height:140px !important;}
 }
