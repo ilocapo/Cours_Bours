@@ -11,6 +11,7 @@ Objectif: Identifier les super-rendements obligataires (bonds trading at discoun
 import sys
 import os
 from datetime import datetime
+import re as _re
 import pandas as pd
 from pathlib import Path
 import numpy as np
@@ -97,7 +98,29 @@ def analyze_bond_opportunity(ticker, df_bonds):
     current_price = latest_row['Cours moyen']
     libelle = latest_row['Libellé']
     taux = latest_row['TAUX']
-    
+
+    # ── Extraire l'année de maturité depuis le libellé (ex: "2018-2025" → 2025) ──
+    current_year = datetime.now().year
+    maturity_year = None
+    m = _re.search(r'\b(20\d{2})-(20\d{2})\b', str(libelle))
+    if m:
+        maturity_year = int(m.group(2))
+    else:
+        # Cherche une seule année (ex: "O28" dans le ticker → 2028)
+        m2 = _re.search(r'O(\d{2})$', str(ticker))
+        if m2:
+            maturity_year = 2000 + int(m2.group(1))
+
+    # ── Rejeter les obligations dont la maturité est déjà passée ──
+    if maturity_year is not None and maturity_year < current_year:
+        return None  # Obligation expirée — exclure
+
+    # Années restantes jusqu'à maturité (minimum 0.5 an pour éviter division par zéro)
+    if maturity_year is not None:
+        years_to_maturity = max(0.5, float(maturity_year - current_year))
+    else:
+        years_to_maturity = 5.0  # Valeur par défaut si date non trouvée
+
     # Vérifier que c'est bien une obligation (prix doit être proche de 100)
     if pd.isna(current_price) or current_price < 50 or current_price > 150:
         return None
@@ -119,8 +142,7 @@ def analyze_bond_opportunity(ticker, df_bonds):
                 coupon_rate = taux_val if taux_val <= 15 else 0.0  # Les taux réalistes sont < 15%
         else:
             # Essayer d'extraire du libellé (pattern: "X,XX%")
-            import re
-            match = re.search(r'(\d+[,\.]\d+)\s*%', str(libelle))
+            match = _re.search(r'(\d+[,\.]\d+)\s*%', str(libelle))
             if match:
                 coupon_rate = float(match.group(1).replace(',', '.'))
             else:
@@ -128,19 +150,20 @@ def analyze_bond_opportunity(ticker, df_bonds):
     except:
         coupon_rate = 0.0
     
-    # Rendement effectif : coupon rate + rendement du discount jusqu'à maturité
-    # Simplifié : on suppose remboursement à 100 dans 5 ans
+    # Rendement effectif : coupon rate + capital gain amorti sur les années réelles restantes
     if discount_pct > 0:
-        amortized_gain = discount_pct / 5  # Par an
+        amortized_gain = discount_pct / years_to_maturity
         effective_yield = coupon_rate + amortized_gain
     else:
         effective_yield = coupon_rate
-    
+
     return {
         'Ticker': ticker,
         'Libelle': libelle,
         'Current_Price': round(current_price, 2),
         'Nominal_Price': 100.0,
+        'Maturity_Year': maturity_year if maturity_year else 'N/A',
+        'Years_Left': round(years_to_maturity, 1),
         'Discount_FCFA': round(discount_amount, 2),
         'Discount_%': round(discount_pct, 2),
         'Coupon_Rate_%': round(coupon_rate, 2),
