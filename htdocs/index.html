@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BRVM Portfolio — Hedge Fund Dashboard</title>
+  <meta name="description" content="Dashboard de gestion de portefeuille BRVM - Stratégie Core-Satellite avec Z-Score">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231b191a'/><text x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-size='18' fill='%23e94e00'>B</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Aoboshi+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Mobile hamburger -->
+<button class="mobile-toggle" aria-label="Menu">☰</button>
+<div class="overlay"></div>
+
+<div class="app-layout">
+
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <h1>◆ BRVM Portfolio</h1>
+      <span class="brand-sub">Hedge Fund Dashboard</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Navigation</div>
+      <a class="nav-item active" data-page="overview" href="#overview">
+        <span class="nav-icon">◈</span> Vue d'ensemble
+      </a>
+      <a class="nav-item" data-page="portfolio" href="#portfolio">
+        <span class="nav-icon">◉</span> Portfolio
+      </a>
+      <a class="nav-item" data-page="backtests" href="#backtests">
+        <span class="nav-icon">◆</span> Backtests
+      </a>
+      <a class="nav-item" data-page="signals" href="#signals">
+        <span class="nav-icon">◇</span> Signaux
+      </a>
+      <a class="nav-item" data-page="bonds" href="#bonds">
+        <span class="nav-icon">◍</span> Obligations
+      </a>
+      <div class="nav-group-label" style="margin-top:24px">Paramètres</div>
+      <a class="nav-item" style="opacity:0.5;cursor:default">
+        <span class="nav-icon">⚙</span> Configuration
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <span>BRVM Trading System v2.0</span>
+      <div class="status-line">
+        <span class="pulse"></span>
+        <span id="last-update">—</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════ MAIN CONTENT ═══════════ -->
+  <main class="main-content">
+
+    <!-- ──────────────────────────────────── -->
+    <!-- PAGE: VUE D'ENSEMBLE                 -->
+    <!-- ──────────────────────────────────── -->
+    <section id="page-overview" class="page-section active">
+      <div class="page-header">
+        <h1>Vue d'ensemble</h1>
+        <div class="header-right">
+          <div class="header-date" id="header-date"></div>
+          <div class="header-market-status">
+            <span class="pulse" style="width:6px;height:6px;background:var(--warning)"></span>
+            <span class="text-muted">BRVM — Marché fermé</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Valeur du portefeuille</div>
+          <div class="kpi-value" id="kpi-total-value">—</div>
+          <div class="kpi-sub up" id="kpi-total-change">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Performance YTD</div>
+          <div class="kpi-value" id="kpi-ytd">—</div>
+          <div class="kpi-sub flat" id="kpi-ytd-sub">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">P&amp;L du jour</div>
+          <div class="kpi-value" id="kpi-daily-pnl">—</div>
+          <div class="kpi-sub flat" id="kpi-daily-sub">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Positions ouvertes</div>
+          <div class="kpi-value" id="kpi-positions">—</div>
+          <div class="kpi-sub flat" id="kpi-positions-sub">—</div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h3>Évolution du portefeuille</h3>
+            <span class="card-badge">90 jours</span>
+          </div>
+          <div class="chart-box h300">
+            <canvas id="chart-portfolio"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Allocation d'actifs</h3>
+            <span class="card-badge">Répartition</span>
+          </div>
+          <div class="chart-box h300">
+            <canvas id="chart-allocation"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tables Row -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h3>Signaux actifs du jour</h3>
+            <span class="card-badge">Z-Score</span>
+          </div>
+          <div class="table-wrap">
+            <table id="table-daily-signals">
+              <thead>
+                <tr><th>Symbole</th><th>Signal</th><th>Z-Score</th><th>Prix</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Activité récente</h3>
+            <span class="card-badge">Trades</span>
+          </div>
+          <div class="table-wrap">
+            <table id="table-recent-trades">
+              <thead>
+                <tr><th>Date</th><th>Action</th><th>Symbole</th><th>P&amp;L</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────── -->
+    <!-- PAGE: PORTFOLIO                      -->
+    <!-- ──────────────────────────────────── -->
+    <section id="page-portfolio" class="page-section">
+      <div class="page-header">
+        <h1>Portfolio</h1>
+        <div class="header-right">
+          <span class="header-date">Architecture Hedge Fund 70/30</span>
+        </div>
+      </div>
+
+      <!-- CORE Holdings -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Poche CORE — 70% du capital</h3>
+          <span class="card-badge">5 valeurs dividendes</span>
+        </div>
+        <div class="table-wrap">
+          <table id="table-core">
+            <thead>
+              <tr>
+                <th>Valeur</th><th>Secteur</th><th>Qté</th>
+                <th>PRU</th><th>Cours</th><th>Poids</th>
+                <th>P&amp;L</th><th>%</th><th>Div. Yield</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Satellite -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Poche SATELLITE — 30% du capital</h3>
+          <span class="card-badge">Z-Score Trading</span>
+        </div>
+        <div class="table-wrap">
+          <table id="table-satellite">
+            <thead>
+              <tr>
+                <th>Valeur</th><th>Signal</th><th>Qté</th>
+                <th>Entrée</th><th>Cours</th><th>SL</th>
+                <th>TP</th><th>P&amp;L %</th><th>Durée</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Bottom row -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h3>Répartition par position</h3>
+            <span class="card-badge">Poids</span>
+          </div>
+          <div class="chart-box h300">
+            <canvas id="chart-weights"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Métriques clés</h3>
+            <span class="card-badge">Résumé</span>
+          </div>
+          <div id="portfolio-metrics"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────── -->
+    <!-- PAGE: BACKTESTS                      -->
+    <!-- ──────────────────────────────────── -->
+    <section id="page-backtests" class="page-section">
+      <div class="page-header">
+        <h1>Backtests</h1>
+        <div class="header-right">
+          <span class="header-date">Stratégie Z-Score · 2017-2025</span>
+        </div>
+      </div>
+
+      <!-- Metrics Cards -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+        <div class="kpi-card">
+          <div class="kpi-label">Rendement total</div>
+          <div class="kpi-value text-up" id="bt-total-return">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Rendement annualisé</div>
+          <div class="kpi-value" id="bt-annual-return">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Ratio de Sharpe</div>
+          <div class="kpi-value text-accent" id="bt-sharpe">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Drawdown max</div>
+          <div class="kpi-value text-down" id="bt-max-dd">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Taux de gain</div>
+          <div class="kpi-value" id="bt-win-rate">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Profit Factor</div>
+          <div class="kpi-value" id="bt-profit-factor">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Trades exécutés</div>
+          <div class="kpi-value" id="bt-total-trades">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Durée moyenne</div>
+          <div class="kpi-value" id="bt-avg-duration">—</div>
+        </div>
+      </div>
+
+      <!-- Comparisons -->
+      <div class="card mb-2" style="display:flex;gap:32px;padding:16px 24px">
+        <span class="text-muted">Comparaisons :</span>
+        <span>Buy &amp; Hold : <strong id="bt-bh-return">—</strong></span>
+        <span>Taux sans risque : <strong id="bt-rf-return">—</strong></span>
+      </div>
+
+      <!-- Equity Curve -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Courbe d'équité</h3>
+          <span class="card-badge">Stratégie vs Buy&amp;Hold</span>
+        </div>
+        <div class="chart-box h400">
+          <canvas id="chart-equity"></canvas>
+        </div>
+      </div>
+
+      <!-- Monthly Returns + Trade Log -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h3>Rendements mensuels</h3>
+            <span class="card-badge">Historique</span>
+          </div>
+          <div class="chart-box h300">
+            <canvas id="chart-monthly"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Journal des trades</h3>
+            <span class="card-badge">Récents</span>
+          </div>
+          <div class="table-wrap">
+            <table id="table-trades">
+              <thead>
+                <tr>
+                  <th>Date</th><th>Action</th><th>Symbole</th><th>Qté</th>
+                  <th>Entrée</th><th>Sortie</th><th>P&amp;L</th><th>%</th><th>Raison</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────── -->
+    <!-- PAGE: SIGNAUX                        -->
+    <!-- ──────────────────────────────────── -->
+    <section id="page-signals" class="page-section">
+      <div class="page-header">
+        <h1>Signaux de trading</h1>
+        <div class="header-right">
+          <span class="header-date">Algorithme Z-Score · Filtres : Vol + Volume + Trend</span>
+        </div>
+      </div>
+
+      <!-- Signal Stats -->
+      <div class="signal-stats">
+        <div class="signal-stat s-strong-buy">
+          <span class="stat-count" id="sig-strong-buy">0</span>
+          <span class="stat-label text-muted">Strong Buy</span>
+        </div>
+        <div class="signal-stat s-buy">
+          <span class="stat-count" id="sig-buy">0</span>
+          <span class="stat-label text-muted">Buy</span>
+        </div>
+        <div class="signal-stat s-hold">
+          <span class="stat-count" id="sig-hold">0</span>
+          <span class="stat-label text-muted">Hold</span>
+        </div>
+        <div class="signal-stat s-sell">
+          <span class="stat-count" id="sig-sell">0</span>
+          <span class="stat-label text-muted">Sell</span>
+        </div>
+        <div class="signal-stat s-strong-sell">
+          <span class="stat-count" id="sig-strong-sell">0</span>
+          <span class="stat-label text-muted">Strong Sell</span>
+        </div>
+      </div>
+
+      <!-- Signal Table + Z-Score Chart -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h3>Tableau des signaux</h3>
+            <span class="card-badge">Toutes les valeurs</span>
+          </div>
+          <div class="table-wrap" style="max-height:500px;overflow-y:auto">
+            <table id="table-signals">
+              <thead>
+                <tr>
+                  <th>Valeur</th><th>Prix</th><th>Z-Score</th>
+                  <th>Signal</th><th>Volume</th><th>Volatilité</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Distribution Z-Score</h3>
+            <span class="card-badge">Tous les titres</span>
+          </div>
+          <div class="chart-box h400" style="height:500px">
+            <canvas id="chart-zscore"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────── -->
+    <!-- PAGE: OBLIGATIONS                    -->
+    <!-- ──────────────────────────────────── -->
+    <section id="page-bonds" class="page-section">
+      <div class="page-header">
+        <h1>Obligations &amp; Taux</h1>
+        <div class="header-right">
+          <span class="header-date">Scanner d'opportunités obligataires</span>
+        </div>
+      </div>
+
+      <!-- Bond Table -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Opportunités obligataires</h3>
+          <span class="card-badge">Décote &amp; Rendement</span>
+        </div>
+        <div class="table-wrap">
+          <table id="table-bonds">
+            <thead>
+              <tr>
+                <th>Obligation</th><th>Coupon</th><th>Maturité</th>
+                <th>Prix</th><th>Rdt effectif</th><th>Décote</th><th>Rating</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Yield Chart -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Comparaison des rendements</h3>
+          <span class="card-badge">Effectif vs Coupon</span>
+        </div>
+        <div class="chart-box h350">
+          <canvas id="chart-yields"></canvas>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+{
+  "meta": {
+    "lastUpdate": "2026-03-09T09:15:37.246895",
+    "currency": "FCFA",
+    "marketStatus": "Données mises à jour",
+    "generatedBy": "generate_dashboard_data.py"
+  },
+  "overview": {
+    "totalValue": 1000000,
+    "initialCapital": 1000000,
+    "ytdReturn": 0.0,
+    "dailyPnl": 0,
+    "dailyPnlPct": 0.0,
+    "coreValue": 700000,
+    "satelliteValue": 300000,
+    "cashAvailable": 0,
+    "openPositions": 5,
+    "corePositions": 5,
+    "satellitePositions": 0,
+    "sharpeRatio": null,
+    "maxDrawdown": null,
+    "winRate": null
+  },
+  "portfolioHistory": [],
+  "core": [
+    {
+      "symbol": "SNTS",
+      "name": "SONATEL SENEGAL",
+      "sector": "—",
+      "shares": 5,
+      "avgPrice": 26120.0,
+      "currentPrice": 26120.0,
+      "weight": 20.0,
+      "pnl": 0,
+      "pnlPct": 0.0,
+      "dividendYield": 0.0
+    },
+    {
+      "symbol": "ORGT",
+      "name": "ORAGROUP TOGO",
+      "sector": "—",
+      "shares": 58,
+      "avgPrice": 2400.0,
+      "currentPrice": 2400.0,
+      "weight": 20.0,
+      "pnl": 0,
+      "pnlPct": 0.0,
+      "dividendYield": 0.0
+    },
+    {
+      "symbol": "ONTBF",
+      "name": "ONATEL BURKINA FASO",
+      "sector": "—",
+      "shares": 56,
+      "avgPrice": 2485.0,
+      "currentPrice": 2485.0,
+      "weight": 20.0,
+      "pnl": 0,
+      "pnlPct": 0.0,
+      "dividendYield": 0.0
+    },
+    {
+      "symbol": "SAFC",
+      "name": "SAFCA COTE D'IVOIRE",
+      "sector": "—",
+      "shares": 42,
+      "avgPrice": 3305.0,
+      "currentPrice": 3305.0,
+      "weight": 20.0,
+      "pnl": 0,
+      "pnlPct": 0.0,
+      "dividendYield": 0.0
+    },
+    {
+      "symbol": "ABJC",
+      "name": "SERVAIR ABIDJAN  COTE D'IVOIRE",
+      "sector": "—",
+      "shares": 48,
+      "avgPrice": 2900.0,
+      "currentPrice": 2900.0,
+      "weight": 20.0,
+      "pnl": 0,
+      "pnlPct": 0.0,
+      "dividendYield": 0.0
+    }
+  ],
+  "satellite": [],
+  "backtests": {
+    "strategy": {
+      "totalReturn": 0,
+      "annualReturn": 0,
+      "sharpe": 0,
+      "maxDrawdown": 0,
+      "winRate": 0,
+      "profitFactor": 0,
+      "totalTrades": 0,
+      "avgDuration": 0
+    },
+    "buyHold": {
+      "totalReturn": 0,
+      "annualReturn": 0
+    },
+    "riskFree": {
+      "annualReturn": 6.5
+    },
+    "equityCurve": [],
+    "monthlyReturns": [],
+    "recentTrades": []
+  },
+  "signals": {
+    "summary": {
+      "strongBuy": 0,
+      "buy": 0,
+      "hold": 0,
+      "sell": 0,
+      "strongSell": 0
+    },
+    "current": []
+  },
+  "bonds": {
+    "opportunities": []
+  }
+}
