@@ -34,6 +34,7 @@ sys.path.insert(0, str(ROOT / "src"))
 try:
     from config import (
         REAL_PORTFOLIO_CAPITAL, CORE_ALLOCATION_PCT, SATELLITE_ALLOCATION_PCT,
+        CASH_ALLOCATION_PCT,
         CORE_STOCKS, STOP_LOSS_PCT, TAKE_PROFIT_PCT, TIME_STOP_DAYS,
         FALLING_KNIFE_WINDOW, FALLING_KNIFE_DROP_PCT, ZSCORE_WINDOW,
         ZSCORE_STRONG_BUY, ZSCORE_BUY, ZSCORE_SELL, ZSCORE_STRONG_SELL
@@ -41,18 +42,19 @@ try:
     CAPITAL_TOTAL = REAL_PORTFOLIO_CAPITAL
     CORE_TICKERS  = CORE_STOCKS
 except ImportError:
-    CAPITAL_TOTAL         = 1_000_000
-    CORE_ALLOCATION_PCT   = 0.70
-    SATELLITE_ALLOCATION_PCT = 0.30
-    CORE_TICKERS          = ["SNTS", "ORGT", "ONTBF", "SAFC", "ABJC"]
-    STOP_LOSS_PCT         = 0.05
-    TAKE_PROFIT_PCT       = 0.08
-    TIME_STOP_DAYS        = 10
-    FALLING_KNIFE_WINDOW  = 3
-    FALLING_KNIFE_DROP_PCT= 0.08
-    ZSCORE_WINDOW         = 200
-    ZSCORE_STRONG_BUY     = -3.0
-    ZSCORE_BUY            = -2.5
+    CAPITAL_TOTAL            = 1_000_000
+    CORE_ALLOCATION_PCT      = 0.70
+    SATELLITE_ALLOCATION_PCT = 0.20
+    CASH_ALLOCATION_PCT      = 0.10
+    CORE_TICKERS             = ["SNTS", "ORGT", "ONTBF", "SAFC", "ABJC"]
+    STOP_LOSS_PCT            = 0.05
+    TAKE_PROFIT_PCT          = 0.08
+    TIME_STOP_DAYS           = 10
+    FALLING_KNIFE_WINDOW     = 3
+    FALLING_KNIFE_DROP_PCT   = 0.08
+    ZSCORE_WINDOW            = 200
+    ZSCORE_STRONG_BUY        = -3.0
+    ZSCORE_BUY               = -2.5
     ZSCORE_SELL           = 2.5
     ZSCORE_STRONG_SELL    = 3.0
 
@@ -625,20 +627,20 @@ def main():
         monthly_returns = monthly_returns[-12:]
 
     overview = {
-        'totalValue': CAPITAL_TOTAL,
-        'initialCapital': CAPITAL_TOTAL,
-        'ytdReturn': bt_strategy['totalReturn'] if best_result else 0,
-        'dailyPnl': 0,
-        'dailyPnlPct': 0.0,
-        'coreValue': int(CAPITAL_TOTAL * CORE_ALLOCATION_PCT),
-        'satelliteValue': int(CAPITAL_TOTAL * SATELLITE_ALLOCATION_PCT),
-        'cashAvailable': 0,
-        'openPositions': len(CORE_TICKERS),
-        'corePositions': len(CORE_TICKERS),
-        'satellitePositions': 0,
-        'sharpeRatio': bt_strategy.get('sharpe'),
-        'maxDrawdown': bt_strategy.get('maxDrawdown'),
-        'winRate': bt_strategy.get('winRate')
+        'totalValue':        CAPITAL_TOTAL,
+        'initialCapital':    CAPITAL_TOTAL,
+        'ytdReturn':         bt_strategy['totalReturn'] if best_result else 0,
+        'dailyPnl':          0,
+        'dailyPnlPct':       0.0,
+        'coreValue':         int(CAPITAL_TOTAL * CORE_ALLOCATION_PCT),
+        'satelliteValue':    int(CAPITAL_TOTAL * SATELLITE_ALLOCATION_PCT),
+        'cashAvailable':     int(CAPITAL_TOTAL * CASH_ALLOCATION_PCT),
+        'openPositions':     len(CORE_TICKERS),
+        'corePositions':     len(CORE_TICKERS),
+        'satellitePositions':0,
+        'sharpeRatio':       bt_strategy.get('sharpe'),
+        'maxDrawdown':       bt_strategy.get('maxDrawdown'),
+        'winRate':           bt_strategy.get('winRate')
     }
 
     # 5. Build and save logs

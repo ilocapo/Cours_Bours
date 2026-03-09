@@ -18,7 +18,22 @@ YTD_FILE   = ROOT / "YTD_2026.csv"
 SIG_GLOB   = str(ROOT / "output" / "signals" / "*.csv")
 CORE_FILE  = ROOT / "core_allocation.csv"
 
-INITIAL_CAPITAL = 1_000_000
+INITIAL_CAPITAL     = 1_000_000
+CORE_PCT            = 0.70
+SATELLITE_PCT       = 0.20
+CASH_PCT            = 0.10
+
+try:
+    from config import (
+        REAL_PORTFOLIO_CAPITAL, CORE_ALLOCATION_PCT,
+        SATELLITE_ALLOCATION_PCT, CASH_ALLOCATION_PCT
+    )
+    INITIAL_CAPITAL  = REAL_PORTFOLIO_CAPITAL
+    CORE_PCT         = CORE_ALLOCATION_PCT
+    SATELLITE_PCT    = SATELLITE_ALLOCATION_PCT
+    CASH_PCT         = CASH_ALLOCATION_PCT
+except Exception:
+    pass
 
 
 def safe_float(v, default=0.0):
@@ -182,7 +197,7 @@ def main():
             "dailyPnlPct":       daily_pct,
             "coreValue":         int(core_val),
             "satelliteValue":    int(sat_val),
-            "cashAvailable":     max(0, INITIAL_CAPITAL - int(core_val) - int(sat_val)),
+            "cashAvailable":     int(INITIAL_CAPITAL * CASH_PCT),
             "openPositions":     len(core_pos) if core_pos else data["overview"].get("openPositions", 5),
             "corePositions":     len(core_pos) if core_pos else data["overview"].get("corePositions", 5),
             "satellitePositions":0,

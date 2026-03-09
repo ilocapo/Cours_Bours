@@ -29,13 +29,15 @@ os.makedirs(OUTPUT_BACKTEST_REPORTS, exist_ok=True)
 #   - Les rendements en % restent identiques, juste les montants changent
 REAL_PORTFOLIO_CAPITAL = 1_000_000  # À MODIFIER selon ton capital réel
 
-# Allocation CORE vs SATELLITE (split ne change pas)
-CORE_ALLOCATION_PCT = 0.70      # 70% en CORE (5 big caps dividend)
-SATELLITE_ALLOCATION_PCT = 0.30 # 30% en SATELLITE (Z-Score robot)
+# Allocation CORE vs SATELLITE vs CASH
+CORE_ALLOCATION_PCT      = 0.70  # 70% en CORE (5 big caps dividend)
+SATELLITE_ALLOCATION_PCT = 0.20  # 20% en SATELLITE (Z-Score robot)
+CASH_ALLOCATION_PCT      = 0.10  # 10% en CASH (réserve / opportunités)
 
 # Capital calculé automatiquement
-REAL_CORE_CAPITAL = int(REAL_PORTFOLIO_CAPITAL * CORE_ALLOCATION_PCT)
+REAL_CORE_CAPITAL      = int(REAL_PORTFOLIO_CAPITAL * CORE_ALLOCATION_PCT)
 REAL_SATELLITE_CAPITAL = int(REAL_PORTFOLIO_CAPITAL * SATELLITE_ALLOCATION_PCT)
+REAL_CASH_CAPITAL      = int(REAL_PORTFOLIO_CAPITAL * CASH_ALLOCATION_PCT)
 
 # 5 stocks CORE (division égale parmi les 5)
 REAL_CAPITAL_PER_CORE_STOCK = REAL_CORE_CAPITAL // 5
