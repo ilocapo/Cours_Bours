@@ -382,9 +382,93 @@ function renderPortfolioMetrics() {
 // ═══════════════════════════════════════════
 function renderSignals() {
   renderSignalSummary();
+  renderSignalConseils();
   renderSignalHeatmap();
   renderZScoreChart();
   renderSignalTable();
+}
+
+function renderSignalConseils() {
+  const el = document.getElementById('signal-conseils');
+  if(!el) return;
+  const sigs = DATA.signals || {};
+  const sentiment = sigs.marketSentiment || 'NEUTRE';
+  const buys  = sigs.buysCount  || 0;
+  const sells = sigs.sellsCount || 0;
+  const tops  = sigs.topOpportunities || [];
+
+  const sentCol = sentiment==='HAUSSIER' ? 'var(--g)' : sentiment==='BAISSIER' ? 'var(--r)' : 'var(--o)';
+  const sentIcon = sentiment==='HAUSSIER' ? '▲' : sentiment==='BAISSIER' ? '▼' : '◆';
+
+  // --- Sentiment banner ---
+  const banner = `
+    <div style="display:flex;align-items:center;gap:16px;padding:10px 16px;background:var(--bg2);border:1px solid var(--bd);border-left:3px solid ${sentCol};margin-bottom:12px;">
+      <span style="color:${sentCol};font-size:18px;font-family:var(--ff)">${sentIcon}</span>
+      <div>
+        <div style="font-size:9px;color:var(--td);letter-spacing:2px">SENTIMENT MARCHÉ</div>
+        <div style="font-size:14px;font-weight:700;color:${sentCol};font-family:var(--ff);letter-spacing:3px">${sentiment}</div>
+      </div>
+      <div style="margin-left:auto;font-size:9px;color:var(--td);text-align:right">
+        <div>${buys} signal${buys>1?'s':''} ACHAT &nbsp;|&nbsp; ${sells} signal${sells>1?'s':''} VENTE</div>
+        <div style="margin-top:3px;color:var(--tb)">${tops.length > 0 ? tops.length+' OPPORTUNITÉ'+(tops.length>1?'S':'') : 'AUCUNE OUVERTURE SUGGÉRÉE'}</div>
+      </div>
+    </div>`;
+
+  // --- Cartes conseils ---
+  let cards = '';
+  if(tops.length === 0) {
+    cards = `<div style="padding:20px;text-align:center;background:var(--bg2);border:1px solid var(--bd);color:var(--td);font-size:10px;letter-spacing:1px">
+      <div style="font-size:18px;margin-bottom:8px;color:var(--muted)">◇</div>
+      AUCUNE OPPORTUNITÉ D'ACHAT ACTUELLEMENT<br>
+      <span style="color:var(--r);font-size:9px">Tous les signaux sont VENTE / HOLD — attendre un pullback ou un Z-Score &lt; -2.5</span>
+    </div>`;
+  } else {
+    const cardList = tops.map(s => {
+      const z = s.zScore || 0;
+      const sigCol = s.signal==='Strong Buy' ? 'var(--g)' : 'var(--o)';
+      const rr = s.riskReward && s.riskReward > 0 ? s.riskReward.toFixed(1)+':1' : '—';
+      const deploy = s.capitalDeploy > 0 ? fmt.num(s.capitalDeploy)+' FCFA' : '—';
+      const zInterp = z <= -3 ? 'Très sous-évalué' : z <= -2.5 ? 'Sous-évalué' : 'Signal achat';
+      return `
+        <div style="flex:1;min-width:220px;max-width:340px;background:var(--bg2);border:1px solid var(--bd);border-top:2px solid ${sigCol};padding:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <span style="font-size:15px;font-weight:700;color:var(--tb);font-family:var(--ff)">${s.symbol}</span>
+            <span class="sig ${fmt.sigClass(s.signal)}" style="font-size:8px">${s.signal.toUpperCase()}</span>
+          </div>
+          <div style="font-size:9px;color:var(--td);margin-bottom:3px">Z-SCORE</div>
+          <div style="font-size:20px;font-weight:700;color:${sigCol};font-family:var(--ff);margin-bottom:2px">${z.toFixed(2)}</div>
+          <div style="font-size:8px;color:var(--td);margin-bottom:12px">${zInterp}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;margin-bottom:10px">
+            <div style="background:var(--bg3);padding:6px">
+              <div style="color:var(--td);margin-bottom:2px">PRIX ACTUEL</div>
+              <div style="color:var(--tb);font-weight:600">${fmt.num(s.price)} FCFA</div>
+            </div>
+            <div style="background:rgba(0,229,122,0.07);padding:6px">
+              <div style="color:var(--td);margin-bottom:2px">OBJECTIF (TP)</div>
+              <div style="color:var(--g);font-weight:700">${s.tp > 0 ? fmt.num(s.tp)+' FCFA' : '—'} <span style="font-size:8px">${s.tpPct||''}</span></div>
+            </div>
+            <div style="background:rgba(255,45,85,0.07);padding:6px">
+              <div style="color:var(--td);margin-bottom:2px">STOP LOSS (SL)</div>
+              <div style="color:var(--r);font-weight:700">${s.sl > 0 ? fmt.num(s.sl)+' FCFA' : '—'} <span style="font-size:8px">${s.slPct||''}</span></div>
+            </div>
+            <div style="background:var(--bg3);padding:6px">
+              <div style="color:var(--td);margin-bottom:2px">RISK/REWARD</div>
+              <div style="color:var(--o);font-weight:700">${rr}</div>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--bd);padding-top:8px;display:flex;justify-content:space-between;font-size:9px">
+            <div><span style="color:var(--td)">QTÉ SUGGÉRÉE&nbsp;</span><span style="color:var(--tb);font-weight:600">${s.qty > 0 ? s.qty+' titres' : '—'}</span></div>
+            <div><span style="color:var(--td)">CAPITAL&nbsp;</span><span style="color:var(--o);font-weight:600">${deploy}</span></div>
+          </div>
+        </div>`;
+    }).join('');
+    cards = `<div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:4px">${cardList}</div>`;
+  }
+
+  el.innerHTML = `<div style="margin-bottom:16px">
+    <div class="stitle" style="margin-bottom:8px">💡 CONSEILS &amp; OPPORTUNITÉS</div>
+    ${banner}${cards}
+  </div>`;
 }
 
 function renderSignalSummary() {
@@ -445,12 +529,32 @@ function renderSignalTable() {
   const sigs = DATA.signals?.current || [];
   const el = document.getElementById('signal-table-wrap');
   if(!el) return;
-  el.innerHTML = `<table class="sig-table"><thead><tr><th>TICKER</th><th>NOM</th><th class="num">PRIX</th><th class="num">Z-SCORE</th><th>SIGNAL</th><th class="num">VOLUME</th><th class="num">VOLATIL.</th></tr></thead><tbody>
-    ${sigs.map(s=>`<tr>
-      <td style="color:var(--tb);font-weight:600">${s.symbol}</td><td style="color:var(--td);font-size:8px">${s.name||''}</td>
-      <td class="num">${fmt.num(s.price)}</td><td class="num" style="color:${fmt.zsColor(s.zScore)}">${(s.zScore||0).toFixed(2)}</td>
-      <td><span class="sig ${fmt.sigClass(s.signal)}">${s.signal}</span></td>
-      <td class="num">${fmt.num(s.volume)}</td><td class="num">${(s.volatility||0).toFixed(1)}%</td></tr>`).join('')}
+  el.innerHTML = `<table class="sig-table"><thead><tr>
+    <th>TICKER</th>
+    <th class="num">PRIX</th>
+    <th class="num">Z-SCORE</th>
+    <th>SIGNAL</th>
+    <th class="num">TP</th>
+    <th class="num">SL</th>
+    <th class="num">R/R</th>
+    <th class="num">QTÉ</th>
+    <th class="num">CAPITAL</th>
+  </tr></thead><tbody>
+    ${sigs.map(s=>{
+      const hasBuy = s.action === 'BUY';
+      const rr = s.riskReward && s.riskReward > 0 ? s.riskReward.toFixed(1) : '—';
+      return `<tr>
+        <td style="color:var(--tb);font-weight:600;font-family:var(--ff)">${s.symbol}</td>
+        <td class="num">${fmt.num(s.price)}</td>
+        <td class="num" style="color:${fmt.zsColor(s.zScore)}">${(s.zScore||0).toFixed(2)}</td>
+        <td><span class="sig ${fmt.sigClass(s.signal)}">${s.signal}</span></td>
+        <td class="num" style="color:var(--g)">${hasBuy && s.tp > 0 ? fmt.num(s.tp) : '—'}</td>
+        <td class="num" style="color:var(--r)">${hasBuy && s.sl > 0 ? fmt.num(s.sl) : '—'}</td>
+        <td class="num" style="color:var(--o)">${hasBuy ? rr : '—'}</td>
+        <td class="num">${hasBuy && s.qty > 0 ? s.qty : '—'}</td>
+        <td class="num" style="color:var(--o)">${hasBuy && s.capitalDeploy > 0 ? fmt.num(s.capitalDeploy) : '—'}</td>
+      </tr>`;
+    }).join('')}
   </tbody></table>`;
 }
 

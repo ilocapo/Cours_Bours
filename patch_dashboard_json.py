@@ -98,13 +98,38 @@ def read_signals():
         tick = col(row, "Ticker")
         price= safe_float(col(row, "Price"))
         z    = safe_float(col(row, "Z_Score"))
+        tp   = safe_float(col(row, "TP_Price"))
+        sl   = safe_float(col(row, "SL_Price"))
+        qty  = int(safe_float(col(row, "Qty"), 0))
+        action = col(row, "Action")
+        tp_pct = col(row, "TP_Pct") or "8.0%"
+        sl_pct = col(row, "SL_Pct") or "5.0%"
+        # Risk/Reward: (TP - Price) / (Price - SL)
+        rr = 0.0
+        if tp > price > sl > 0:
+            rr = round((tp - price) / (price - sl), 2)
+        capital_deploy = int(price * qty) if qty > 0 else 0
         if   sig == "Strong Buy":  summary["strongBuy"]  += 1
         elif sig == "Buy":         summary["buy"]         += 1
         elif sig == "Strong Sell": summary["strongSell"]  += 1
         elif sig == "Sell":        summary["sell"]        += 1
         else:                      summary["hold"]        += 1
-        current.append({"symbol": tick, "price": price, "zScore": round(z, 2),
-                         "signal": sig, "volume": 0, "volatility": 0})
+        current.append({
+            "symbol":        tick,
+            "price":         price,
+            "zScore":        round(z, 2),
+            "signal":        sig,
+            "action":        action,
+            "volume":        0,
+            "volatility":    0,
+            "tp":            tp,
+            "sl":            sl,
+            "qty":           qty,
+            "tpPct":         tp_pct,
+            "slPct":         sl_pct,
+            "riskReward":    rr,
+            "capitalDeploy": capital_deploy,
+        })
     # Trier par Z-Score croissant (plus sous-évalué en premier)
     current.sort(key=lambda x: x["zScore"])
     return summary, current
@@ -258,10 +283,30 @@ def main():
     if sig_summary is not None:
         data.setdefault("signals", {})
         data["signals"]["summary"] = sig_summary
+        # Sentiment global
+        buys  = sig_summary.get("strongBuy", 0) + sig_summary.get("buy", 0)
+        sells = sig_summary.get("strongSell", 0) + sig_summary.get("sell", 0)
+        total = buys + sells + sig_summary.get("hold", 0)
+        if total > 0:
+            if buys > sells * 1.5:
+                sentiment = "HAUSSIER"
+            elif sells > buys * 1.5:
+                sentiment = "BAISSIER"
+            else:
+                sentiment = "NEUTRE"
+        else:
+            sentiment = "NEUTRE"
+        data["signals"]["marketSentiment"] = sentiment
+        data["signals"]["buysCount"]  = buys
+        data["signals"]["sellsCount"] = sells
         if sig_current:
             data["signals"]["current"] = sig_current
+            # Top 3 opportunités d'achat (Strong Buy puis Buy, par Z-Score croissant)
+            buy_ops = [s for s in sig_current if s.get("action") == "BUY"]
+            buy_ops.sort(key=lambda x: x.get("zScore", 0))
+            data["signals"]["topOpportunities"] = buy_ops[:3]
         print(f"  ✓ Signaux: {sig_summary.get('strongBuy',0)} StrongBuy | "
-              f"{sig_summary.get('buy',0)} Buy | {sig_summary.get('sell',0)+sig_summary.get('strongSell',0)} Sell")
+              f"{sig_summary.get('buy',0)} Buy | {sig_summary.get('sell',0)+sig_summary.get('strongSell',0)} Sell | Sentiment: {sentiment}")
 
     # 6. Patcher positions CORE
     if core_pos:
