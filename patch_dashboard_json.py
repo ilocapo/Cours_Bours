@@ -8,6 +8,7 @@ Ne relance PAS les backtests (très rapide, ~1 sec).
 
 import json
 import glob
+import csv
 import os
 from datetime import datetime
 from pathlib import Path
@@ -17,6 +18,7 @@ JSON_FILE  = ROOT / "docs" / "data" / "dashboard.json"
 YTD_FILE   = ROOT / "YTD_2026.csv"
 SIG_GLOB   = str(ROOT / "output" / "signals" / "*.csv")
 CORE_FILE  = ROOT / "core_allocation.csv"
+BOND_GLOB  = str(ROOT / "bond_opportunities_*.csv")
 
 INITIAL_CAPITAL     = 1_000_000
 CORE_PCT            = 0.70
@@ -150,6 +152,38 @@ def read_core_positions():
     return positions
 
 
+def read_bonds():
+    """Lit le dernier bond_opportunities_*.csv et retourne la liste pour bonds.opportunities."""
+    files = sorted(glob.glob(BOND_GLOB))
+    if not files:
+        return None
+    latest = files[-1]
+    opportunities = []
+    with open(latest, encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            def g(key):
+                return row.get(key, "").strip()
+            name      = g("Libelle") or g("Ticker")
+            coupon    = safe_float(g("Coupon_Rate_%"))
+            yield_eff = safe_float(g("Effective_Yield_%"))
+            price     = safe_float(g("Current_Price"))
+            maturity  = g("Maturity_Year") or "-"
+            discount  = safe_float(g("Discount_%"))
+            rating    = g("Rating") or "-"
+            if name:
+                opportunities.append({
+                    "name":     name,
+                    "coupon":   round(coupon, 2),
+                    "maturity": maturity,
+                    "price":    round(price, 2),
+                    "yieldEff": round(yield_eff, 2),
+                    "discount": round(discount, 2),
+                    "rating":   rating,
+                })
+    return opportunities
+
+
 def main():
     print(f"\n[PATCH] Mise à jour dashboard.json — {datetime.now().strftime('%H:%M:%S')}")
 
@@ -166,6 +200,7 @@ def main():
     ytd  = read_ytd()
     sig_summary, sig_current = read_signals()
     core_pos = read_core_positions()
+    bonds_opps = read_bonds()
 
     now = datetime.now()
 
@@ -233,7 +268,13 @@ def main():
         data["core"] = core_pos
         print(f"  ✓ Core positions: {len(core_pos)} titres")
 
-    # 7. Ajouter un point à portfolioHistory (si pas déjà là)
+    # 7. Patcher obligations
+    if bonds_opps is not None:
+        data.setdefault("bonds", {})
+        data["bonds"]["opportunities"] = bonds_opps
+        print(f"  ✓ Obligations: {len(bonds_opps)} opportunités")
+
+    # 8. Ajouter un point à portfolioHistory (si pas déjà là)
     if ytd and "portfolioHistory" in data:
         today_str = now.strftime("%Y-%m-%d")
         already   = any(pt.get("date","").startswith(today_str) for pt in data["portfolioHistory"])
@@ -245,7 +286,7 @@ def main():
             })
             print(f"  ✓ portfolioHistory: point {today_str} ajouté")
 
-    # 8. Sauvegarder
+    # 9. Sauvegarder
     os.makedirs(JSON_FILE.parent, exist_ok=True)
     with open(JSON_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"), default=str)
