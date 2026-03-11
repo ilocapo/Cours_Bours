@@ -17,9 +17,10 @@ ROOT       = Path(__file__).resolve().parent
 JSON_FILE  = ROOT / "docs" / "data" / "dashboard.json"
 YTD_FILE   = ROOT / "YTD_2026.csv"
 SIG_GLOB   = str(ROOT / "output" / "signals" / "*.csv")
-CORE_FILE  = ROOT / "core_allocation.csv"
-BOND_GLOB  = str(ROOT / "bond_opportunities_*.csv")
-FUND_ALERTS= ROOT / "fundamentals_alerts.json"
+CORE_FILE       = ROOT / "core_allocation.csv"
+BOND_GLOB       = str(ROOT / "bond_opportunities_*.csv")
+FUND_ALERTS     = ROOT / "fundamentals_alerts.json"
+DIVIDENDS_STATUS= ROOT / "dividends_status.json"
 
 INITIAL_CAPITAL     = 1_000_000
 CORE_PCT            = 0.70
@@ -210,6 +211,18 @@ def read_bonds():
     return opportunities
 
 
+def read_dividends():
+    """Lit dividends_status.json généré par dividend_tracker.py."""
+    if not DIVIDENDS_STATUS.exists():
+        return None
+    try:
+        with open(DIVIDENDS_STATUS, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"  [WARN] lecture dividends_status.json: {e}")
+        return None
+
+
 def read_fundamentals_alerts():
     """Lit fundamentals_alerts.json généré par fundamentals_core_alert.py."""
     if not FUND_ALERTS.exists():
@@ -237,8 +250,9 @@ def main():
     ytd  = read_ytd()
     sig_summary, sig_current = read_signals()
     core_pos = read_core_positions()
-    bonds_opps = read_bonds()
-    fund_data  = read_fundamentals_alerts()
+    bonds_opps  = read_bonds()
+    fund_data   = read_fundamentals_alerts()
+    div_data    = read_dividends()
 
     now = datetime.now()
 
@@ -275,6 +289,9 @@ def main():
                 daily_pnl = total_val - prev_total
                 daily_pct = round(daily_pnl / prev_total * 100, 2)
 
+        # Ajouter dividendes reçus au CASH
+        div_recu = int(div_data["totalRecuFcfa"]) if div_data else 0
+        cash_val_with_div = cash_val + div_recu
         data["overview"].update({
             "totalValue":        int(total_val),
             "initialCapital":    INITIAL_CAPITAL,
@@ -283,7 +300,9 @@ def main():
             "dailyPnlPct":       daily_pct,
             "coreValue":         int(core_val),
             "satelliteValue":    sat_val,
-            "cashAvailable":     cash_val,
+            "cashAvailable":     cash_val_with_div,
+            "cashBase":          cash_val,
+            "dividendesRecus":   div_recu,
             "openPositions":     len(core_pos) if core_pos else data["overview"].get("openPositions", 5),
             "corePositions":     len(core_pos) if core_pos else data["overview"].get("corePositions", 5),
             "satellitePositions":0,
@@ -331,6 +350,18 @@ def main():
         data.setdefault("bonds", {})
         data["bonds"]["opportunities"] = bonds_opps
         print(f"  ✓ Obligations: {len(bonds_opps)} opportunités")
+
+    # 8b. Patcher dividendes
+    if div_data:
+        data["dividends"] = div_data
+        div_alerts = div_data.get("alerts", [])
+        div_recu_v = div_data.get("totalRecuFcfa", 0)
+        div_att_v  = div_data.get("totalAttenduFcfa", 0)
+        print(f"  ✓ Dividendes: {int(div_recu_v):,} FCFA reçus | "
+              f"{int(div_att_v):,} FCFA attendus | "
+              f"{len(div_alerts)} alerte(s)")
+    else:
+        print("  [SKIP] dividends_status.json absent — run dividend_tracker.py")
 
     # 8. Patcher fondamentaux CORE
     if fund_data:

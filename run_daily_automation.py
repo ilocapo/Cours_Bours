@@ -35,6 +35,7 @@ MODULES = [
     ('portfolio_manager.py',     'Gestion des positions'),
     ('core_rebalancing.py',      'Monitor CORE stocks'),
     ('bond_scanner.py',          'Scan des obligations'),
+    ('dividend_tracker.py',      'Suivi dividendes CORE (alertes + cash)'),
     ('patch_dashboard_json.py',  'Mise à jour dashboard web (GitHub Pages)'),
 ]
 

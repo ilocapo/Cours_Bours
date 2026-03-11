@@ -316,6 +316,7 @@ function renderPortfolio() {
   renderWeightsChart();
   renderPortfolioCoreTable();
   renderFundamentals();
+  renderDividends();
   renderPortfolioSatTable();
   renderPortfolioMetrics();
 }
@@ -376,6 +377,90 @@ function renderPortfolioMetrics() {
     ['Taux de gain',`${(o.winRate||0).toFixed(0)}%`],['Ratio de Sharpe',`${(o.sharpeRatio||0).toFixed(2)}`]
   ];
   el.innerHTML = metrics.map(([l,v])=>`<div class="rbar-block"><div class="rbar-label"><span>${l}</span><span style="color:var(--tb)">${v}</span></div></div>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// DIVIDENDES CORE — Calendrier & Suivi
+// ═══════════════════════════════════════════
+function renderDividends() {
+  const elSummary = document.getElementById('dividends-summary');
+  const elTable   = document.getElementById('dividends-table');
+  if(!elSummary || !elTable) return;
+
+  const div = DATA.dividends;
+  const o   = DATA.overview || {};
+
+  if(!div || !div.positions || div.positions.length === 0) {
+    elSummary.innerHTML = `<div style="padding:12px;background:var(--bg2);border:1px solid var(--bd);color:var(--td);font-size:9px;letter-spacing:1px">
+      ◇ DONNÉES DIVIDENDES NON DISPONIBLES — Exécuter dividend_tracker.py
+    </div>`;
+    elTable.innerHTML = '';
+    return;
+  }
+
+  const recu    = div.totalRecuFcfa    || 0;
+  const attendu = div.totalAttenduFcfa || 0;
+  const alerts  = div.alerts           || [];
+  const cashBase= o.cashBase           || o.cashAvailable || 0;
+
+  // Alertes urgentes
+  const urgentAlerts = alerts.filter(a => a.urgence === 'ROUGE' || a.urgence === 'ORANGE');
+  const alertsHtml = urgentAlerts.length ? `
+    <div style="margin-bottom:8px">
+      ${urgentAlerts.map(a => `
+        <div style="padding:8px 12px;background:rgba(255,183,0,0.08);border-left:3px solid var(--o);font-size:9px;color:var(--o);margin-bottom:4px">
+          ${a.message}
+        </div>`).join('')}
+    </div>` : '';
+
+  // Bandeau résumé
+  elSummary.innerHTML = `
+    ${alertsHtml}
+    <div style="display:flex;align-items:center;gap:16px;padding:10px 14px;background:var(--bg2);border:1px solid var(--bd);border-left:3px solid var(--g);margin-bottom:4px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column">
+        <span style="font-size:7px;color:var(--td);letter-spacing:1px">✅ REÇUS</span>
+        <span style="font-size:14px;font-weight:700;color:var(--g);font-family:var(--ff)">${(recu).toLocaleString('fr-FR')} FCFA</span>
+      </div>
+      <span style="color:var(--bd)">|</span>
+      <div style="display:flex;flex-direction:column">
+        <span style="font-size:7px;color:var(--td);letter-spacing:1px">⏳ ATTENDUS</span>
+        <span style="font-size:14px;font-weight:700;color:var(--o);font-family:var(--ff)">${(attendu).toLocaleString('fr-FR')} FCFA</span>
+      </div>
+      <span style="color:var(--bd)">|</span>
+      <div style="display:flex;flex-direction:column">
+        <span style="font-size:7px;color:var(--td);letter-spacing:1px">💵 CASH TOTAL</span>
+        <span style="font-size:14px;font-weight:700;color:var(--b);font-family:var(--ff)">${(cashBase).toLocaleString('fr-FR')} FCFA</span>
+      </div>
+      ${recu > 0
+        ? `<span style="margin-left:auto;font-size:8px;color:var(--g)">+${(recu).toLocaleString('fr-FR')} FCFA ajoutés au CASH</span>`
+        : `<span style="margin-left:auto;font-size:8px;color:var(--td)">Aucun dividende encaissé cette année</span>`}
+    </div>`;
+
+  // Tableau
+  const statutColor = {RECU:'var(--g)', ATTENDU:'var(--o)', 'ESTIMÉ':'var(--td)', ESTIME:'var(--td)'};
+  elTable.innerHTML = `<table class="sig-table">
+    <thead><tr>
+      <th>TICKER</th><th>NOM</th><th class="num">QTÉ</th><th class="num">DIV/ACTION</th>
+      <th class="num">TOTAL</th><th>EX-DATE</th><th>PAIEMENT</th><th>STATUT</th>
+    </tr></thead>
+    <tbody>
+      ${div.positions.map(p => {
+        const col = statutColor[p.statut] || 'var(--td)';
+        const mpa = p.montantParAction > 0 ? p.montantParAction.toLocaleString('fr-FR')+' FCFA'
+                                           : '<span style="color:var(--td)">$ à saisir</span>';
+        const tot = p.montantTotal > 0 ? p.montantTotal.toLocaleString('fr-FR')+' FCFA' : '—';
+        return `<tr>
+          <td style="color:var(--tb);font-weight:600">${p.ticker}</td>
+          <td style="color:var(--td);font-size:8px">${p.nom}</td>
+          <td class="num">${p.nbActions}</td>
+          <td class="num">${mpa}</td>
+          <td class="num" style="color:${p.montantTotal>0?'var(--g)':'var(--td)'}">${tot}</td>
+          <td style="font-size:9px">${p.exDate}</td>
+          <td style="font-size:9px">${p.paiementDate}</td>
+          <td><span style="color:${col};font-size:8px;font-weight:700;border:1px solid ${col};padding:1px 5px">${p.statut}</span></td>
+        </tr>`;
+      }).join('')}
+    </tbody></table>`;
 }
 
 // ═══════════════════════════════════════════
