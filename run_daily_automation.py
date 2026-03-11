@@ -28,7 +28,7 @@ from pathlib import Path
 # Répertoire du script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Modules à exécuter dans l'ordre
+# Modules à exécuter dans l'ordre (QUOTIDIEN)
 MODULES = [
     ('daily_signals.py',         'Génération des signaux Z-Score'),
     ('daily_market_update.py',   'Mise à jour du portefeuille'),
@@ -36,6 +36,12 @@ MODULES = [
     ('core_rebalancing.py',      'Monitor CORE stocks'),
     ('bond_scanner.py',          'Scan des obligations'),
     ('patch_dashboard_json.py',  'Mise à jour dashboard web (GitHub Pages)'),
+]
+
+# Modules fondamentaux (HEBDOMADAIRE — exécutés le lundi ou si données > 7j)
+FUNDAMENTAL_MODULES = [
+    ('fundamental_scraper.py',      'Scraping états financiers BRVM (CA/REX/RN)'),
+    ('fundamentals_core_alert.py',  'Arbitrage CORE — détection illusions de croissance'),
 ]
 
 # Fichier de log
@@ -151,39 +157,65 @@ def generate_summary():
     log("AUTOMATISATION TERMINEE!")
 
 
+def should_run_fundamentals() -> bool:
+    """Décide si on doit exécuter les modules fondamentaux ce jour.
+    Critères : lundi OU fichier absent OU données > 7 jours.
+    """
+    today = datetime.now()
+    if today.weekday() == 0:   # Lundi
+        return True
+    alerts_file = os.path.join(SCRIPT_DIR, 'fundamentals_alerts.json')
+    if not os.path.exists(alerts_file):
+        return True
+    age_days = (today - datetime.fromtimestamp(os.path.getmtime(alerts_file))).days
+    return age_days >= 7
+
+
 def main():
     """Fonction principale"""
     log(f"\n{'='*80}")
     log("DEMARRAGE AUTOMATION ALTOS - " + datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
     log(f"{'='*80}\n")
-    
+
     results = {}
     success_count = 0
-    
-    # Exécuter chaque module
+
+    # ── Modules fondamentaux (hebdomadaire) ─────────────────
+    if should_run_fundamentals():
+        log("FONDAMENTAUX: Mise a jour hebdomadaire des etats financiers...")
+        for module_name, description in FUNDAMENTAL_MODULES:
+            success = run_module(module_name, description)
+            results[f"[HEBDO] {description}"] = success
+            if success:
+                success_count += 1
+    else:
+        log("FONDAMENTAUX: Deja a jour (prochaine MAJ lundi). Skipped.")
+
+    # ── Modules quotidiens ───────────────────────────────────
     for module_name, description in MODULES:
         success = run_module(module_name, description)
         results[description] = success
         if success:
             success_count += 1
-    
+
+    total = len(results)
+
     # Résumé final
     log(f"\n{'='*80}")
     log("RESUME DES EXECUTIONS")
     log(f"{'='*80}")
-    
+
     for description, success in results.items():
         status = "OK" if success else "ERREUR"
         log(f"  {status}: {description}")
-    
-    log(f"\nTotal: {success_count}/{len(MODULES)} modules executes avec succes")
-    
-    # Message final
-    if success_count == len(MODULES):
+
+    log(f"\nTotal: {success_count}/{total} modules executes avec succes")
+
+    if success_count == total:
         log("\nSUCCES COMPLET! Tous les modules ont tournes.", "SUCCESS")
         return 0
     else:
-        log(f"\nATTENTION: {len(MODULES) - success_count} module(s) ont echoue.", "WARNING")
+        log(f"\nATTENTION: {total - success_count} module(s) ont echoue.", "WARNING")
         return 1
 
 

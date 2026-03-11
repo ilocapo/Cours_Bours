@@ -315,6 +315,7 @@ function renderPortfolio() {
 
   renderWeightsChart();
   renderPortfolioCoreTable();
+  renderFundamentals();
   renderPortfolioSatTable();
   renderPortfolioMetrics();
 }
@@ -375,6 +376,98 @@ function renderPortfolioMetrics() {
     ['Taux de gain',`${(o.winRate||0).toFixed(0)}%`],['Ratio de Sharpe',`${(o.sharpeRatio||0).toFixed(2)}`]
   ];
   el.innerHTML = metrics.map(([l,v])=>`<div class="rbar-block"><div class="rbar-label"><span>${l}</span><span style="color:var(--tb)">${v}</span></div></div>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// ARBITRAGE CORE — Fondamentaux & Alertes
+// ═══════════════════════════════════════════
+function renderFundamentals() {
+  const fund = DATA.fundamentals;
+  const elSummary = document.getElementById('fundamentals-summary');
+  const elCards   = document.getElementById('fundamentals-cards');
+  if(!elSummary || !elCards) return;
+
+  if(!fund || !fund.alerts || fund.alerts.length === 0) {
+    elSummary.innerHTML = `<div style="padding:12px;background:var(--bg2);border:1px solid var(--bd);color:var(--td);font-size:9px;letter-spacing:1px">
+      ◇ DONNÉES FONDAMENTALES NON DISPONIBLES — Exécuter fundamental_scraper.py + fundamentals_core_alert.py
+    </div>`;
+    elCards.innerHTML = '';
+    return;
+  }
+
+  const alerts = fund.alerts;
+  const summary = fund.summary || {};
+  const generated = fund.generatedAt ? new Date(fund.generatedAt).toLocaleDateString('fr-FR') : '—';
+
+  // Bandeau résumé
+  const summaryItems = [
+    {l:'✅ CONSERVER', v: summary.conserver||0, c:'var(--g)'},
+    {l:'🔵 RENFORCER', v: summary.renforcer||0, c:'var(--b)'},
+    {l:'🟡 SURVEILLER',v: summary.surveiller||0, c:'var(--o)'},
+    {l:'🔴 LIQUIDER',  v: summary.liquider||0,  c:'var(--r)'},
+  ];
+  elSummary.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg2);border:1px solid var(--bd);border-left:3px solid var(--b);margin-bottom:4px;flex-wrap:wrap">
+      ${summaryItems.map(i=>`<div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;font-family:var(--ff);color:${i.c}">${i.l}</span>
+        <span style="font-size:16px;font-weight:700;color:${i.c};font-family:var(--ff)">${i.v}</span>
+      </div>`).join('<span style="color:var(--bd)">|</span>')}
+      <span style="margin-left:auto;font-size:8px;color:var(--td)">Mis à jour : ${generated}</span>
+    </div>`;
+
+  // Cartes par ticker
+  const niveauColor = {CONSERVER:'var(--g)',RENFORCER:'var(--b)',SURVEILLER:'var(--o)',LIQUIDER:'var(--r)'};
+  const niveauBg    = {CONSERVER:'rgba(0,229,122,0.06)',RENFORCER:'rgba(0,170,255,0.06)',SURVEILLER:'rgba(255,183,0,0.06)',LIQUIDER:'rgba(255,45,85,0.08)'};
+
+  elCards.innerHTML = alerts.map(a => {
+    const col = niveauColor[a.niveau] || 'var(--td)';
+    const bg  = niveauBg[a.niveau]   || 'var(--bg2)';
+    const caSign  = a.caYoY  >= 0 ? '+' : '';
+    const rexSign = a.rexYoY >= 0 ? '+' : '';
+    const rnSign  = a.rnYoY  >= 0 ? '+' : '';
+    const cacCol  = a.cacOpinion?.includes('réserve') && !a.cacOpinion?.includes('Sans') ? 'var(--r)' :
+                    a.cacOpinion === 'Sans réserve' ? 'var(--g)' : 'var(--o)';
+
+    const detailsHtml = (a.details||[]).map(d =>
+      `<div style="font-size:8px;color:var(--o);padding:3px 0;border-bottom:1px solid var(--bd)">⚡ ${d}</div>`
+    ).join('');
+
+    return `<div style="flex:1;min-width:260px;max-width:360px;background:${bg};border:1px solid var(--bd);border-top:2px solid ${col};padding:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:14px;font-weight:700;color:var(--tb);font-family:var(--ff)">${a.ticker}</span>
+        <span style="font-size:8px;font-weight:700;color:${col};border:1px solid ${col};padding:2px 6px;letter-spacing:1px">${a.icone||''} ${a.niveau}</span>
+      </div>
+      <div style="font-size:8px;color:var(--td);margin-bottom:10px">${a.nom} · ${a.secteur}</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:9px;margin-bottom:10px">
+        <div style="background:var(--bg3);padding:6px;text-align:center">
+          <div style="color:var(--td);font-size:7px;margin-bottom:2px">CA ${a.derniereAnnee}</div>
+          <div style="color:var(--tb);font-weight:600">${a.ca ? a.ca.toLocaleString('fr-FR') : '—'}</div>
+          <div style="color:${a.caYoY>=0?'var(--g)':'var(--r)'};font-size:8px">${caSign}${a.caYoY}%</div>
+        </div>
+        <div style="background:var(--bg3);padding:6px;text-align:center">
+          <div style="color:var(--td);font-size:7px;margin-bottom:2px">REX · ${a.margeRex}%</div>
+          <div style="color:var(--tb);font-weight:600">${a.rex ? a.rex.toLocaleString('fr-FR') : '—'}</div>
+          <div style="color:${a.rexYoY>=0?'var(--g)':'var(--r)'};font-size:8px">${rexSign}${a.rexYoY}%</div>
+        </div>
+        <div style="background:var(--bg3);padding:6px;text-align:center">
+          <div style="color:var(--td);font-size:7px;margin-bottom:2px">RN · ${a.margeRn}%</div>
+          <div style="color:var(--tb);font-weight:600">${a.rn ? a.rn.toLocaleString('fr-FR') : '—'}</div>
+          <div style="color:${a.rnYoY>=0?'var(--g)':'var(--r)'};font-size:8px">${rnSign}${a.rnYoY}%</div>
+        </div>
+      </div>
+
+      <div style="font-size:8px;padding:4px 6px;background:var(--bg3);margin-bottom:8px;border-left:2px solid ${cacCol}">
+        <span style="color:var(--td)">CAC: </span><span style="color:${cacCol}">${a.cacOpinion}</span>
+      </div>
+
+      ${detailsHtml}
+
+      <div style="margin-top:8px;padding:6px;background:var(--bg3);font-size:8px;color:${col};border-left:2px solid ${col}">
+        ${a.conseil}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════

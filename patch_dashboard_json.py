@@ -19,6 +19,7 @@ YTD_FILE   = ROOT / "YTD_2026.csv"
 SIG_GLOB   = str(ROOT / "output" / "signals" / "*.csv")
 CORE_FILE  = ROOT / "core_allocation.csv"
 BOND_GLOB  = str(ROOT / "bond_opportunities_*.csv")
+FUND_ALERTS= ROOT / "fundamentals_alerts.json"
 
 INITIAL_CAPITAL     = 1_000_000
 CORE_PCT            = 0.70
@@ -209,6 +210,17 @@ def read_bonds():
     return opportunities
 
 
+def read_fundamentals_alerts():
+    """Lit fundamentals_alerts.json généré par fundamentals_core_alert.py."""
+    if not FUND_ALERTS.exists():
+        return None
+    try:
+        with open(FUND_ALERTS, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
 def main():
     print(f"\n[PATCH] Mise à jour dashboard.json — {datetime.now().strftime('%H:%M:%S')}")
 
@@ -226,6 +238,7 @@ def main():
     sig_summary, sig_current = read_signals()
     core_pos = read_core_positions()
     bonds_opps = read_bonds()
+    fund_data  = read_fundamentals_alerts()
 
     now = datetime.now()
 
@@ -319,7 +332,21 @@ def main():
         data["bonds"]["opportunities"] = bonds_opps
         print(f"  ✓ Obligations: {len(bonds_opps)} opportunités")
 
-    # 8. Ajouter un point à portfolioHistory (si pas déjà là)
+    # 8. Patcher fondamentaux CORE
+    if fund_data:
+        data["fundamentals"] = fund_data
+        summary_f = fund_data.get("summary", {})
+        alerts_f  = fund_data.get("alerts", [])
+        critical   = [a for a in alerts_f if a.get("niveau") == "LIQUIDER"]
+        watchlist  = [a for a in alerts_f if a.get("niveau") == "SURVEILLER"]
+        print(f"  ✓ Fondamentaux: {len(alerts_f)} tickers | "
+              f"{summary_f.get('conserver',0)} ✅ CONSERVER | "
+              f"{len(watchlist)} 🟡 SURVEILLER | "
+              f"{len(critical)} 🔴 LIQUIDER")
+    else:
+        print("  [SKIP] fundamentals_alerts.json absent — run fundamentals_core_alert.py")
+
+    # 9. Ajouter un point à portfolioHistory (si pas déjà là)
     if ytd and "portfolioHistory" in data:
         today_str = now.strftime("%Y-%m-%d")
         already   = any(pt.get("date","").startswith(today_str) for pt in data["portfolioHistory"])
@@ -331,7 +358,7 @@ def main():
             })
             print(f"  ✓ portfolioHistory: point {today_str} ajouté")
 
-    # 9. Sauvegarder
+    # 10. Sauvegarder
     os.makedirs(JSON_FILE.parent, exist_ok=True)
     with open(JSON_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"), default=str)
