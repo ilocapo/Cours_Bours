@@ -15,8 +15,58 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateClock();
   setInterval(updateClock, 1000);
   buildTicker();
+  setupAutomationRunner();
   renderOverview();
 });
+
+// ═══════════════════════════════════════════
+// AUTOMATION RUNNER (LOCAL API)
+// ═══════════════════════════════════════════
+function setupAutomationRunner() {
+  const btn = document.getElementById('run-automation-btn');
+  const statusEl = document.getElementById('run-automation-status');
+  if(!btn || !statusEl) return;
+
+  const setStatus = (msg, type='') => {
+    statusEl.textContent = msg;
+    statusEl.classList.remove('ok', 'err', 'busy');
+    if(type) statusEl.classList.add(type);
+  };
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    setStatus('Exécution en cours... cela peut prendre 20 à 60 secondes.', 'busy');
+
+    try {
+      const resp = await fetch('http://127.0.0.1:8765/api/run-daily-automation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: 'docs-site' })
+      });
+
+      const data = await resp.json().catch(() => ({}));
+      if(!resp.ok) {
+        const msg = data?.message || 'Erreur lors du lancement de l\'automation.';
+        setStatus(msg, 'err');
+        return;
+      }
+
+      const details = data?.returncode === 0
+        ? `OK (${data.duration_seconds || 0}s)`
+        : `Code ${data.returncode}`;
+      const tail = (data?.stdout_tail || data?.stderr_tail || '').toString().trim();
+      const tailLine = tail ? ` | ${tail.split('\n').slice(-1)[0]}` : '';
+      setStatus(`Automation terminée: ${details}${tailLine}`, data?.returncode === 0 ? 'ok' : 'err');
+
+      await loadRealData();
+      renderPage(document.querySelector('.tab.active')?.dataset?.tab || 'overview');
+    } catch (e) {
+      setStatus('API locale indisponible. Lance: py automation_api.py', 'err');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
 
 async function loadRealData() {
   try {
