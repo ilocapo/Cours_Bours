@@ -293,17 +293,21 @@
   <div class="card acc-c">
     <div class="ch">
       <span class="ct">AUTOMATION QUOTIDIENNE</span>
-      <span class="cbadge b">LOCAL API</span>
+      <span class="cbadge b">GITHUB ACTIONS</span>
     </div>
     <div class="cb">
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;">
+      <div class="run-grid">
         <div style="font-size:9px;color:var(--td);line-height:1.5;">
-          Lance run_daily_automation.py depuis l'interface.
+          Lance l'automation depuis n'importe quel appareil via GitHub Actions.
         </div>
+        <input id="gh-owner" class="run-input" type="text" value="ilocapo" placeholder="Owner GitHub" />
+        <input id="gh-repo" class="run-input" type="text" value="Cours_Bours" placeholder="Repo GitHub" />
+        <input id="gh-ref" class="run-input" type="text" value="main" placeholder="Branche (ref)" />
+        <input id="gh-token" class="run-input" type="password" placeholder="GitHub token (Actions: Write)" autocomplete="off" />
         <button id="run-automation-btn" class="run-btn" type="button">RUN DAILY AUTOMATION</button>
       </div>
       <div id="run-automation-status" class="run-status" aria-live="polite">
-        En attente.
+        Prêt. Ajoute un token GitHub puis lance le workflow.
       </div>
     </div>
   </div>

@@ -25,6 +25,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 function setupAutomationRunner() {
   const btn = document.getElementById('run-automation-btn');
   const statusEl = document.getElementById('run-automation-status');
+  const ownerEl = document.getElementById('gh-owner');
+  const repoEl = document.getElementById('gh-repo');
+  const refEl = document.getElementById('gh-ref');
+  const tokenEl = document.getElementById('gh-token');
   if(!btn || !statusEl) return;
 
   const setStatus = (msg, type='') => {
@@ -34,34 +38,48 @@ function setupAutomationRunner() {
   };
 
   btn.addEventListener('click', async () => {
+    const owner = (ownerEl?.value || '').trim();
+    const repo = (repoEl?.value || '').trim();
+    const ref = (refEl?.value || 'main').trim();
+    const token = (tokenEl?.value || '').trim();
+
+    if(!owner || !repo || !ref || !token) {
+      setStatus('Renseigne owner, repo, branche et token GitHub.', 'err');
+      return;
+    }
+
     btn.disabled = true;
-    setStatus('Exécution en cours... cela peut prendre 20 à 60 secondes.', 'busy');
+    setStatus('Déclenchement du workflow GitHub en cours...', 'busy');
 
     try {
-      const resp = await fetch('http://127.0.0.1:8765/api/run-daily-automation', {
+      const workflowFile = 'daily-automation.yml';
+      const dispatchUrl = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFile}/dispatches`;
+
+      const resp = await fetch(dispatchUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source: 'docs-site' })
+        headers: {
+          'Accept': 'application/vnd.github+json',
+          'Authorization': `Bearer ${token}`,
+          'X-GitHub-Api-Version': '2022-11-28',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ref,
+          inputs: { trigger_source: 'docs-site' }
+        })
       });
 
-      const data = await resp.json().catch(() => ({}));
-      if(!resp.ok) {
-        const msg = data?.message || 'Erreur lors du lancement de l\'automation.';
+      if(resp.status !== 204) {
+        const data = await resp.json().catch(() => ({}));
+        const msg = data?.message || 'Erreur lors du déclenchement du workflow.';
         setStatus(msg, 'err');
         return;
       }
 
-      const details = data?.returncode === 0
-        ? `OK (${data.duration_seconds || 0}s)`
-        : `Code ${data.returncode}`;
-      const tail = (data?.stdout_tail || data?.stderr_tail || '').toString().trim();
-      const tailLine = tail ? ` | ${tail.split('\n').slice(-1)[0]}` : '';
-      setStatus(`Automation terminée: ${details}${tailLine}`, data?.returncode === 0 ? 'ok' : 'err');
-
-      await loadRealData();
-      renderPage(document.querySelector('.tab.active')?.dataset?.tab || 'overview');
+      const runsUrl = `https://github.com/${owner}/${repo}/actions/workflows/daily-automation.yml`;
+      setStatus(`Workflow lancé avec succès. Suivi: ${runsUrl}`, 'ok');
     } catch (e) {
-      setStatus('API locale indisponible. Lance: py automation_api.py', 'err');
+      setStatus('Impossible de joindre l\'API GitHub. Vérifie la connexion réseau.', 'err');
     } finally {
       btn.disabled = false;
     }
