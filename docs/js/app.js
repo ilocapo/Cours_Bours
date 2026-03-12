@@ -477,6 +477,7 @@ function renderFundamentals() {
       ◇ DONNÉES FONDAMENTALES NON DISPONIBLES — Exécuter fundamental_scraper.py + fundamentals_core_alert.py
     </div>`;
     elCards.innerHTML = '';
+    _renderPdfAlerts(elCards, fund);
     return;
   }
 
@@ -553,6 +554,26 @@ function renderFundamentals() {
       </div>
     </div>`;
   }).join('');
+
+  // Alertes PDFs en attente
+  _renderPdfAlerts(elCards, fund);
+}
+
+function _renderPdfAlerts(container, fund) {
+  const pending = fund?.pendingPdfs || [];
+  if(!pending.length) return;
+  const html = `<div style="width:100%;padding:10px 14px;background:rgba(0,170,255,0.07);border:1px solid var(--b);border-left:3px solid var(--b);margin-top:8px">
+    <div style="font-size:9px;font-weight:700;color:var(--b);letter-spacing:1px;margin-bottom:8px">
+      📄 ${pending.length} RAPPORT(S) PDF EN ATTENTE — lancer pdf_parser.py
+    </div>
+    ${pending.map(p=>`<div style="font-size:8px;color:var(--tb);padding:3px 0;border-bottom:1px solid var(--bd)">
+      <span style="color:var(--b)">${p.ticker}</span> · ${p.fichier}
+    </div>`).join('')}
+    <div style="font-size:8px;color:var(--td);margin-top:6px">
+      → py pdf_parser.py &nbsp;&nbsp; ou &nbsp;&nbsp; py run_daily_automation.py
+    </div>
+  </div>`;
+  container.innerHTML += html;
 }
 
 // ═══════════════════════════════════════════

@@ -16,11 +16,13 @@ from pathlib import Path
 ROOT       = Path(__file__).resolve().parent
 JSON_FILE  = ROOT / "docs" / "data" / "dashboard.json"
 YTD_FILE   = ROOT / "YTD_2026.csv"
-SIG_GLOB   = str(ROOT / "output" / "signals" / "*.csv")
+SIG_GLOB        = str(ROOT / "output" / "signals" / "*.csv")
 CORE_FILE       = ROOT / "core_allocation.csv"
 BOND_GLOB       = str(ROOT / "bond_opportunities_*.csv")
 FUND_ALERTS     = ROOT / "fundamentals_alerts.json"
 DIVIDENDS_STATUS= ROOT / "dividends_status.json"
+PDF_DIR         = ROOT / "rapports_annuels"
+PDF_LOG         = ROOT / "rapports_annuels" / "parse_log.json"
 
 INITIAL_CAPITAL     = 1_000_000
 CORE_PCT            = 0.70
@@ -211,6 +213,42 @@ def read_bonds():
     return opportunities
 
 
+def check_pending_pdfs() -> list:
+    """
+    Détecte les PDFs déposés dans rapports_annuels/ non encore traités.
+    Retourne une liste d'alertes.
+    """
+    if not PDF_DIR.exists():
+        return []
+    # Charger les noms déjà traités
+    processed_names = set()
+    if PDF_LOG.exists():
+        try:
+            with open(PDF_LOG, encoding="utf-8") as f:
+                log = json.load(f)
+            for e in log:
+                if e.get("statut") not in ("ECHEC",):
+                    processed_names.add(e.get("fichier", ""))
+        except Exception:
+            pass
+
+    pending = []
+    TICKERS = ["SNTS", "ORGT", "ONTBF", "SAFC", "ABJC"]
+    for ticker in TICKERS:
+        folder = PDF_DIR / ticker
+        if not folder.exists():
+            continue
+        pdfs = list(folder.glob("*.pdf")) + list(folder.glob("*.PDF"))
+        for pdf in pdfs:
+            if pdf.name not in processed_names:
+                pending.append({
+                    "ticker":  ticker,
+                    "fichier": pdf.name,
+                    "message": f"📄 {ticker} — {pdf.name} en attente de traitement",
+                })
+    return pending
+
+
 def read_dividends():
     """Lit dividends_status.json généré par dividend_tracker.py."""
     if not DIVIDENDS_STATUS.exists():
@@ -249,10 +287,11 @@ def main():
     # 2. Lire les données fraîches
     ytd  = read_ytd()
     sig_summary, sig_current = read_signals()
-    core_pos = read_core_positions()
-    bonds_opps  = read_bonds()
-    fund_data   = read_fundamentals_alerts()
-    div_data    = read_dividends()
+    core_pos     = read_core_positions()
+    bonds_opps   = read_bonds()
+    fund_data    = read_fundamentals_alerts()
+    div_data     = read_dividends()
+    pending_pdfs = check_pending_pdfs()
 
     now = datetime.now()
 
@@ -375,7 +414,14 @@ def main():
               f"{len(watchlist)} 🟡 SURVEILLER | "
               f"{len(critical)} 🔴 LIQUIDER")
     else:
-        print("  [SKIP] fundamentals_alerts.json absent — run fundamentals_core_alert.py")
+        data.setdefault("fundamentals", {})
+
+    # 8c. PDFs en attente de traitement
+    data["fundamentals"]["pendingPdfs"] = pending_pdfs
+    if pending_pdfs:
+        print(f"  📄 {len(pending_pdfs)} PDF(s) non traité(s) détecté(s) → lancer pdf_parser.py")
+        for p in pending_pdfs:
+            print(f"     {p['message']}")
 
     # 9. Ajouter un point à portfolioHistory (si pas déjà là)
     if ytd and "portfolioHistory" in data:

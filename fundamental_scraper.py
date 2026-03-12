@@ -267,19 +267,88 @@ def try_brvm_direct(ticker: str) -> dict | None:
 
 
 # ────────────────────────────────────────────────────────────
+# Priorité 0 : lecture depuis fundamentals_data.csv (peuplé par pdf_parser.py)
+# ────────────────────────────────────────────────────────────
+def read_from_csv(ticker: str) -> dict | None:
+    """
+    Lit les données extraites des PDFs dans fundamentals_data.csv.
+    Retourne un dict compatible avec REFERENCE_FUNDAMENTALS ou None.
+    """
+    csv_path = ROOT / "fundamentals_data.csv"
+    if not csv_path.exists():
+        return None
+    rows = []
+    with open(csv_path, encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            if row.get("Ticker", "").upper() == ticker.upper():
+                rows.append(row)
+    if not rows:
+        return None
+    rows.sort(key=lambda r: r.get("Annee", "0"))
+
+    ref = REFERENCE_FUNDAMENTALS.get(ticker, {})
+    result = {**ref}
+
+    # Mettre à jour les années/valeurs depuis le CSV
+    annees, ca_l, rex_l, rn_l, mrex_l, mrn_l, cac_l = [], [], [], [], [], [], []
+    for r in rows:
+        try:
+            annees.append(int(r["Annee"]))
+            ca_l.append(float(r.get("CA_MFCFA", 0) or 0))
+            rex_l.append(float(r.get("REX_MFCFA", 0) or 0))
+            rn_l.append(float(r.get("RN_MFCFA", 0) or 0))
+            mrex_l.append(float(r.get("Marge_REX_pct", 0) or 0))
+            mrn_l.append(float(r.get("Marge_RN_pct", 0) or 0))
+            cac_l.append(r.get("CAC_Opinion", "À compléter"))
+        except Exception:
+            continue
+
+    if annees:
+        result.update({
+            "annees":      annees,
+            "ca":          ca_l,
+            "rex":         rex_l,
+            "rn":          rn_l,
+            "marge_rex":   mrex_l,
+            "marge_rn":    mrn_l,
+            "cac_opinion": cac_l,
+            "source":      rows[-1].get("Source", "CSV / PDF"),
+            "last_update": rows[-1].get("Last_Update", datetime.now().strftime("%Y-%m-%d")),
+            "source_csv":  True,
+        })
+    return result if annees else None
+
+
+# ────────────────────────────────────────────────────────────
 # Scraper principal
 # ────────────────────────────────────────────────────────────
 def scrape_fundamentals(tickers: list[str]) -> dict:
     """
-    Tente de scraper les fondamentaux pour chaque ticker.
-    Retourne {ticker: {ca_last, rex_last, rn_last, ...}} ou données de référence.
+    Cascade de sources pour chaque ticker :
+      0. fundamentals_data.csv  (peuplé par pdf_parser.py)  ← PRIORITÉ MAX
+      1. africamarkets.net
+      2. sikafinance.com
+      3. brvm.org
+      4. Données de référence hardcodées
+
+    Retourne {ticker: data_dict}.
     """
     results = {}
     for ticker in tickers:
-        print(f"\n  [{ticker}] Scraping fondamentaux...")
+        print(f"\n  [{ticker}] Fondamentaux...")
         scraped = None
 
-        # Tentatives en cascade
+        # PRIORITÉ 0 — données CSV (issues des PDFs déposés)
+        csv_data = read_from_csv(ticker)
+        if csv_data and csv_data.get("source_csv"):
+            src = csv_data.get("source", "CSV")
+            last = csv_data.get("last_update", "—")
+            annee_max = max(csv_data.get("annees", [0]))
+            print(f"      ✓ Source CSV/PDF [{src}] — dernière année: {annee_max}, màj: {last}")
+            results[ticker] = csv_data
+            continue
+
+        # Tentatives web en cascade
         if SCRAPING_ENABLED:
             scraped = try_africamarkets(ticker)
             if not scraped:

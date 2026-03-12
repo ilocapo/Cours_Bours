@@ -41,6 +41,7 @@ MODULES = [
 
 # Modules fondamentaux (HEBDOMADAIRE — exécutés le lundi ou si données > 7j)
 FUNDAMENTAL_MODULES = [
+    ('pdf_parser.py',               'Lecture PDFs rapports annuels BRVM (si nouveaux PDFs)'),
     ('fundamental_scraper.py',      'Scraping états financiers BRVM (CA/REX/RN)'),
     ('fundamentals_core_alert.py',  'Arbitrage CORE — détection illusions de croissance'),
 ]

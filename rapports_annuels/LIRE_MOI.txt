@@ -1,0 +1,50 @@
+=====================================================================
+  RAPPORTS ANNUELS BRVM — DOSSIER DE DÉPÔT
+=====================================================================
+
+MODE D'EMPLOI
+─────────────
+1. Télécharger le rapport annuel PDF depuis :
+   • brvm.org → Publications → Rapports annuels
+   • Site officiel de la société
+
+2. Déposer le PDF dans le dossier du ticker correspondant :
+
+   rapports_annuels/
+   ├── SNTS/    ← Sonatel           (ex: SNTS_rapport_annuel_2025.pdf)
+   ├── ORGT/    ← Orange CI         (ex: ORGT_2025.pdf)
+   ├── ONTBF/   ← ONATEL Burkina    (ex: ONTBF_rapport_2025.pdf)
+   ├── SAFC/    ← SAFCA             (ex: SAFC_2025.pdf)
+   └── ABJC/    ← Air Liquide CI    (ex: ABJC_2025.pdf)
+
+3. Le nom du fichier n'a pas d'importance.
+   Le script détecte l'année automatiquement dans le contenu du PDF.
+
+4. Lancer le parseur :
+   py pdf_parser.py
+
+   OU automatiquement lors du prochain run :
+   py run_daily_automation.py
+
+5. Les PDFs traités sont déplacés dans _traites/ automatiquement.
+
+=====================================================================
+CE QUI EST EXTRAIT AUTOMATIQUEMENT
+=====================================================================
+
+  ✅ Chiffre d'affaires (CA)         - en millions FCFA
+  ✅ Résultat d'exploitation (REX)   - en millions FCFA
+  ✅ Résultat net (RN)               - en millions FCFA
+  ✅ Marges calculées                - REX/CA et RN/CA
+  ✅ Exercice fiscal (année)         - détecté dans le texte
+  ✅ Avis du CAC                     - Sans réserve / Avec réserves
+
+=====================================================================
+EN CAS D'ÉCHEC D'EXTRACTION
+=====================================================================
+
+Si le parseur ne trouve pas les données (PDF scanné, format inhabituel),
+un fichier TICKER_ANNEE_manuel.json est créé dans le dossier _traites/
+avec un template à remplir manuellement.
+
+=====================================================================
