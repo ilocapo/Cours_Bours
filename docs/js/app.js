@@ -25,10 +25,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 function setupAutomationRunner() {
   const btn = document.getElementById('run-automation-btn');
   const statusEl = document.getElementById('run-automation-status');
-  const ownerEl = document.getElementById('gh-owner');
-  const repoEl = document.getElementById('gh-repo');
-  const refEl = document.getElementById('gh-ref');
-  const tokenEl = document.getElementById('gh-token');
   if(!btn || !statusEl) return;
 
   const setStatus = (msg, type='') => {
@@ -38,51 +34,20 @@ function setupAutomationRunner() {
   };
 
   btn.addEventListener('click', async () => {
-    const owner = (ownerEl?.value || '').trim();
-    const repo = (repoEl?.value || '').trim();
-    const ref = (refEl?.value || 'main').trim();
-    const token = (tokenEl?.value || '').trim();
-
-    if(!owner || !repo || !ref || !token) {
-      setStatus('Renseigne owner, repo, branche et token GitHub.', 'err');
-      return;
-    }
-
     btn.disabled = true;
-    setStatus('Déclenchement du workflow GitHub en cours...', 'busy');
+    setStatus('Ouverture de GitHub pour créer la commande...', 'busy');
 
-    try {
-      const workflowFile = 'daily-automation.yml';
-      const dispatchUrl = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFile}/dispatches`;
+    const owner = 'ilocapo';
+    const repo = 'Cours_Bours';
+    const title = encodeURIComponent('[AUTOMATION] run daily automation');
+    const body = encodeURIComponent('/run-daily-automation\n\nTriggered from TERMINUS site.');
+    const labels = encodeURIComponent('automation,trigger');
+    const issueUrl = `https://github.com/${owner}/${repo}/issues/new?title=${title}&body=${body}&labels=${labels}`;
+    const runsUrl = `https://github.com/${owner}/${repo}/actions/workflows/daily-automation.yml`;
 
-      const resp = await fetch(dispatchUrl, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/vnd.github+json',
-          'Authorization': `Bearer ${token}`,
-          'X-GitHub-Api-Version': '2022-11-28',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ref,
-          inputs: { trigger_source: 'docs-site' }
-        })
-      });
-
-      if(resp.status !== 204) {
-        const data = await resp.json().catch(() => ({}));
-        const msg = data?.message || 'Erreur lors du déclenchement du workflow.';
-        setStatus(msg, 'err');
-        return;
-      }
-
-      const runsUrl = `https://github.com/${owner}/${repo}/actions/workflows/daily-automation.yml`;
-      setStatus(`Workflow lancé avec succès. Suivi: ${runsUrl}`, 'ok');
-    } catch (e) {
-      setStatus('Impossible de joindre l\'API GitHub. Vérifie la connexion réseau.', 'err');
-    } finally {
-      btn.disabled = false;
-    }
+    window.open(issueUrl, '_blank', 'noopener,noreferrer');
+    setStatus(`Issue préremplie ouverte. Publie l'issue puis suis l'exécution ici: ${runsUrl}`, 'ok');
+    btn.disabled = false;
   });
 }
 
