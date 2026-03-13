@@ -9,6 +9,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 import subprocess, os, sys, glob, time
 from datetime import datetime, date
+from pathlib import Path
 
 # ══════════════════════════════════════════════════════════
 #  CONFIG & THEME
@@ -199,7 +200,7 @@ st.markdown(f"""
 # ══════════════════════════════════════════════════════════
 #  CONSTANTES
 # ══════════════════════════════════════════════════════════
-BASE         = os.path.dirname(os.path.abspath(__file__))
+BASE         = str(Path(__file__).resolve().parents[2])
 CAPITAL_INIT = 1_000_000
 CORE_STOCKS  = ['SNTS', 'ORGT', 'ONTBF', 'SAFC', 'ABJC']
 PLOTLY_BASE  = dict(
