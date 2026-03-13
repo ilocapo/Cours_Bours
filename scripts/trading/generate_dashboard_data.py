@@ -492,18 +492,31 @@ def build_core_from_df(df):
         price = float(last_row['Cours moyen']) if not math.isnan(last_row['Cours moyen']) else 0
         z = safe_json(last_row.get('Z_Score', 0))
         name = str(last_row.get('Libellé', ticker))
-        shares = int(per_stock / price) if price and price > 0 else 0
+
+        # Prix d'entrée proxy: ~1 an glissant (sinon premier prix dispo)
+        df_t = df_t.sort_values('Date').reset_index(drop=True)
+        if len(df_t) >= 252:
+            avg_price = float(df_t.iloc[-252]['Cours moyen'])
+        else:
+            avg_price = float(df_t.iloc[0]['Cours moyen'])
+        if not avg_price or math.isnan(avg_price) or avg_price <= 0:
+            avg_price = price
+
+        shares = int(per_stock / avg_price) if avg_price and avg_price > 0 else 0
+        current_value = shares * price if shares and price else 0
+        pnl = current_value - per_stock
+        pnl_pct = (pnl / per_stock * 100) if per_stock > 0 else 0
 
         holdings.append({
             'symbol': ticker,
             'name': name[:25] if name else ticker,
             'sector': '-',
             'shares': shares,
-            'avgPrice': round(price, 2),
+            'avgPrice': round(avg_price, 2),
             'currentPrice': round(price, 2),
             'weight': round(100 / len(CORE_TICKERS), 1),
-            'pnl': 0,
-            'pnlPct': 0.0,
+            'pnl': round(float(pnl), 0),
+            'pnlPct': round(float(pnl_pct), 2),
             'dividendYield': 0.0,
             'zScore': round(float(z), 2) if z is not None else 0
         })
@@ -768,15 +781,17 @@ def main():
                 current_month = m
         monthly_returns = monthly_returns[-12:]
 
+    total_value = int(round(CAPITAL_TOTAL * (1 + (bt_strategy['totalReturn'] / 100.0)))) if best_result else CAPITAL_TOTAL
+
     overview = {
-        'totalValue':        CAPITAL_TOTAL,
+        'totalValue':        total_value,
         'initialCapital':    CAPITAL_TOTAL,
         'ytdReturn':         bt_strategy['totalReturn'] if best_result else 0,
         'dailyPnl':          0,
         'dailyPnlPct':       0.0,
-        'coreValue':         int(CAPITAL_TOTAL * CORE_ALLOCATION_PCT),
-        'satelliteValue':    int(CAPITAL_TOTAL * SATELLITE_ALLOCATION_PCT),
-        'cashAvailable':     int(CAPITAL_TOTAL * CASH_ALLOCATION_PCT),
+        'coreValue':         int(total_value * CORE_ALLOCATION_PCT),
+        'satelliteValue':    int(total_value * SATELLITE_ALLOCATION_PCT),
+        'cashAvailable':     int(total_value * CASH_ALLOCATION_PCT),
         'openPositions':     len(CORE_TICKERS),
         'corePositions':     len(CORE_TICKERS),
         'satellitePositions':0,
