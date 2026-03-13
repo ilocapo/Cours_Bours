@@ -19,12 +19,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadRealData() {
+  const cacheBuster = Date.now();
   try {
-    const r = await fetch('data/dashboard.json');
+    const r = await fetch(`data/dashboard.json?v=${cacheBuster}`, { cache: 'no-store' });
     if (r.ok) { const j = await r.json(); DATA = { ...SAMPLE_DATA, ...j }; }
   } catch(e) { console.log('[TERMINUS] Using sample data'); }
   try {
-    const r2 = await fetch('data/backtest_logs.json');
+    const r2 = await fetch(`data/backtest_logs.json?v=${cacheBuster}`, { cache: 'no-store' });
     if (r2.ok) { const j2 = await r2.json(); if(j2&&j2.length) DATA.allLogs = j2; }
   } catch(e) {}
 }
