@@ -5,7 +5,15 @@ import sys
 
 # Ajouter le répertoire parent au chemin pour l'import de config
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from src.config import DATA_PATH
+from src.config import (
+    DATA_PATH,
+    ZSCORE_STRONG_BUY,
+    ZSCORE_BUY,
+    ZSCORE_SELL,
+    ZSCORE_STRONG_SELL,
+    ADVT_MIN_FCFA,
+    DAYS_TRADED_MIN
+)
 
 def charge_and_clean_data():
     """
@@ -88,17 +96,32 @@ def signals_generation(df):
     Returns:
         pd.DataFrame: DataFrame avec les colonnes "Signal" et "Watchlist".
     """
-    def get_signal(z_score):
+    # Confirmation de rebond:
+    # si hier Z était extrême (<= ZSCORE_BUY) et aujourd'hui le prix remonte,
+    # on conserve un signal d'achat même si le Z remonte rapidement le jour J.
+    df['Z_Score_Prev'] = df.groupby('Code symbole')['Z_Score'].shift(1)
+    df['Prix_Prev'] = df.groupby('Code symbole')['Cours moyen'].shift(1)
+    df['Confirmation_Rebond'] = (
+        (df['Z_Score_Prev'] <= ZSCORE_BUY) &
+        (df['Cours moyen'] > df['Prix_Prev'])
+    )
+
+    def get_signal(row):
+        z_score = row.get('Z_Score', None)
+        confirmation_rebond = bool(row.get('Confirmation_Rebond', False))
+
         if pd.isna(z_score):
             return 'Hold'
-        if z_score <= -3.0:
+        if z_score <= ZSCORE_STRONG_BUY:
             return 'Strong Buy'
-        elif z_score <= -2.0:
+        elif z_score <= ZSCORE_BUY:
             return 'Buy'
-        elif z_score >= 3.0:
+        elif z_score >= ZSCORE_STRONG_SELL:
             return 'Strong Sell'
-        elif z_score >= 2.0:
+        elif z_score >= ZSCORE_SELL:
             return 'Sell'
+        elif confirmation_rebond:
+            return 'Buy'
         else:
             return 'Hold'
     
@@ -110,13 +133,14 @@ def signals_generation(df):
         else:
             return 'No'
     
-    df['Signal'] = df['Z_Score'].apply(get_signal)
+    df['Signal'] = df.apply(get_signal, axis=1)
     df['Watchlist'] = df['Z_Score'].apply(get_watchlist)
     
     return df
 
 
-def add_filters(df, window_volatility=20, min_volume=1000, trend_period=50):
+def add_filters(df, window_volatility=20, min_volume=1000, trend_period=50,
+                min_advt=ADVT_MIN_FCFA, days_traded_min=DAYS_TRADED_MIN):
     """
     Ajoute des filtres supplémentaires pour améliorer la qualité des signaux:
     - Filtre de volatilité: évite les titres trop volatiles ou pas assez liquides
@@ -145,13 +169,50 @@ def add_filters(df, window_volatility=20, min_volume=1000, trend_period=50):
     df['Volatilite_Ann'] = df['Volatilite_Historique'] * (252 ** 0.5)
     df['Filtre_Volatilite'] = (df['Volatilite_Ann'] > 5) & (df['Volatilite_Ann'] < 80)
     
-    # 2. FILTRE DE VOLUME
-    # Vérifier que le volume transigé (total) est suffisant
-    if 'Transactions (total)' in df.columns:
-        df['Filtre_Volume'] = df['Transactions (total)'] >= min_volume
+    # 2. FILTRE DE LIQUIDITÉ (ADVT)
+    # ADVT = Average Daily Value Traded (valeur échangée moyenne sur 20 jours)
+    # Chercher d'abord une colonne de valeur transigée (FCFA), sinon approx = volume * prix.
+    value_cols = [
+        'Valeur transigée (FCFA)', 'Valeur transigee (FCFA)',
+        'Valeur transigée', 'Valeur transigee',
+        'Valeur transigée (total)', 'Valeur transigee (total)'
+    ]
+    volume_cols = [
+        'Volume transigé (total)', 'Volume transige (total)',
+        'Volume transigé total', 'Volume transige total',
+        'Volume', 'Transactions (total)'
+    ]
+
+    selected_value_col = next((c for c in value_cols if c in df.columns), None)
+    selected_volume_col = next((c for c in volume_cols if c in df.columns), None)
+
+    if selected_value_col is not None:
+        df['Valeur_Transigee'] = pd.to_numeric(
+            df[selected_value_col].astype(str).str.replace(',', '.').str.replace(' ', ''),
+            errors='coerce'
+        ).fillna(0)
+    elif selected_volume_col is not None:
+        volume_num = pd.to_numeric(
+            df[selected_volume_col].astype(str).str.replace(',', '.').str.replace(' ', ''),
+            errors='coerce'
+        ).fillna(0)
+        df['Valeur_Transigee'] = volume_num * df['Cours moyen'].fillna(0)
     else:
-        # Si la colonne n'existe pas, on ne peut pas confirmer la liquidité
-        df['Filtre_Volume'] = False
+        # Pas de donnée volume/valeur: ne pas bloquer complètement le système
+        df['Valeur_Transigee'] = 0
+
+    df['ADVT_20'] = df.groupby('Code symbole')['Valeur_Transigee'].transform(
+        lambda x: x.rolling(window=20, min_periods=5).mean()
+    )
+    df['Jour_Trade'] = (df['Valeur_Transigee'] > 0).astype(int)
+    df['Jours_Trades_30'] = df.groupby('Code symbole')['Jour_Trade'].transform(
+        lambda x: x.rolling(window=30, min_periods=10).sum()
+    )
+
+    df['Filtre_Volume'] = (
+        (df['ADVT_20'] >= float(min_advt)) &
+        (df['Jours_Trades_30'] >= int(days_traded_min))
+    )
     
     # 3. FILTRE DE TENDANCE
     # Calculer la tendance sur les 50 derniers jours
@@ -178,9 +239,9 @@ def add_filters(df, window_volatility=20, min_volume=1000, trend_period=50):
         z_score = row.get('Z_Score', 0)
         
         # Appliquer les filtres (plus assouplls pour allow trades même sans conditions optimales)
-        if signal == 'Strong Buy' or z_score <= -3.0:
+        if signal == 'Strong Buy' or z_score <= ZSCORE_STRONG_BUY:
             # Les signaux d'achat TRÈS forts (Z <= -3.0) passent toujours
-            if z_score <= -3.0:
+            if z_score <= ZSCORE_STRONG_BUY:
                 return 'Strong Buy_FILTERED'
             # Strong Buy normal nécessite juste la volatilité raisonnable
             elif filtre_volatilite:
@@ -188,16 +249,16 @@ def add_filters(df, window_volatility=20, min_volume=1000, trend_period=50):
             else:
                 return 'Hold'
         
-        elif signal == 'Buy' or (-2.0 >= z_score > -3.0):
-            # Buy nécessite une volatilité raisonnable (le Z-Score ≤ -2 est déjà le filtre principal)
-            if filtre_volatilite:
+        elif signal == 'Buy' or (ZSCORE_BUY >= z_score > ZSCORE_STRONG_BUY):
+            # Buy nécessite volatilité raisonnable + liquidité minimale
+            if filtre_volatilite and filtre_volume:
                 return 'Buy_FILTERED'
             else:
                 return 'Hold'
         
-        elif signal == 'Strong Sell' or z_score >= 3.0:
+        elif signal == 'Strong Sell' or z_score >= ZSCORE_STRONG_SELL:
             # Les signaux de vente TRÈS forts (Z >= 3.0) passent toujours
-            if z_score >= 3.0:
+            if z_score >= ZSCORE_STRONG_SELL:
                 return 'Strong Sell_FILTERED'
             # Strong Sell normal nécessite juste la volatilité raisonnable
             elif filtre_volatilite:
@@ -205,7 +266,7 @@ def add_filters(df, window_volatility=20, min_volume=1000, trend_period=50):
             else:
                 return 'Hold'
         
-        elif signal == 'Sell' or (2.0 <= z_score < 3.0):
+        elif signal == 'Sell' or (ZSCORE_SELL <= z_score < ZSCORE_STRONG_SELL):
             # Sell nécessite une volatilité raisonnable (le Z-Score ≥ 2 est déjà le filtre principal)
             if filtre_volatilite:
                 return 'Sell_FILTERED'

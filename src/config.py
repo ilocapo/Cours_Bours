@@ -51,7 +51,8 @@ CORE_STOCKS = ['SNTS', 'ORGT', 'ONTBF', 'SAFC', 'ABJC']
 # ============================================================================
 
 # Filtre de liquidité (ADVT = Average Daily Value Traded)
-ADVT_MIN_FCFA = 10_000_000      # Minimum 10M FCFA/jour (sinon carnet trop fin)
+# Recalibré BRVM: 10M bloquait presque tout l'univers volatil (mid/small caps)
+ADVT_MIN_FCFA = 1_500_000       # Minimum 1.5M FCFA/jour (plus agressif pour capter les mid-caps)
 DAYS_TRADED_MIN = 20            # Min 20 jours tradés sur 30 (pas d'actions "mortes")
 
 # Position sizing réaliste
@@ -98,8 +99,8 @@ FALLING_KNIFE_DROP_PCT = 0.08      # Don't buy if price dropped 8%+ in 3 days
 
 # Paramètres Z-Score
 ZSCORE_WINDOW = 200                # 200-day rolling window
-ZSCORE_STRONG_BUY = -3.0           # Z <= -3.0 = Strong Buy
-ZSCORE_BUY = -2.5                  # Z <= -2.5 = Buy
+ZSCORE_STRONG_BUY = -2.5           # Z <= -2.5 = Strong Buy (moins rare)
+ZSCORE_BUY = -2.0                  # Z <= -2.0 = Buy (fréquence plus utile)
 ZSCORE_SELL = 2.5                  # Z >= +2.5 = Sell
 ZSCORE_STRONG_SELL = 3.0           # Z >= +3.0 = Strong Sell
 
