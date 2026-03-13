@@ -1,9 +1,13 @@
 name: Daily BRVM Automation
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   schedule:
-    # 18:45 UTC (proche fermeture BRVM) du lundi au vendredi
-    - cron: '45 18 * * 1-5'
+    # 17:10 heure Côte d'Ivoire (GMT/UTC+0), du lundi au vendredi
+    # GitHub Actions utilise UTC pour cron; Côte d'Ivoire = UTC toute l'année.
+    - cron: '10 17 * * 1-5'
   workflow_dispatch:
 
 permissions:
@@ -19,12 +23,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -35,10 +39,32 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run nightly automation
+        id: run_automation
         env:
           PYTHONIOENCODING: utf-8
         run: |
+          set +e
           python scripts/automation/run_daily_automation.py
+          EXIT_CODE=$?
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "⚠️ Le run a eu des erreurs partielles (exit code $EXIT_CODE)." >> "$GITHUB_STEP_SUMMARY"
+            echo "Le workflow continue pour publier les fichiers générés." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "✅ Automation terminée sans erreur." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # On n'arrête pas le workflow: on publie quand même les sorties disponibles.
+          exit 0
+
+      - name: Upload automation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: automation-logs
+          path: logs/automation_*.log
+          if-no-files-found: ignore
 
       - name: Commit and push generated updates
         run: |
