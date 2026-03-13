@@ -46,6 +46,12 @@ REAL_CAPITAL_PER_CORE_STOCK = REAL_CORE_CAPITAL // 5
 # Stocks CORE (ne change pas - ce sont les dividendes réguliers)
 CORE_STOCKS = ['SNTS', 'ORGT', 'ONTBF', 'SAFC', 'ABJC']
 
+# Mix interne du CORE (70% du portefeuille total)
+# Exemple: CORE = 70% du total, puis 70% actions / 30% obligations dans ce CORE.
+CORE_STOCKS_WITHIN_CORE_PCT = 0.70
+CORE_BONDS_WITHIN_CORE_PCT = 0.30
+CORE_BOND_TOP_N = 3  # Nombre d'obligations à retenir (top rendement effectif)
+
 # ============================================================================
 # PHASE 1 ROBUSTESSE - Filtres de liquidité et position sizing
 # ============================================================================

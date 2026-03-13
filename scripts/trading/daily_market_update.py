@@ -21,6 +21,7 @@ import pandas as pd
 from datetime import datetime
 from bs4 import BeautifulSoup
 from pathlib import Path
+import glob
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -33,7 +34,10 @@ try:
         REAL_SATELLITE_CAPITAL,
         REAL_CASH_CAPITAL,
         REAL_CAPITAL_PER_CORE_STOCK,
-        CORE_STOCKS
+        CORE_STOCKS,
+        CORE_STOCKS_WITHIN_CORE_PCT,
+        CORE_BONDS_WITHIN_CORE_PCT,
+        CORE_BOND_TOP_N
     )
     CORE_TICKERS            = CORE_STOCKS
     INITIAL_CAPITAL         = REAL_PORTFOLIO_CAPITAL
@@ -51,6 +55,9 @@ except ImportError:
     SATELLITE_VALUE_INITIAL = INITIAL_CAPITAL * SATELLITE_ALLOCATION
     CASH_VALUE              = int(INITIAL_CAPITAL * 0.10)
     CORE_PER_STOCK          = CORE_VALUE_INITIAL / len(CORE_TICKERS)
+    CORE_STOCKS_WITHIN_CORE_PCT = 0.70
+    CORE_BONDS_WITHIN_CORE_PCT = 0.30
+    CORE_BOND_TOP_N = 3
 
 # URL BRVM pour scraper
 BRVM_URL = "https://www.brvm.org"
@@ -71,6 +78,27 @@ def load_core_allocation_positions() -> pd.DataFrame:
     """
     core_path = PROJECT_ROOT / 'core_allocation.csv'
     if not core_path.exists():
+        return pd.DataFrame()
+
+
+def load_latest_bond_opportunities() -> pd.DataFrame:
+    """Charge le dernier fichier bond_opportunities_*.csv s'il existe."""
+    files = sorted(glob.glob(str(PROJECT_ROOT / 'bond_opportunities_*.csv')))
+    if not files:
+        return pd.DataFrame()
+    try:
+        df = pd.read_csv(files[-1])
+        if df.empty:
+            return pd.DataFrame()
+        df.columns = [str(c).strip() for c in df.columns]
+        if 'Effective_Yield_%' in df.columns:
+            df['Effective_Yield_%'] = pd.to_numeric(df['Effective_Yield_%'], errors='coerce').fillna(0)
+            df = df.sort_values('Effective_Yield_%', ascending=False)
+        if 'Current_Price' in df.columns:
+            df['Current_Price'] = pd.to_numeric(df['Current_Price'], errors='coerce').fillna(0)
+        return df
+    except Exception as e:
+        print(f"   ⚠️  Impossible de lire bond_opportunities: {e}")
         return pd.DataFrame()
 
     try:
@@ -331,20 +359,43 @@ def calculate_portfolio_value() -> dict:
             tag = 'OBLIG' if position_type == 'BOND' else 'CORE'
             print(f"  ✓ [{tag}] {ticker}: {qty:,.0f} × {current_price:,.0f} = {position_value:,.0f} FCFA")
     else:
-        # Fallback legacy: 5 actions CORE équipondérées
-        print("  ℹ️  core_allocation.csv absent → fallback 5 actions CORE")
+        # Fallback simulé: CORE mixte Actions + Obligations
+        print("  ℹ️  core_allocation.csv absent → fallback CORE mixte (actions + obligations)")
+
+        # 1) Bloc actions du CORE
+        core_stocks_budget = CORE_VALUE_INITIAL * CORE_STOCKS_WITHIN_CORE_PCT
+        per_stock_budget = core_stocks_budget / max(1, len(CORE_TICKERS))
+
         for ticker in CORE_TICKERS:
             current_price = prices.get(ticker, INITIAL_PRICE_CORE.get(ticker, 1))
             initial_price = INITIAL_PRICE_CORE.get(ticker, 1)
-
-            # Nombre d'actions = capital initial par stock / prix initial
-            qty = CORE_PER_STOCK / initial_price if initial_price > 0 else 0
-
-            # Valeur actuelle = nombre d'actions × prix actuel
+            qty = per_stock_budget / initial_price if initial_price > 0 else 0
             position_value = qty * current_price
             core_value += position_value
+            print(f"  ✓ [CORE] {ticker}: {current_price:,.0f} FCFA → {position_value:,.0f} FCFA")
 
-            print(f"  ✓ {ticker}: {current_price:,.0f} FCFA → {position_value:,.0f} FCFA")
+        # 2) Bloc obligations du CORE (basé sur le dernier bond_opportunities)
+        core_bonds_budget = CORE_VALUE_INITIAL * CORE_BONDS_WITHIN_CORE_PCT
+        bonds_df = load_latest_bond_opportunities()
+
+        if not bonds_df.empty and 'Ticker' in bonds_df.columns and 'Current_Price' in bonds_df.columns:
+            bonds_df = bonds_df.head(int(max(1, CORE_BOND_TOP_N))).copy()
+            per_bond_budget = core_bonds_budget / max(1, len(bonds_df))
+
+            for _, b in bonds_df.iterrows():
+                ticker = str(b.get('Ticker', '')).strip().upper()
+                ref_price = float(b.get('Current_Price', 0) or 0)
+                current_price = float(prices.get(ticker, ref_price)) if ticker else ref_price
+                if current_price <= 0:
+                    continue
+                qty = per_bond_budget / ref_price if ref_price > 0 else 0
+                position_value = qty * current_price
+                core_value += position_value
+                print(f"  ✓ [OBLIG] {ticker}: {current_price:,.2f} FCFA → {position_value:,.0f} FCFA")
+        else:
+            # Sans fichier obligations, on garde ce budget en réserve CORE
+            core_value += core_bonds_budget
+            print(f"  ⚠️  Pas de bond_opportunities: réserve obligataire CORE = {core_bonds_budget:,.0f} FCFA")
     
     # Valeur SATELLITE réelle (capital initial + P&L réalisé + latent)
     satellite_value, positions_open_count, trades_closed_count = calculate_satellite_value(prices)

@@ -32,9 +32,9 @@ SCRIPT_DIR = str(Path(__file__).resolve().parents[2])
 MODULES = [
     ('scripts/trading/daily_signals.py',         'Génération des signaux Z-Score'),
     ('scripts/trading/portfolio_manager.py',     'Gestion des positions'),
-    ('scripts/trading/daily_market_update.py',   'Mise à jour du portefeuille'),
     ('scripts/trading/core_rebalancing.py',      'Monitor CORE stocks'),
     ('scripts/trading/bond_scanner.py',          'Scan des obligations'),
+    ('scripts/trading/daily_market_update.py',   'Mise à jour du portefeuille'),
     ('scripts/fundamentals/dividend_tracker.py', 'Suivi dividendes CORE (alertes + cash)'),
     ('scripts/maintenance/patch_dashboard_json.py',  'Mise à jour dashboard web (GitHub Pages)'),
 ]
