@@ -1,18 +1,18 @@
 {
   "meta": {
-    "lastUpdate": "2026-03-13T01:46:06.659356",
+    "lastUpdate": "2026-03-11T23:33:52.068590",
     "currency": "FCFA",
-    "marketStatus": "Donnees mises a jour",
-    "dataDate": "2025-12-31",
-    "generatedBy": "generate_dashboard_data.py"
+    "marketStatus": "Données mises à jour",
+    "dataDate": "2026-03-11",
+    "generatedBy": "patch_dashboard_json.py"
   },
   "overview": {
-    "totalValue": 1000000,
+    "totalValue": 1126274,
     "initialCapital": 1000000,
-    "ytdReturn": 31.77,
+    "ytdReturn": 12.63,
     "dailyPnl": 0,
     "dailyPnlPct": 0.0,
-    "coreValue": 700000,
+    "coreValue": 826274,
     "satelliteValue": 200000,
     "cashAvailable": 100000,
     "openPositions": 5,
