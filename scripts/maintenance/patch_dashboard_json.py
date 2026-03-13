@@ -15,7 +15,10 @@ from pathlib import Path
 
 ROOT       = Path(__file__).resolve().parents[2]
 JSON_FILE  = ROOT / "docs" / "data" / "dashboard.json"
-YTD_FILE   = ROOT / "YTD_2026.csv"
+YTD_FILE_CANDIDATES = [
+    ROOT / "YTD_2026.csv",
+    ROOT / "data" / "runtime" / "YTD_2026.csv",
+]
 SIG_GLOB        = str(ROOT / "output" / "signals" / "*.csv")
 CORE_FILE       = ROOT / "core_allocation.csv"
 BOND_GLOB       = str(ROOT / "bond_opportunities_*.csv")
@@ -49,16 +52,25 @@ def safe_float(v, default=0.0):
         return default
 
 
+def resolve_ytd_file() -> Path:
+    for p in YTD_FILE_CANDIDATES:
+        if p.exists():
+            return p
+    return YTD_FILE_CANDIDATES[0]
+
+
 def read_ytd():
     """Retourne la dernière ligne valide de YTD_2026.csv (2026 only)."""
-    if not YTD_FILE.exists():
-        print(f"  [WARN] {YTD_FILE} introuvable")
+    ytd_file = resolve_ytd_file()
+    if not ytd_file.exists():
+        print(f"  [WARN] {ytd_file} introuvable")
         return None
     rows = []
-    with open(YTD_FILE, encoding="utf-8") as f:
+    with open(ytd_file, encoding="utf-8") as f:
         lines = f.readlines()
+    delim = ';' if lines and ';' in lines[0] else ','
     for line in lines[1:]:           # skip header
-        parts = line.strip().split(",")
+        parts = line.strip().split(delim)
         if len(parts) >= 5:
             date_str = parts[0].strip()
             # Exclure la ligne 2025 (initialisation)
@@ -316,10 +328,12 @@ def main():
         daily_pnl = 0
         daily_pct = 0.0
         rows_all = []
-        with open(YTD_FILE, encoding="utf-8") as f:
+        ytd_file = resolve_ytd_file()
+        with open(ytd_file, encoding="utf-8") as f:
             lines_all = f.readlines()
+        delim = ';' if lines_all and ';' in lines_all[0] else ','
         for ln in lines_all[1:]:
-            p = ln.strip().split(",")
+            p = ln.strip().split(delim)
             if len(p) >= 5 and "2026" in p[0]:
                 rows_all.append(p)
         if len(rows_all) >= 2:
