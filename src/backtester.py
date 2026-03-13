@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Ajouter le répertoire src au chemin pour les imports locaux
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config import OUTPUT_DAILY_REPORTS, OUTPUT_BACKTEST_REPORTS
+from src.config import OUTPUT_DAILY_REPORTS, OUTPUT_BACKTEST_REPORTS
 
 # Configurer l'encodage UTF-8 pour la sortie sur Windows
 # (ne pas remplacer si la sortie est déjà fermée ou encodée en UTF-8)

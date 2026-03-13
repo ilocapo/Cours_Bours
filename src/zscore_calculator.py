@@ -5,7 +5,7 @@ import sys
 
 # Ajouter le répertoire parent au chemin pour l'import de config
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import DATA_PATH
+from src.config import DATA_PATH
 
 def charge_and_clean_data():
     """
