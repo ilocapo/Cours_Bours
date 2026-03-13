@@ -35,7 +35,7 @@ function setupAutomationRunner() {
 
   btn.addEventListener('click', async () => {
     btn.disabled = true;
-    setStatus('Ouverture de GitHub pour créer la commande...', 'busy');
+    setStatus('', '');
 
     const owner = 'ilocapo';
     const repo = 'Cours_Bours';
@@ -46,7 +46,7 @@ function setupAutomationRunner() {
     const runsUrl = `https://github.com/${owner}/${repo}/actions/workflows/daily-automation.yml`;
 
     window.open(issueUrl, '_blank', 'noopener,noreferrer');
-    setStatus(`Issue préremplie ouverte. Publie l'issue puis suis l'exécution ici: ${runsUrl}`, 'ok');
+    setStatus('');
     btn.disabled = false;
   });
 }

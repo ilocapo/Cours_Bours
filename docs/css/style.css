@@ -254,6 +254,7 @@ body:not(.light)::before{content:'';position:fixed;inset:0;z-index:9998;pointer-
 .run-status.ok{border-color:rgba(0,229,122,0.4);color:var(--g);background:rgba(0,229,122,0.08);}
 .run-status.err{border-color:rgba(255,45,85,0.4);color:var(--r);background:rgba(255,45,85,0.08);}
 .run-status.busy{border-color:rgba(0,170,255,0.4);color:var(--b);background:rgba(0,170,255,0.08);}
+.run-status:empty{display:none;}
 
 @media(max-width:980px){
   .run-grid{grid-template-columns:1fr;}
