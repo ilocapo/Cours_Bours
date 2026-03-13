@@ -21,6 +21,7 @@ from pathlib import Path
 BASE_DIR         = Path(__file__).parent
 AUTOMATION_SCRIPT = BASE_DIR / "run_daily_automation.py"
 SETUP_SCHEDULER   = BASE_DIR / "setup_scheduler.py"
+FULL_DASHBOARD_SCRIPT = BASE_DIR / "generate_dashboard_data.py"
 LOG_DIR           = BASE_DIR / "logs"
 
 
@@ -40,6 +41,30 @@ def run_now() -> int:
 
     result = subprocess.run(
         [sys.executable, str(AUTOMATION_SCRIPT)],
+        cwd=str(BASE_DIR),
+        env=env,
+    )
+    return result.returncode
+
+
+def run_full_now() -> int:
+    """Exécute automation quotidienne puis génération complète dashboard/backtests."""
+    rc = run_now()
+    if rc != 0:
+        print("\nAutomation échouée, génération complète du dashboard annulée.")
+        return rc
+
+    if not FULL_DASHBOARD_SCRIPT.exists():
+        print(f"\nERREUR: Script introuvable: {FULL_DASHBOARD_SCRIPT}")
+        return 1
+
+    print("\nRelance complète dashboard (backtests + logs historiques)...\n")
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUNBUFFERED"] = "1"
+
+    result = subprocess.run(
+        [sys.executable, str(FULL_DASHBOARD_SCRIPT)],
         cwd=str(BASE_DIR),
         env=env,
     )
@@ -131,6 +156,8 @@ def main():
     )
     parser.add_argument("--schedule",   action="store_true",
                         help="Lance scheduler APScheduler (bloquant, Ctrl+C pour arrêter)")
+    parser.add_argument("--full",       action="store_true",
+                        help="Exécute automation + génération complète dashboard/backtests")
     parser.add_argument("--time",       default="16:30", metavar="HH:MM",
                         help="Heure de déclenchement (défaut: 16:30 = fermeture BRVM)")
     parser.add_argument("--setup-task", action="store_true",
@@ -146,6 +173,8 @@ def main():
         return create_windows_task(args.time)
     if args.schedule:
         return start_schedule(args.time)
+    if args.full:
+        return run_full_now()
 
     return run_now()
 
