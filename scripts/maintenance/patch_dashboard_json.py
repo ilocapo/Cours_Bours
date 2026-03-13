@@ -44,7 +44,7 @@ except Exception:
 
 def safe_float(v, default=0.0):
     try:
-        return float(str(v).replace(",", ".").replace(" ", ""))
+        return float(str(v).replace(",", ".").replace("%", "").replace(" ", ""))
     except Exception:
         return default
 

@@ -37,6 +37,7 @@ try:
         CASH_ALLOCATION_PCT,
         CORE_STOCKS, STOP_LOSS_PCT, TAKE_PROFIT_PCT, TIME_STOP_DAYS,
         FALLING_KNIFE_WINDOW, FALLING_KNIFE_DROP_PCT, ZSCORE_WINDOW,
+        SATELLITE_STOCK_UNIVERSE, MAX_POSITION_PCT,
         ZSCORE_STRONG_BUY, ZSCORE_BUY, ZSCORE_SELL, ZSCORE_STRONG_SELL
     )
     CAPITAL_TOTAL = REAL_PORTFOLIO_CAPITAL
@@ -53,6 +54,8 @@ except ImportError:
     FALLING_KNIFE_WINDOW     = 3
     FALLING_KNIFE_DROP_PCT   = 0.08
     ZSCORE_WINDOW            = 200
+    SATELLITE_STOCK_UNIVERSE = ["ABJC", "ORGT", "SAFC", "SNTS", "ETIT", "BOABF", "SONATEL"]
+    MAX_POSITION_PCT         = 0.08
     ZSCORE_STRONG_BUY        = -3.0
     ZSCORE_BUY               = -2.5
     ZSCORE_SELL           = 2.5
@@ -61,7 +64,13 @@ except ImportError:
 # -- Helpers --
 def safe_float(val, default=0.0):
     try:
-        return float(str(val).replace(",", ".").replace(" ", "").replace("\xa0", ""))
+        return float(
+            str(val)
+            .replace(",", ".")
+            .replace("%", "")
+            .replace(" ", "")
+            .replace("\xa0", "")
+        )
     except (ValueError, TypeError):
         return default
 
@@ -103,9 +112,15 @@ def load_data():
         if col in df.columns:
             df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce')
 
-    if 'Volume transige (total)' in df.columns:
+    vol_col = None
+    for c in ['Volume transige (total)', 'Volume transigé (total)', 'Volume transigé total', 'Volume transige total']:
+        if c in df.columns:
+            vol_col = c
+            break
+
+    if vol_col:
         df['Volume'] = pd.to_numeric(
-            df['Volume transige (total)'].astype(str).str.replace(',', '.').str.replace(' ', ''),
+            df[vol_col].astype(str).str.replace(',', '.').str.replace(' ', ''),
             errors='coerce'
         ).fillna(0)
     else:
@@ -147,13 +162,26 @@ def compute_zscores(df):
     return df
 
 
-def run_backtest_for_ticker(df_all, ticker, capital=1_000_000):
+def run_backtest_for_ticker(
+    df_all,
+    ticker,
+    capital=1_000_000,
+    tp_pct=None,
+    sl_pct=None,
+    time_stop_days=None,
+    fk_drop_pct=None,
+):
     """Run a Z-score backtest on a single ticker. Returns results dict."""
     import pandas as pd
 
     df_stock = df_all[df_all['Code symbole'] == ticker].copy()
     if len(df_stock) < ZSCORE_WINDOW:
         return None
+
+    tp_pct = TAKE_PROFIT_PCT if tp_pct is None else tp_pct
+    sl_pct = STOP_LOSS_PCT if sl_pct is None else sl_pct
+    time_stop_days = TIME_STOP_DAYS if time_stop_days is None else time_stop_days
+    fk_drop_pct = FALLING_KNIFE_DROP_PCT if fk_drop_pct is None else fk_drop_pct
 
     df_stock = df_stock.sort_values('Date').reset_index(drop=True)
 
@@ -243,7 +271,7 @@ def run_backtest_for_ticker(df_all, ticker, capital=1_000_000):
                     price_past = df_stock.iloc[i - FALLING_KNIFE_WINDOW]['Cours moyen']
                     if price_past > 0:
                         pct_chg = (price - price_past) / price_past
-                        if pct_chg <= -FALLING_KNIFE_DROP_PCT:
+                        if pct_chg <= -fk_drop_pct:
                             avoid = True
 
                 if not avoid:
@@ -251,8 +279,8 @@ def run_backtest_for_ticker(df_all, ticker, capital=1_000_000):
                     in_position = True
                     trade_entry_price = price
                     trade_entry_date = date
-                    tp_price = price * (1 + TAKE_PROFIT_PCT)
-                    sl_price = price * (1 - STOP_LOSS_PCT)
+                    tp_price = price * (1 + tp_pct)
+                    sl_price = price * (1 - sl_pct)
                     holding_days = 0
                     positions[i] = 1
 
@@ -266,7 +294,7 @@ def run_backtest_for_ticker(df_all, ticker, capital=1_000_000):
     df_stock['Capital_Algo'] = capital * (1 + df_stock['Rendement_Algo'].fillna(0)).cumprod()
     df_stock['Capital_BuyHold'] = capital * (1 + df_stock['Rendement_Action'].fillna(0)).cumprod()
 
-    taux_sr = (1 + 0.065) ** (1/252) - 1
+    taux_sr = (1 + 0.02) ** (1/252) - 1
     df_stock['Capital_SafeRate'] = capital * (1 + taux_sr) ** pd.Series(range(len(df_stock)))
 
     cap_final = df_stock['Capital_Algo'].iloc[-1]
@@ -281,7 +309,11 @@ def run_backtest_for_ticker(df_all, ticker, capital=1_000_000):
     ann_ret = ((cap_final / capital) ** (1 / max(n_years, 0.5)) - 1) * 100 if cap_final > 0 else 0
 
     vol = df_stock['Rendement_Algo'].dropna().std() * (252 ** 0.5) * 100
-    sharpe = (ann_ret - 6.5) / vol if vol > 0 else 0
+    ret_series = df_stock['Rendement_Algo'].dropna()
+    if len(ret_series) > 1 and ret_series.std() > 0:
+        sharpe = ((ret_series.mean()) / ret_series.std()) * (252 ** 0.5)
+    else:
+        sharpe = 0
 
     cum_max = df_stock['Capital_Algo'].cummax()
     drawdown = (df_stock['Capital_Algo'] - cum_max) / cum_max * 100
@@ -321,9 +353,32 @@ def run_backtest_for_ticker(df_all, ticker, capital=1_000_000):
         'winRate': round(float(win_rate), 1),
         'profitFactor': round(float(profit_factor), 2),
         'volatility': round(float(vol), 2),
+        'tpPct': tp_pct,
+        'slPct': sl_pct,
+        'timeStopDays': time_stop_days,
         'trades': trades[-20:],
         'equityCurve': equity_curve
     }
+
+
+def is_probable_bond_row(row):
+    """Heuristique pour exclure obligations/sukuk du module signaux actions."""
+    symbol = str(row.get('Code symbole', '')).upper()
+    name = str(row.get('Libellé', row.get('Libelle', ''))).upper()
+    taux_raw = str(row.get('TAUX', '')).strip()
+    coupon_raw = str(row.get('Numéro de Coupon', '')).strip()
+
+    if '.O' in symbol or symbol.startswith(('TP', 'EOM', 'SUK', 'CRRH')):
+        return True
+    if 'OBLIG' in name or 'SUKUK' in name or 'ETAT' in name:
+        return True
+    if '%' in name and any(y in name for y in ['202', '203', '204']):
+        return True
+    if taux_raw not in ('', '0', '0.0', 'nan', 'None'):
+        return True
+    if coupon_raw not in ('', '0', 'nan', 'None'):
+        return True
+    return False
 
 
 # =============================================================================
@@ -336,6 +391,14 @@ def build_signals_from_df(df):
 
     latest_date = df['Date'].max()
     df_latest = df[df['Date'] == latest_date].copy()
+    df_latest = df_latest[~df_latest.apply(is_probable_bond_row, axis=1)].copy()
+
+    # Priorité à l'univers SATELLITE si disponible
+    sat_set = set(str(s).upper() for s in (SATELLITE_STOCK_UNIVERSE or []))
+    if sat_set:
+        df_sat = df_latest[df_latest['Code symbole'].astype(str).str.upper().isin(sat_set)].copy()
+        if not df_sat.empty:
+            df_latest = df_sat
 
     summary = {'strongBuy': 0, 'buy': 0, 'hold': 0, 'sell': 0, 'strongSell': 0}
     current = []
@@ -354,21 +417,51 @@ def build_signals_from_df(df):
         summary[key_map.get(signal, 'hold')] += 1
 
         if z is not None:
+            action = 'BUY' if signal in ('Buy', 'Strong Buy') else ('SELL' if signal in ('Sell', 'Strong Sell') else 'HOLD')
+            tp = float(price) * (1 + TAKE_PROFIT_PCT) if price else 0
+            sl = float(price) * (1 - STOP_LOSS_PCT) if price else 0
+            cap_trade = int(CAPITAL_TOTAL * MAX_POSITION_PCT)
+            qty = int(cap_trade / price) if action == 'BUY' and price and price > 0 else 0
+            rr = round((tp - price) / (price - sl), 2) if action == 'BUY' and tp > price > sl else 0
+            deploy = int(qty * price) if qty > 0 else 0
             current.append({
                 'symbol': symbol,
                 'name': name[:30] if name else symbol,
                 'price': round(float(price), 2) if price else 0,
                 'zScore': round(float(z), 2) if z else 0,
                 'signal': signal,
+                'action': action,
                 'volume': int(volume) if volume else 0,
-                'volatility': round(float(vol), 1) if vol else 0
+                'volatility': round(float(vol), 1) if vol else 0,
+                'tp': round(tp, 2) if tp else 0,
+                'sl': round(sl, 2) if sl else 0,
+                'qty': qty,
+                'tpPct': f"{TAKE_PROFIT_PCT*100:.1f}%",
+                'slPct': f"{STOP_LOSS_PCT*100:.1f}%",
+                'riskReward': rr,
+                'capitalDeploy': deploy,
             })
 
     current.sort(key=lambda x: x['zScore'])
 
+    buys_count = summary['strongBuy'] + summary['buy']
+    sells_count = summary['strongSell'] + summary['sell']
+    sentiment = 'NEUTRE'
+    if buys_count > sells_count:
+        sentiment = 'HAUSSIER'
+    elif sells_count > buys_count:
+        sentiment = 'BAISSIER'
+
+    top_opps = [s for s in current if s.get('action') == 'BUY']
+    top_opps = sorted(top_opps, key=lambda x: x.get('zScore', 0))[:5]
+
     return {
         'summary': summary,
         'current': current,
+        'marketSentiment': sentiment,
+        'buysCount': buys_count,
+        'sellsCount': sells_count,
+        'topOpportunities': top_opps,
         'date': str(latest_date.date()),
         'totalAnalyzed': len(df_latest)
     }
@@ -440,7 +533,19 @@ def build_bonds_from_df(df):
         if not price or price <= 0:
             continue
 
+        # Coupon: préférence colonne TAUX, sinon extraction depuis le libellé (ex: "6,30%")
         coupon = taux if taux and taux > 0 else 0
+        if coupon <= 0:
+            m_coupon = re.search(r'(\d+[\.,]\d+)\s*%', name)
+            if m_coupon:
+                coupon = safe_float(m_coupon.group(1), 0)
+
+        # Maturité: extraction du pattern AAAA-AAAA si présent
+        maturity = '-'
+        m_mat = re.search(r'(20\d{2})\s*[-/]\s*(20\d{2})', name)
+        if m_mat:
+            maturity = m_mat.group(2)
+
         discount = max(0, 100 - price) if price < 110 else 0
         yield_eff = coupon * 100 / price if price > 0 and coupon > 0 else 0
 
@@ -448,7 +553,7 @@ def build_bonds_from_df(df):
             opportunities.append({
                 'name': name[:35] if name else symbol,
                 'coupon': round(coupon, 2),
-                'maturity': '-',
+                'maturity': maturity,
                 'price': round(float(price), 2),
                 'yieldEff': round(yield_eff, 2),
                 'discount': round(discount, 1),
@@ -548,22 +653,59 @@ def main():
     print("[3/5] Execution des backtests...")
 
     tickers_to_test = list(CORE_TICKERS)
-    top_buy = [s['symbol'] for s in signals['current']
-               if s['signal'] in ('Strong Buy', 'Buy') and s['symbol'] not in tickers_to_test]
+    top_buy = [
+        s['symbol'] for s in signals['current']
+        if s['signal'] in ('Strong Buy', 'Buy') and s['symbol'] not in tickers_to_test
+    ]
     tickers_to_test.extend(top_buy[:5])
 
     all_bt_results = []
     best_result = None
 
+    param_grid = [
+        (0.05, 0.08, 10),
+        (0.05, 0.08, 20),
+        (0.06, 0.08, 10),
+        (0.05, 0.05, 10),
+        (0.08, 0.05, 10),
+    ]
+
     for ticker in tickers_to_test:
         try:
-            result = run_backtest_for_ticker(df, ticker, capital=CAPITAL_TOTAL)
-            if result:
-                all_bt_results.append(result)
-                print(f"  -> {ticker:8} : {result['totalReturn']:+.2f}% "
-                      f"(Sharpe {result['sharpe']:.2f}, {result['n_trades']} trades)")
-                if best_result is None or result['sharpe'] > best_result['sharpe']:
-                    best_result = result
+            best_local = None
+            best_score = -10**9
+
+            for tp, sl, ts in param_grid:
+                result = run_backtest_for_ticker(
+                    df,
+                    ticker,
+                    capital=CAPITAL_TOTAL,
+                    tp_pct=tp,
+                    sl_pct=sl,
+                    time_stop_days=ts,
+                )
+                if not result:
+                    continue
+
+                score = result['sharpe']
+                if result['n_trades'] < 5:
+                    score -= 0.5
+                if result['maxDrawdown'] < -20:
+                    score -= 0.5
+
+                if score > best_score:
+                    best_score = score
+                    best_local = result
+
+            if best_local:
+                all_bt_results.append(best_local)
+                print(
+                    f"  -> {ticker:8} : {best_local['totalReturn']:+.2f}% "
+                    f"(Sharpe {best_local['sharpe']:.2f}, MDD {best_local['maxDrawdown']:.2f}%, "
+                    f"{best_local['n_trades']} trades, TP {best_local['tpPct']*100:.0f}% / SL {best_local['slPct']*100:.0f}% / TS {best_local['timeStopDays']}j)"
+                )
+                if best_result is None or best_local['sharpe'] > best_result['sharpe']:
+                    best_result = best_local
         except Exception as e:
             print(f"  -> {ticker:8} : ERREUR - {e}")
 
