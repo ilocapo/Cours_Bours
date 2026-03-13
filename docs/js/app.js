@@ -182,11 +182,24 @@ function chartOpts(unit) {
 // ═══════════════════════════════════════════
 function renderOverview() {
   const o = DATA.overview;
+  const strategy = DATA.backtests?.strategy || {};
+  const bestTicker = strategy.bestTicker;
+  const bestPeriod = (DATA.backtests?.perTicker || []).find(t => t.ticker === bestTicker)?.period || '';
+  const dataDate = DATA.meta?.dataDate || '';
+  const isHistoricalBacktest = /^202[0-5]-/.test(dataDate);
+
+  const ytdLabel = document.getElementById('lbl-ytd');
+  if (ytdLabel) ytdLabel.textContent = isHistoricalBacktest ? 'RENDEMENT BACKTEST' : 'RENDEMENT YTD';
+
   setText('kv-total', fmt.fcfa(o.totalValue));
   const ytdCls = o.ytdReturn >= 0 ? 'g' : 'r';
   const ytdEl = document.getElementById('kv-ytd');
   if(ytdEl) { ytdEl.textContent = fmt.pct(o.ytdReturn); ytdEl.className = 'kpi-val '+ytdCls; }
-  setText('ks-ytd', `Sharpe ${(o.sharpeRatio||0).toFixed(2)}`);
+  if (isHistoricalBacktest && bestPeriod) {
+    setText('ks-ytd', `${bestTicker || 'Best'} · ${bestPeriod}`);
+  } else {
+    setText('ks-ytd', `Sharpe ${(o.sharpeRatio||0).toFixed(2)}`);
+  }
 
   const dailyEl = document.getElementById('kv-daily');
   if(dailyEl) { dailyEl.textContent = fmt.fcfa(o.dailyPnl); dailyEl.className = 'kpi-val '+(o.dailyPnl>=0?'g':'r'); dailyEl.style.fontSize='16px'; }
