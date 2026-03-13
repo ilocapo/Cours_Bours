@@ -1,0 +1,64 @@
+name: Daily BRVM Automation
+
+on:
+  schedule:
+    # 18:45 UTC (proche fermeture BRVM) du lundi au vendredi
+    - cron: '45 18 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-brvm-automation
+  cancel-in-progress: false
+
+jobs:
+  run-daily-automation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run nightly automation
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          python scripts/automation/run_daily_automation.py
+
+      - name: Commit and push generated updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Fichiers potentiellement mis à jour par l'automation
+          git add YTD_2026.csv || true
+          git add output/ || true
+          git add docs/data/ || true
+          git add data/runtime/ || true
+          git add core_allocation.csv || true
+          git add core_bonds_allocation.csv || true
+          git add open_positions.csv executed_trades.csv portfolio_summary.csv || true
+          git add bond_opportunities_*.csv || true
+
+          if git diff --staged --quiet; then
+            echo "Aucun changement à commit."
+            exit 0
+          fi
+
+          git commit -m "chore: nightly automation update [skip ci]"
+          git push

@@ -56,6 +56,58 @@ except ImportError:
 BRVM_URL = "https://www.brvm.org"
 
 
+def load_core_allocation_positions() -> pd.DataFrame:
+    """
+    Charge les positions CORE réelles depuis core_allocation.csv si disponible.
+
+    Colonnes attendues (tolérantes):
+      - Ticker
+      - Qty
+      - Entry_Price (optionnel)
+      - Type (optionnel: STOCK/BOND)
+
+    Returns:
+      DataFrame normalisé ou DataFrame vide si indisponible/invalide.
+    """
+    core_path = PROJECT_ROOT / 'core_allocation.csv'
+    if not core_path.exists():
+        return pd.DataFrame()
+
+    try:
+        df = pd.read_csv(core_path)
+        if df.empty:
+            return pd.DataFrame()
+
+        # Normalisation minimale des colonnes
+        df.columns = [str(c).strip() for c in df.columns]
+        if 'Ticker' not in df.columns or 'Qty' not in df.columns:
+            return pd.DataFrame()
+
+        df['Ticker'] = df['Ticker'].astype(str).str.strip().str.upper()
+        df['Qty'] = pd.to_numeric(df['Qty'], errors='coerce').fillna(0)
+        if 'Entry_Price' in df.columns:
+            df['Entry_Price'] = pd.to_numeric(df['Entry_Price'], errors='coerce').fillna(0)
+        else:
+            df['Entry_Price'] = 0.0
+
+        if 'Type' not in df.columns:
+            df['Type'] = 'UNKNOWN'
+        else:
+            df['Type'] = df['Type'].astype(str).str.strip().str.upper()
+
+        # Si la colonne Status existe, ne garder que les positions réellement investies
+        if 'Status' in df.columns:
+            status = df['Status'].astype(str).str.strip().str.upper()
+            df = df[~status.isin(['SUGGESTED', 'TEMPLATE', 'DRAFT'])].copy()
+
+        # Exclure les lignes invalides
+        df = df[(df['Ticker'] != '') & (df['Qty'] > 0)].copy()
+        return df
+    except Exception as e:
+        print(f"   ⚠️  core_allocation.csv illisible: {e}")
+        return pd.DataFrame()
+
+
 def calculate_satellite_value(prices: dict) -> tuple:
     """
     Calcule la valeur réelle du SATELLITE:
@@ -253,22 +305,46 @@ def calculate_portfolio_value() -> dict:
         'SAFC': 5000,
         'ABJC': 2840
     }
-    
+
     # Calculer la valeur CORE en temps réel
+    # Priorité: positions réelles (core_allocation.csv) -> inclut obligations si présentes
     core_value = 0
-    
-    for ticker in CORE_TICKERS:
-        current_price = prices.get(ticker, INITIAL_PRICE_CORE.get(ticker, 1))
-        initial_price = INITIAL_PRICE_CORE.get(ticker, 1)
-        
-        # Nombre d'actions = capital initial par stock / prix initial
-        qty = CORE_PER_STOCK / initial_price if initial_price > 0 else 0
-        
-        # Valeur actuelle = nombre d'actions × prix actuel
-        position_value = qty * current_price
-        core_value += position_value
-        
-        print(f"  ✓ {ticker}: {current_price:,.0f} FCFA → {position_value:,.0f} FCFA")
+    core_positions = load_core_allocation_positions()
+
+    if not core_positions.empty:
+        print(f"  📁 CORE réel chargé depuis core_allocation.csv ({len(core_positions)} lignes)")
+        for _, pos in core_positions.iterrows():
+            ticker = pos['Ticker']
+            qty = float(pos['Qty'])
+            entry_price = float(pos.get('Entry_Price', 0) or 0)
+            position_type = str(pos.get('Type', 'UNKNOWN')).upper()
+
+            # Prix live BRVM si disponible, sinon fallback sur Entry_Price
+            current_price = float(prices.get(ticker, entry_price if entry_price > 0 else 0))
+            if current_price <= 0:
+                # Si aucun prix disponible, ne pas casser le calcul
+                print(f"  ⚠️  {ticker}: prix indisponible (ligne ignorée)")
+                continue
+
+            position_value = qty * current_price
+            core_value += position_value
+            tag = 'OBLIG' if position_type == 'BOND' else 'CORE'
+            print(f"  ✓ [{tag}] {ticker}: {qty:,.0f} × {current_price:,.0f} = {position_value:,.0f} FCFA")
+    else:
+        # Fallback legacy: 5 actions CORE équipondérées
+        print("  ℹ️  core_allocation.csv absent → fallback 5 actions CORE")
+        for ticker in CORE_TICKERS:
+            current_price = prices.get(ticker, INITIAL_PRICE_CORE.get(ticker, 1))
+            initial_price = INITIAL_PRICE_CORE.get(ticker, 1)
+
+            # Nombre d'actions = capital initial par stock / prix initial
+            qty = CORE_PER_STOCK / initial_price if initial_price > 0 else 0
+
+            # Valeur actuelle = nombre d'actions × prix actuel
+            position_value = qty * current_price
+            core_value += position_value
+
+            print(f"  ✓ {ticker}: {current_price:,.0f} FCFA → {position_value:,.0f} FCFA")
     
     # Valeur SATELLITE réelle (capital initial + P&L réalisé + latent)
     satellite_value, positions_open_count, trades_closed_count = calculate_satellite_value(prices)
