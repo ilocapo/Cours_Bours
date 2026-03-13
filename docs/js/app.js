@@ -204,12 +204,13 @@ function renderOverview() {
   const initial = Number(o.initialCapital || 0);
   const total = Number(o.totalValue || 0);
   const growthPct = initial > 0 ? ((total - initial) / initial) * 100 : 0;
+  const growthAmt = total - initial;
   const growthEl = document.getElementById('kv-growth');
   if (growthEl) {
-    growthEl.textContent = fmt.pct(growthPct);
-    growthEl.className = 'kpi-val ' + (growthPct >= 0 ? 'g' : 'r');
+    growthEl.textContent = fmt.fcfa(growthAmt);
+    growthEl.className = 'kpi-val ' + (growthAmt >= 0 ? 'g' : 'r');
   }
-  setText('ks-growth', initial > 0 ? `${fmt.fcfa(total - initial)}` : 'vs capital initial');
+  setText('ks-growth', initial > 0 ? `${fmt.pct(growthPct)} vs capital initial` : 'vs capital initial');
 
   const dailyEl = document.getElementById('kv-daily');
   if(dailyEl) { dailyEl.textContent = fmt.fcfa(o.dailyPnl); dailyEl.className = 'kpi-val '+(o.dailyPnl>=0?'g':'r'); dailyEl.style.fontSize='16px'; }
