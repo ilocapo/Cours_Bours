@@ -35,6 +35,7 @@ MODULES = [
     ('scripts/trading/core_rebalancing.py',      'Monitor CORE stocks'),
     ('scripts/trading/bond_scanner.py',          'Scan des obligations'),
     ('scripts/trading/daily_market_update.py',   'Mise à jour du portefeuille'),
+    ('scripts/automation/generate_last10days_history.py', 'Historique 10 jours (runs + transactions + portefeuille)'),
     ('scripts/fundamentals/dividend_tracker.py', 'Suivi dividendes CORE (alertes + cash)'),
     ('scripts/maintenance/patch_dashboard_json.py',  'Mise à jour dashboard web (GitHub Pages)'),
 ]
