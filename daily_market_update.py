@@ -54,6 +54,56 @@ except ImportError:
 BRVM_URL = "https://www.brvm.org"
 
 
+def calculate_satellite_value(prices: dict) -> tuple:
+    """
+    Calcule la valeur réelle du SATELLITE:
+      valeur = capital_initial_satellite + P&L réalisé + P&L latent
+
+    Retourne:
+      (satellite_value, open_positions_count, trades_closed_count)
+    """
+    open_positions_path = Path('open_positions.csv')
+    executed_trades_path = Path('executed_trades.csv')
+
+    realized_pnl = 0.0
+    unrealized_pnl = 0.0
+    open_positions_count = 0
+    trades_closed_count = 0
+
+    if executed_trades_path.exists():
+        try:
+            df_executed = pd.read_csv(executed_trades_path)
+            if not df_executed.empty:
+                if 'P&L_FCFA' in df_executed.columns:
+                    realized_pnl = pd.to_numeric(df_executed['P&L_FCFA'], errors='coerce').fillna(0).sum()
+                trades_closed_count = len(df_executed)
+        except Exception as e:
+            print(f"   ⚠️  Impossible de lire executed_trades.csv: {e}")
+
+    if open_positions_path.exists():
+        try:
+            df_open = pd.read_csv(open_positions_path)
+            if not df_open.empty:
+                open_positions_count = len(df_open)
+                for _, row in df_open.iterrows():
+                    ticker = str(row.get('Ticker', '')).strip().upper()
+                    entry_price = float(row.get('Entry_Price', 0) or 0)
+                    qty = float(row.get('Qty', 0) or 0)
+                    if qty <= 0 or entry_price <= 0:
+                        continue
+
+                    current_price = float(prices.get(ticker, entry_price))
+                    unrealized_pnl += (current_price - entry_price) * qty
+        except Exception as e:
+            print(f"   ⚠️  Impossible de lire open_positions.csv: {e}")
+
+    satellite_value = SATELLITE_VALUE_INITIAL + realized_pnl + unrealized_pnl
+    if satellite_value < 0:
+        satellite_value = 0
+
+    return satellite_value, open_positions_count, trades_closed_count
+
+
 def fetch_all_brvm_prices() -> dict:
     """
     Scrape TOUS les prix BRVM en une seule requête
@@ -218,9 +268,9 @@ def calculate_portfolio_value() -> dict:
         
         print(f"  ✓ {ticker}: {current_price:,.0f} FCFA → {position_value:,.0f} FCFA")
     
-    # Valeur satellite (simplifié: on suppose croissance constante)
-    # À améliorer avec trading réel
-    satellite_value = SATELLITE_VALUE_INITIAL  # Placeholder
+    # Valeur SATELLITE réelle (capital initial + P&L réalisé + latent)
+    satellite_value, positions_open_count, trades_closed_count = calculate_satellite_value(prices)
+    print(f"  🤖 SATELLITE: {satellite_value:,.0f} FCFA | Open={positions_open_count} | Closed={trades_closed_count}")
 
     # Total = core + satellite + cash (réserve non investie)
     total_value = core_value + satellite_value + CASH_VALUE
@@ -232,7 +282,7 @@ def calculate_portfolio_value() -> dict:
         "satellite_value": satellite_value,
         "total_value": total_value,
         "ytd_return_pct": ytd_return_pct,
-        "trades_count": 0  # À récupérer depuis logs
+        "trades_count": trades_closed_count
     }
 
 

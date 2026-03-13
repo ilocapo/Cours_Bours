@@ -3,8 +3,8 @@ Daily Automation Script - Altos Trading System
 
 Exécute automatiquement tous les modules de trading:
 1. daily_signals.py - Génère signaux Z-Score
-2. daily_market_update.py - Met à jour valeurs portfolio
-3. portfolio_manager.py - Gère positions ouvertes
+2. portfolio_manager.py - Gère positions ouvertes
+3. daily_market_update.py - Met à jour valeurs portfolio
 4. core_rebalancing.py - Monitor santé CORE
 5. bond_scanner.py - Scan obligations
 
@@ -31,8 +31,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Modules à exécuter dans l'ordre (QUOTIDIEN)
 MODULES = [
     ('daily_signals.py',         'Génération des signaux Z-Score'),
-    ('daily_market_update.py',   'Mise à jour du portefeuille'),
     ('portfolio_manager.py',     'Gestion des positions'),
+    ('daily_market_update.py',   'Mise à jour du portefeuille'),
     ('core_rebalancing.py',      'Monitor CORE stocks'),
     ('bond_scanner.py',          'Scan des obligations'),
     ('dividend_tracker.py',      'Suivi dividendes CORE (alertes + cash)'),
