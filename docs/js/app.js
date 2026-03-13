@@ -15,41 +15,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateClock();
   setInterval(updateClock, 1000);
   buildTicker();
-  setupAutomationRunner();
   renderOverview();
 });
-
-// ═══════════════════════════════════════════
-// AUTOMATION RUNNER (LOCAL API)
-// ═══════════════════════════════════════════
-function setupAutomationRunner() {
-  const btn = document.getElementById('run-automation-btn');
-  const statusEl = document.getElementById('run-automation-status');
-  if(!btn || !statusEl) return;
-
-  const setStatus = (msg, type='') => {
-    statusEl.textContent = msg;
-    statusEl.classList.remove('ok', 'err', 'busy');
-    if(type) statusEl.classList.add(type);
-  };
-
-  btn.addEventListener('click', async () => {
-    btn.disabled = true;
-    setStatus('', '');
-
-    const owner = 'ilocapo';
-    const repo = 'Cours_Bours';
-    const title = encodeURIComponent('[AUTOMATION] run daily automation');
-    const body = encodeURIComponent('/run-daily-automation\n\nTriggered from TERMINUS site.');
-    const labels = encodeURIComponent('automation,trigger');
-    const issueUrl = `https://github.com/${owner}/${repo}/issues/new?title=${title}&body=${body}&labels=${labels}`;
-    const runsUrl = `https://github.com/${owner}/${repo}/actions/workflows/daily-automation.yml`;
-
-    window.open(issueUrl, '_blank', 'noopener,noreferrer');
-    setStatus('');
-    btn.disabled = false;
-  });
-}
 
 async function loadRealData() {
   try {
