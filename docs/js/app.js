@@ -28,6 +28,20 @@ async function loadRealData() {
     const r2 = await fetch(`data/backtest_logs.json?v=${cacheBuster}`, { cache: 'no-store' });
     if (r2.ok) { const j2 = await r2.json(); if(j2&&j2.length) DATA.allLogs = j2; }
   } catch(e) {}
+  try {
+    const r3 = await fetch(`data/history_last10days.json?v=${cacheBuster}`, { cache: 'no-store' });
+    if (r3.ok) {
+      const h = await r3.json();
+      if (Array.isArray(h)) DATA.runHistory = h;
+    }
+  } catch(e) {}
+  try {
+    const r4 = await fetch(`data/transactions_all.json?v=${cacheBuster}`, { cache: 'no-store' });
+    if (r4.ok) {
+      const t = await r4.json();
+      if (Array.isArray(t)) DATA.transactionsAll = t;
+    }
+  } catch(e) {}
 }
 
 // ═══════════════════════════════════════════
@@ -945,6 +959,11 @@ function renderBondCards() {
 // ═══════════════════════════════════════════
 function renderLogs() {
   const logs = DATA.allLogs || DATA.logs || [];
+  const runs = DATA.runHistory || [];
+  const txAll = DATA.transactionsAll || [];
+
+  renderRunsHistoryTable(runs);
+  renderTransactionsHistoryTable(txAll);
 
   // KPIs
   const el = document.getElementById('log-kpis');
@@ -960,6 +979,71 @@ function renderLogs() {
 
   renderLogReturnsChart(logs);
   renderLogTable(logs);
+}
+
+function renderRunsHistoryTable(runs) {
+  const el = document.getElementById('history-runs-wrap');
+  if(!el) return;
+  if(!runs.length) {
+    el.innerHTML = '<div style="font-size:10px;color:var(--td);padding:8px">Aucun run historisé pour le moment.</div>';
+    return;
+  }
+  el.innerHTML = `<table class="sig-table"><thead><tr>
+    <th>DATE</th><th>HEURE RUN</th><th>STATUT</th>
+    <th class="num">MODULES OK</th><th class="num">MODULES ERR</th>
+    <th class="num">TX CLOT.</th><th class="num">PNL JOUR</th>
+    <th class="num">CORE</th><th class="num">SATELLITE</th><th class="num">TOTAL</th><th class="num">YTD</th>
+  </tr></thead><tbody>
+  ${runs.map(r => {
+    const st = (r.Run_Status||'').toString();
+    const stCls = st === 'SUCCESS' ? 'pos' : (st === 'PARTIAL' ? 'warn' : (st === 'NO_RUN' ? '' : 'neg'));
+    const pnl = Number(r.PnL_Day_FCFA||0);
+    return `<tr>
+      <td>${r.Date || '-'}</td>
+      <td>${r.Run_Started_At || '-'}</td>
+      <td class="${stCls}">${st}</td>
+      <td class="num">${fmt.num(r.Modules_OK||0)}</td>
+      <td class="num">${fmt.num(r.Modules_Error||0)}</td>
+      <td class="num">${fmt.num(r.Transactions_Closed||0)}</td>
+      <td class="num ${(pnl>=0)?'pos':'neg'}">${fmt.fcfa(pnl)}</td>
+      <td class="num">${fmt.fcfa(r.Core_Value||0)}</td>
+      <td class="num">${fmt.fcfa(r.Satellite_Value||0)}</td>
+      <td class="num">${fmt.fcfa(r.Total_Value||0)}</td>
+      <td class="num ${(Number(r['YTD_Return_%']||0)>=0)?'pos':'neg'}">${fmt.pct(r['YTD_Return_%']||0)}</td>
+    </tr>`;
+  }).join('')}
+  </tbody></table>`;
+}
+
+function renderTransactionsHistoryTable(txAll) {
+  const el = document.getElementById('history-transactions-wrap');
+  if(!el) return;
+  if(!txAll.length) {
+    el.innerHTML = '<div style="font-size:10px;color:var(--td);padding:8px">Aucune transaction clôturée en mémoire.</div>';
+    return;
+  }
+
+  const recent = txAll.slice(-150).reverse();
+  el.innerHTML = `<table class="sig-table"><thead><tr>
+    <th>DATE SORTIE</th><th>TICKER</th><th class="num">QTE</th>
+    <th class="num">PRIX ENTREE</th><th class="num">PRIX SORTIE</th>
+    <th>RAISON</th><th class="num">PNL FCFA</th><th class="num">PNL %</th>
+  </tr></thead><tbody>
+  ${recent.map(t => {
+    const p = Number(t['P&L_%']||0);
+    const f = Number(t['P&L_FCFA']||0);
+    return `<tr>
+      <td>${t.Exit_Date || '-'}</td>
+      <td style="font-weight:600;color:var(--tb)">${t.Ticker || '-'}</td>
+      <td class="num">${fmt.num(t.Qty||0)}</td>
+      <td class="num">${fmt.num(t.Entry_Price||0)}</td>
+      <td class="num">${fmt.num(t.Exit_Price||0)}</td>
+      <td>${t.Exit_Reason || '-'}</td>
+      <td class="num ${(f>=0)?'pos':'neg'}">${fmt.fcfa(f)}</td>
+      <td class="num ${(p>=0)?'pos':'neg'}">${fmt.pct(p)}</td>
+    </tr>`;
+  }).join('')}
+  </tbody></table>`;
 }
 
 function renderLogReturnsChart(logs) {

@@ -17,6 +17,7 @@ from __future__ import annotations
 import glob
 import os
 import re
+import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -27,6 +28,7 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LOG_DIR = PROJECT_ROOT / "logs"
 OUTPUT_DIR = PROJECT_ROOT / "output" / "reports"
+DOCS_DATA_DIR = PROJECT_ROOT / "docs" / "data"
 YTD_FILE = PROJECT_ROOT / "YTD_2026.csv"
 EXECUTED_TRADES_FILE = PROJECT_ROOT / "executed_trades.csv"
 
@@ -208,6 +210,67 @@ def load_transactions_last10days() -> pd.DataFrame:
     return df[["Exit_Date", "Ticker", "Qty", "Entry_Price", "Exit_Price", "Exit_Reason", "P&L_FCFA", "P&L_%"]]
 
 
+def build_transactions_archive() -> pd.DataFrame:
+    """Construit/maintient un historique cumulé de toutes les transactions closes."""
+    archive_path = OUTPUT_DIR / "transactions_all.csv"
+
+    cols = ["Exit_Date", "Ticker", "Qty", "Entry_Price", "Exit_Price", "Exit_Reason", "P&L_FCFA", "P&L_%"]
+
+    if EXECUTED_TRADES_FILE.exists():
+        cur = pd.read_csv(EXECUTED_TRADES_FILE)
+    else:
+        cur = pd.DataFrame(columns=[])
+
+    if cur.empty:
+        if archive_path.exists():
+            arch = pd.read_csv(archive_path)
+            for c in cols:
+                if c not in arch.columns:
+                    arch[c] = ""
+            return arch[cols]
+        return pd.DataFrame(columns=cols)
+
+    # Normaliser colonnes
+    if "Exit_Date" in cur.columns:
+        cur["Exit_Date"] = pd.to_datetime(cur["Exit_Date"], dayfirst=True, errors="coerce").dt.strftime("%d/%m/%Y")
+    else:
+        cur["Exit_Date"] = ""
+
+    for c in ["Qty", "Entry_Price", "Exit_Price", "P&L_FCFA", "P&L_%"]:
+        cur[c] = pd.to_numeric(cur[c], errors="coerce").fillna(0) if c in cur.columns else 0
+    cur["Ticker"] = cur["Ticker"].astype(str).str.upper() if "Ticker" in cur.columns else ""
+    cur["Exit_Reason"] = cur["Exit_Reason"].astype(str) if "Exit_Reason" in cur.columns else ""
+
+    cur = cur[["Exit_Date", "Ticker", "Qty", "Entry_Price", "Exit_Price", "Exit_Reason", "P&L_FCFA", "P&L_%"]].copy()
+
+    if archive_path.exists():
+        arch = pd.read_csv(archive_path)
+        for c in cols:
+            if c not in arch.columns:
+                arch[c] = ""
+        arch = arch[cols]
+        merged = pd.concat([arch, cur], ignore_index=True)
+    else:
+        merged = cur.copy()
+
+    # Clé de déduplication pour éviter les doublons à chaque run
+    merged["_k"] = (
+        merged["Exit_Date"].astype(str) + "|" +
+        merged["Ticker"].astype(str) + "|" +
+        merged["Qty"].astype(str) + "|" +
+        merged["Entry_Price"].astype(str) + "|" +
+        merged["Exit_Price"].astype(str) + "|" +
+        merged["Exit_Reason"].astype(str)
+    )
+    merged = merged.drop_duplicates(subset=["_k"], keep="last").drop(columns=["_k"])
+
+    # Tri date croissante
+    merged["_dt"] = pd.to_datetime(merged["Exit_Date"], dayfirst=True, errors="coerce")
+    merged = merged.sort_values(["_dt", "Ticker"], na_position="last").drop(columns=["_dt"]).reset_index(drop=True)
+
+    return merged
+
+
 def build_daily_history() -> pd.DataFrame:
     """Construit le tableau final 10 jours (runs + transactions + portefeuille)."""
     runs_df = parse_automation_logs_last10days()
@@ -244,15 +307,35 @@ def build_daily_history() -> pd.DataFrame:
     return out
 
 
-def save_reports(df_hist: pd.DataFrame, df_tx: pd.DataFrame) -> None:
+def save_reports(df_hist: pd.DataFrame, df_tx_last10: pd.DataFrame, df_tx_all: pd.DataFrame) -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    DOCS_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     csv_hist = OUTPUT_DIR / "history_last10days.csv"
-    csv_tx = OUTPUT_DIR / "transactions_last10days.csv"
+    csv_tx_10 = OUTPUT_DIR / "transactions_last10days.csv"
+    csv_tx_all = OUTPUT_DIR / "transactions_all.csv"
     md_file = OUTPUT_DIR / "history_last10days.md"
 
     df_hist.to_csv(csv_hist, index=False)
-    df_tx.to_csv(csv_tx, index=False)
+    df_tx_last10.to_csv(csv_tx_10, index=False)
+    df_tx_all.to_csv(csv_tx_all, index=False)
+
+    # Copies pour GitHub Pages (docs/data)
+    docs_hist_csv = DOCS_DATA_DIR / "history_last10days.csv"
+    docs_tx10_csv = DOCS_DATA_DIR / "transactions_last10days.csv"
+    docs_txall_csv = DOCS_DATA_DIR / "transactions_all.csv"
+    df_hist.to_csv(docs_hist_csv, index=False)
+    df_tx_last10.to_csv(docs_tx10_csv, index=False)
+    df_tx_all.to_csv(docs_txall_csv, index=False)
+
+    # JSON pour frontend
+    docs_hist_json = DOCS_DATA_DIR / "history_last10days.json"
+    docs_txall_json = DOCS_DATA_DIR / "transactions_all.json"
+    with open(docs_hist_json, "w", encoding="utf-8") as f:
+        json.dump(df_hist.to_dict(orient="records"), f, ensure_ascii=False)
+    with open(docs_txall_json, "w", encoding="utf-8") as f:
+        # limiter la taille affichée côté front (500 dernières)
+        json.dump(df_tx_all.tail(500).to_dict(orient="records"), f, ensure_ascii=False)
 
     # Markdown lisible rapide
     with open(md_file, "w", encoding="utf-8") as f:
@@ -260,24 +343,28 @@ def save_reports(df_hist: pd.DataFrame, df_tx: pd.DataFrame) -> None:
         f.write("## Runs + Portefeuille\n\n")
         f.write(df_hist.to_string(index=False))
         f.write("\n\n## Transactions clôturées (10 jours)\n\n")
-        if df_tx.empty:
+        if df_tx_last10.empty:
             f.write("Aucune transaction clôturée sur les 10 derniers jours.\n")
         else:
-            f.write(df_tx.to_string(index=False))
+            f.write(df_tx_last10.to_string(index=False))
             f.write("\n")
 
     print("\n" + "=" * 100)
     print("HISTORIQUE 10 JOURS GÉNÉRÉ")
     print("=" * 100)
     print(f"✅ {csv_hist}")
-    print(f"✅ {csv_tx}")
+    print(f"✅ {csv_tx_10}")
+    print(f"✅ {csv_tx_all}")
     print(f"✅ {md_file}")
+    print(f"✅ {docs_hist_json}")
+    print(f"✅ {docs_txall_json}")
 
 
 def main() -> None:
     df_hist = build_daily_history()
-    df_tx = load_transactions_last10days()
-    save_reports(df_hist, df_tx)
+    df_tx_10 = load_transactions_last10days()
+    df_tx_all = build_transactions_archive()
+    save_reports(df_hist, df_tx_10, df_tx_all)
 
 
 if __name__ == "__main__":
