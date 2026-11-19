@@ -1,0 +1,51 @@
+/* ===== Tokens : univers Sims 4 (jour par défaut, nuit en mode sombre) =====
+   Vocabulaire shadcn, couleurs en OKLCH. Les composants lisent les alias. */
+@font-face{font-family:"Nunito Local";src:url(fonts/nunito.woff2) format("woff2");font-weight:200 1000;font-style:normal;font-display:swap}
+@font-face{font-family:"Nunito Local";src:url(fonts/nunito-italic.woff2) format("woff2");font-weight:200 1000;font-style:italic;font-display:swap}
+
+:root{
+  color-scheme:light dark;
+  /* neutres : une seule teinte bleue (240), le bleu de l'interface du jeu */
+  --background:oklch(0.965 0.02 235); --foreground:oklch(0.27 0.05 255);
+  --card:oklch(0.995 0.004 235); --muted:oklch(0.935 0.025 235); --muted-foreground:oklch(0.44 0.05 255);
+  --border:oklch(0.87 0.03 235);
+  /* accent unique : le vert plumbob */
+  --primary:oklch(0.8 0.21 140); --primary-foreground:oklch(0.25 0.07 150);
+  --primary-edge:oklch(0.6 0.17 145);          /* tranche des boutons, façon touche de jeu */
+  --accent-text:oklch(0.46 0.14 145);          /* vert lisible sur fond clair */
+  --secondary:oklch(0.52 0.15 245); --secondary-foreground:oklch(0.99 0.005 235); /* bleu des onglets sélectionnés */
+  --ring:oklch(0.52 0.15 245);
+  --destructive:oklch(0.52 0.2 25);
+  --outline-image:oklch(0 0 0 / 0.1);
+  --sky-top:oklch(0.86 0.09 232);
+  --motif-gold:oklch(0.8 0.15 85);
+  --shadow:0 2px 0 oklch(0.82 0.04 235),0 14px 30px oklch(0.45 0.1 245 / .12);
+
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px; --space-9:96px;
+  /* rayons : panneaux 28, médias 16, contrôles en pilule */
+  --radius:16px; --radius-sm:calc(var(--radius) - 6px); --radius-lg:calc(var(--radius) + 12px); --radius-pill:9999px;
+
+  --font-display:"Nunito Local",ui-rounded,system-ui,sans-serif;
+  --font-body:"Nunito Local",ui-rounded,system-ui,sans-serif;
+  --text-xs:.8125rem; --text-sm:.9375rem; --text-base:1.0625rem; --text-lg:1.3rem; --text-xl:1.75rem; --text-2xl:clamp(2rem,4.2vw,3rem); --text-hero:clamp(2.4rem,4.6vw,3.9rem);
+
+  --z-nav:10;
+  --ease-out:cubic-bezier(0.23,1,0.32,1); --ease-in-out:cubic-bezier(0.77,0,0.175,1);
+  --dur-press:160ms; --dur-ui:200ms; --dur-enter:280ms;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --background:oklch(0.2 0.06 268); --foreground:oklch(0.96 0.01 235);
+    --card:oklch(0.265 0.06 268); --muted:oklch(0.3 0.06 268); --muted-foreground:oklch(0.78 0.04 250);
+    --border:oklch(0.38 0.06 268);
+    --primary:oklch(0.82 0.21 140); --primary-foreground:oklch(0.22 0.06 150);
+    --primary-edge:oklch(0.55 0.16 145);
+    --accent-text:oklch(0.84 0.19 140);
+    --secondary:oklch(0.7 0.13 240); --secondary-foreground:oklch(0.2 0.05 255);
+    --ring:oklch(0.8 0.13 240);
+    --destructive:oklch(0.72 0.17 25);
+    --outline-image:oklch(1 0 0 / 0.12);
+    --sky-top:oklch(0.15 0.07 275);
+    --shadow:0 2px 0 oklch(0.17 0.05 268),0 14px 30px oklch(0.1 0.05 268 / .5);
+  }
+}

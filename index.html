@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sims 4 Afrique, CC et mods</title>
+<meta name="description" content="CC et mods Sims 4 inspirés des cultures africaines. Aperçus en galerie, téléchargement en un clic et mises à jour.">
+<link rel="preload" href="fonts/nunito.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.classList.add("js")</script>
+</head>
+<body>
+<a class="skip" href="#catalogue">Aller au catalogue</a>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="Sims 4 Afrique, accueil"><svg class="plumbob" viewBox="0 0 100 160" aria-hidden="true"><path class="f1" d="M50 4 14 80h36z"/><path class="f2" d="M50 4 86 80H50z"/><path class="f3" d="M14 80 50 156V80z"/><path class="f4" d="M86 80 50 156V80z"/></svg>Sims 4 Afrique</a>
+    <nav aria-label="Navigation principale">
+      <a href="#catalogue">Catalogue</a>
+      <a href="#mises-a-jour">Mises à jour</a>
+      <a href="#installer">Installation</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero wrap" aria-labelledby="h1">
+    <div class="floaties" id="floaties" aria-hidden="true"></div>
+    <div class="hero-copy">
+      <div class="greet">
+        <svg class="plumbob" viewBox="0 0 100 160" aria-hidden="true"><path class="f1" d="M50 4 14 80h36z"/><path class="f2" d="M50 4 86 80H50z"/><path class="f3" d="M14 80 50 156V80z"/><path class="f4" d="M86 80 50 156V80z"/></svg>
+        <p class="bubble">Sul sul ! Bienvenue.</p>
+      </div>
+      <h1 id="h1">Le style <em>africain</em>, prêt pour tes Sims.</h1>
+      <p class="lead">Des CC et des mods inspirés des cultures africaines. Regarde les aperçus, télécharge en un clic.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#catalogue">Parcourir le catalogue</a>
+        <a class="btn btn-ghost" href="#mises-a-jour">Voir les nouveautés</a>
+      </div>
+    </div>
+    <div class="cas" aria-label="Aperçu des contenus">
+      <div class="cas-view" id="casView">
+        <video id="casVideo" muted loop playsinline preload="metadata" poster="images/boubou-wax.jpg" aria-label="Aperçu animé des contenus">
+          <source src="media/ambiance.webm" type="video/webm">
+          <source src="media/ambiance.mp4" type="video/mp4">
+        </video>
+        <button class="icon-btn cas-pause" id="casPause" type="button" aria-label="Mettre la vidéo en pause"><svg class="ic" viewBox="0 0 256 256" aria-hidden="true" data-icon="pause"></svg></button>
+      </div>
+      <div class="cas-cap" aria-live="polite"><strong id="casName"></strong><span id="casKind"></span></div>
+      <div class="cas-swatches" id="casSwatches"></div>
+    </div>
+  </section>
+
+<div class="wrap"><div class="motif zig" aria-hidden="true"></div></div>
+
+  <section id="catalogue" class="wrap section" aria-labelledby="t-cat">
+    <h2 id="t-cat">Catalogue</h2>
+    <div class="toolbar">
+      <fieldset class="seg">
+        <legend class="label">Type</legend>
+        <div class="seg-row">
+          <button type="button" class="seg-btn" data-type="all" aria-pressed="true"><svg class="ic" viewBox="0 0 256 256" aria-hidden="true" data-icon="squares-four"></svg>Tout</button>
+          <button type="button" class="seg-btn" data-type="cc" aria-pressed="false"><svg class="ic" viewBox="0 0 256 256" aria-hidden="true" data-icon="t-shirt"></svg>CC</button>
+          <button type="button" class="seg-btn" data-type="mod" aria-pressed="false"><svg class="ic" viewBox="0 0 256 256" aria-hidden="true" data-icon="puzzle-piece"></svg>Mods</button>
+        </div>
+      </fieldset>
+      <div class="field">
+        <label class="label" for="q">Rechercher</label>
+        <div class="input-wrap">
+          <svg class="ic" viewBox="0 0 256 256" aria-hidden="true" data-icon="magnifying-glass"></svg>
+          <input id="q" type="search" placeholder="Exemple : wax, tresses, cuisine" autocomplete="off">
+        </div>
+      </div>
+      <p id="count" class="count-out" role="status" aria-live="polite"></p>
+      <div class="geo" role="group" aria-labelledby="geo-l">
+        <span id="geo-l" class="label">Explorer par pays</span>
+        <div class="chips" id="geoChips"></div>
+      </div>
+    </div>
+
+    <div id="grid" class="grid"></div>
+    <div id="empty" class="empty" hidden>
+      <h3>Rien ne correspond à ta recherche.</h3>
+      <p>Essaie un autre mot, ou affiche tout le catalogue.</p>
+      <button class="btn btn-ghost" id="reset" type="button">Tout afficher</button>
+    </div>
+    <noscript><p class="empty">Le catalogue a besoin de JavaScript pour s'afficher.</p></noscript>
+  </section>
+
+<div class="wrap"><div class="motif dia" aria-hidden="true"></div></div>
+
+  <section id="mises-a-jour" class="wrap section updates" aria-labelledby="t-up">
+    <div class="updates-head">
+      <h2 id="t-up">Mises à jour</h2>
+      <p>Chaque changement, du plus récent au plus ancien. Télécharge la dernière version quand une ligne t'intéresse.</p>
+    </div>
+    <div id="updates" class="updates-list"></div>
+  </section>
+
+<div class="wrap"><div class="motif cir" aria-hidden="true"></div></div>
+
+  <section id="installer" class="wrap section install" aria-labelledby="t-in">
+    <h2 id="t-in">Installer un contenu</h2>
+    <ol class="steps">
+      <li>
+        <span class="step-ic"><svg class="ic" viewBox="0 0 256 256" aria-hidden="true" data-icon="download-simple"></svg></span>
+        <div>
+        <h3>Télécharge le fichier</h3>
+        <p>Chaque bouton ouvre la page de son créateur. Pense à le créditer si tu partages des captures.</p>
+        </div>
+      </li>
+      <li>
+        <span class="step-ic"><svg class="ic" viewBox="0 0 256 256" aria-hidden="true" data-icon="folder-open"></svg></span>
+        <div>
+        <h3>Place-le dans le dossier Mods</h3>
+        <p>Copie les fichiers <code>.package</code> et <code>.ts4script</code> dans <code>Documents/Electronic Arts/Les Sims 4/Mods</code>.</p>
+        </div>
+      </li>
+      <li>
+        <span class="step-ic"><svg class="ic" viewBox="0 0 256 256" aria-hidden="true" data-icon="gear-six"></svg></span>
+        <div>
+        <h3>Active les mods de script</h3>
+        <p>Pour les mods uniquement : Options du jeu, onglet Autres, puis « Activer les mods de script ». Relance le jeu.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <svg class="plumbob" viewBox="0 0 100 160" aria-hidden="true"><path class="f1" d="M50 4 14 80h36z"/><path class="f2" d="M50 4 86 80H50z"/><path class="f3" d="M14 80 50 156V80z"/><path class="f4" d="M86 80 50 156V80z"/></svg>
+    <p>Les visuels principaux sont des images générées dans le style du jeu, pas des captures réelles. Site de fans, non affilié à Electronic Arts ni à Maxis. Les Sims est une marque d'Electronic Arts Inc.</p>
+  </div>
+</footer>
+
+<dialog id="lb" class="lb" aria-labelledby="lb-title">
+  <div class="lb-top">
+    <h2 id="lb-title" class="lb-title"></h2>
+    <button class="icon-btn" id="lb-close" type="button" aria-label="Fermer la galerie"><svg class="ic" viewBox="0 0 256 256" aria-hidden="true" data-icon="x"></svg></button>
+  </div>
+  <div class="lb-stage">
+    <button class="icon-btn" id="lb-prev" type="button" aria-label="Aperçu précédent"><svg class="ic" viewBox="0 0 256 256" aria-hidden="true" data-icon="caret-left"></svg></button>
+    <div id="lb-img" class="lb-img"></div>
+    <button class="icon-btn" id="lb-next" type="button" aria-label="Aperçu suivant"><svg class="ic" viewBox="0 0 256 256" aria-hidden="true" data-icon="caret-right"></svg></button>
+  </div>
+  <p id="lb-cap" class="lb-cap" aria-live="polite"></p>
+  <div class="lb-bottom">
+    <div id="lb-thumbs" class="lb-thumbs"></div>
+    <a id="lb-dl" class="btn btn-primary" href="#" target="_blank" rel="noopener noreferrer"><svg class="ic" viewBox="0 0 256 256" aria-hidden="true" data-icon="download-simple"></svg>Télécharger</a>
+  </div>
+</dialog>
+
+<script src="icons.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
