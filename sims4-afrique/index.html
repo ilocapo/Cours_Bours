@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sims 4 Afrique — CC & mods</title>
+<meta name="description" content="Téléchargez des CC et des mods Sims 4 inspirés de l'Afrique : galeries d'aperçus et mises à jour.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#catalogue">Aller au catalogue</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 20h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-images" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="10.5" r="1.6" fill="currentColor"/><path d="M4 17l5-4 4 3 3-2 4 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v5M12 8v.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+</svg>
+
+<header class="hero">
+  <div class="hero-pattern" aria-hidden="true"></div>
+  <div class="wrap hero-inner">
+    <p class="eyebrow">Sims 4 · Afrique</p>
+    <h1>Des Sims qui portent l'Afrique, du wax aux recettes.</h1>
+    <p class="lead">Des CC et des mods inspirés des cultures africaines. Parcourez les aperçus, puis téléchargez en un clic.</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#catalogue">Voir le catalogue</a>
+      <a class="btn btn-ghost" href="#mises-a-jour"><svg class="ic"><use href="#i-refresh"/></svg>Dernières mises à jour</a>
+    </div>
+    <dl class="stats">
+      <div><dt>CC</dt><dd id="stat-cc">4</dd></div>
+      <div><dt>Mods</dt><dd id="stat-mod">2</dd></div>
+      <div><dt>Mise à jour</dt><dd id="stat-last">—</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main>
+  <section id="catalogue" class="wrap section" aria-labelledby="t-cat">
+    <div class="section-head">
+      <h2 id="t-cat">Catalogue</h2>
+      <p class="muted" id="count" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Type de contenu">
+        <button type="button" class="seg-btn" data-type="all" aria-pressed="true">Tout</button>
+        <button type="button" class="seg-btn" data-type="cc" aria-pressed="false">CC</button>
+        <button type="button" class="seg-btn" data-type="mod" aria-pressed="false">Mods</button>
+      </div>
+      <label class="search">
+        <svg class="ic"><use href="#i-search"/></svg>
+        <span class="sr">Rechercher</span>
+        <input id="q" type="search" placeholder="Rechercher : wax, cuisine, tresses…" autocomplete="off">
+      </label>
+    </div>
+
+    <div id="grid" class="grid"></div>
+    <div id="empty" class="empty" hidden>
+      <p><strong>Aucun résultat.</strong></p>
+      <p class="muted">Essayez un autre mot-clé ou revenez à « Tout ».</p>
+      <button class="btn btn-ghost" id="reset" type="button">Réinitialiser les filtres</button>
+    </div>
+  </section>
+
+  <section id="mises-a-jour" class="band" aria-labelledby="t-up">
+    <div class="wrap section">
+      <div class="section-head">
+        <h2 id="t-up">Mises à jour</h2>
+        <p class="muted">Les changements les plus récents, tous contenus confondus.</p>
+      </div>
+      <ol id="updates" class="timeline"></ol>
+    </div>
+  </section>
+
+  <section class="wrap section notice" aria-labelledby="t-info">
+    <svg class="ic ic-lg"><use href="#i-info"/></svg>
+    <div>
+      <h2 id="t-info">À savoir avant d'installer</h2>
+      <ul>
+        <li>Placez les fichiers <code>.package</code> et <code>.ts4script</code> dans <code>Documents/Electronic Arts/Les Sims 4/Mods</code>.</li>
+        <li>Pour les mods à scripts, activez « Mods de script » dans Options du jeu → Autres.</li>
+        <li>Chaque téléchargement renvoie vers la page de son créateur : créditez-le si vous partagez des captures.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>Site de fans, non affilié à Electronic Arts ni à Maxis. Les Sims est une marque d'Electronic Arts Inc.</p>
+  </div>
+</footer>
+
+<dialog id="lb" class="lb" aria-label="Galerie d'aperçus">
+  <div class="lb-top">
+    <p id="lb-title" class="lb-title"></p>
+    <button class="icon-btn" id="lb-close" type="button" aria-label="Fermer la galerie"><svg class="ic"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="lb-stage">
+    <button class="icon-btn nav" id="lb-prev" type="button" aria-label="Aperçu précédent"><svg class="ic"><use href="#i-prev"/></svg></button>
+    <div id="lb-img" class="lb-img"></div>
+    <button class="icon-btn nav" id="lb-next" type="button" aria-label="Aperçu suivant"><svg class="ic"><use href="#i-next"/></svg></button>
+  </div>
+  <div class="lb-bottom">
+    <p id="lb-cap" class="lb-cap" aria-live="polite"></p>
+    <div id="lb-thumbs" class="lb-thumbs"></div>
+    <a id="lb-dl" class="btn btn-primary" href="#" target="_blank" rel="noopener noreferrer"><svg class="ic"><use href="#i-download"/></svg>Télécharger</a>
+  </div>
+</dialog>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
