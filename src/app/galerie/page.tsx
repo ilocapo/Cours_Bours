@@ -10,8 +10,8 @@ import { site } from "@/data/site";
 
 export const metadata: Metadata = { title: "Galerie", description: "Le salon et nos réalisations : tresses, coiffures, soins et ongles." };
 
-const prestations = [photos.bohemeDos, photos.boucles, photos.tressesSalon, photos.tressesDetail, photos.tresses, photos.nattes, photos.bohemeProfil, photos.spa, photos.visage, photos.ongles, photos.ongles2, photos.pedicure];
-const salon = [photos.salonVue, photos.perruques, photos.miroirLogo, photos.homme, photos.salonMiroirs, photos.salonLavage, photos.salonPosteBleu, photos.salonCabine, photos.salonPostes, photos.salonMur];
+const prestations = [photos.bohemeDos, photos.boucles, photos.bouclesDos, photos.tressesDetail, photos.tresses, photos.nattes, photos.soinCuir, photos.ongles, photos.ongles2, photos.pedicure];
+const salon = [photos.salonVue, photos.perruques, photos.miroirLogo, photos.salonMiroirs, photos.cabineBlanche, photos.salonLavage, photos.salonPosteBleu, photos.salonCabine, photos.salonMur];
 
 export default function Page() {
   return (

@@ -12,10 +12,10 @@ import BookingButton, { bookingProps } from "./BookingButton";
 // Une photo par lien (une photo fixe sur téléphone, elle change au toucher / au survol).
 const menuPhoto: Record<string, { src: string; alt: string; position?: string }> = {
   "/coiffure": photos.nattes,
-  "/spa": photos.visage,
-  "/ongles": photos.ongles2,
+  "/spa": photos.soinCuir,
+  "/ongles": photos.ongles,
   "/carte": photos.bohemeDos,
-  "/galerie": photos.boucles,
+  "/galerie": photos.bouclesDos,
   "/a-propos": photos.salonVue,
   "/faq": photos.salonVue,
   "/#contact": photos.salonLogo,

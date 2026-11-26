@@ -29,8 +29,8 @@ export const categories: Category[] = [
     tagline: "Visage · corps · massage",
     intro:
       "Une cabine au calme, des gestes lents. Le temps de souffler avant le reste de la journée.",
-    image: "/img/photos/presta-visage.jpg",
-    imagePosition: "55% center",
+    image: "/img/photos/presta-soin-cuir.jpg",
+    imagePosition: "50% 40%",
     picto: "galets",
   },
   {
@@ -40,8 +40,8 @@ export const categories: Category[] = [
     tagline: "Manucure · pédicure",
     intro:
       "Des mains soignées, un geste précis. Manucure, gel et vernis, dans un décor de marbre.",
-    image: "/img/photos/presta-ongles2m.jpg",
-    imagePosition: "70% center",
+    image: "/img/photos/presta-ongles.jpg",
+    imagePosition: "50% 35%",
     picto: "vernis",
   },
 ];

@@ -38,7 +38,7 @@ export default function Home() {
             <Title as="h1" className="hero__title" initial lines={["Là où", "commence", "la beauté."]} />
             <Trait name="souligne" className="hero__trait" />
           </div>
-          <Arch className="hero__arch" priority ratio="4 / 5" src={photos.bohemeProfil.src} alt={photos.bohemeProfil.alt} position="50% 18%" sizes="(min-width: 1024px) 42vw, 88vw" />
+          <Arch className="hero__arch" priority ratio="4 / 5" src={photos.bouclesDos.src} alt={photos.bouclesDos.alt} position="50% 35%" sizes="(min-width: 1024px) 42vw, 88vw" />
           <div className="hero__cta">
             <BookingButton variant="ivoire">Réserver</BookingButton>
             <span className="scroll" aria-hidden="true"><i /><span className="lb">Défiler</span></span>
@@ -111,7 +111,7 @@ export default function Home() {
             <Arch frame="pleine" src={photos.boucles.src} alt={photos.boucles.alt} ratio="3 / 4.2" sizes="(min-width: 768px) 25vw, 44vw" />
             <Arch frame="filet" tone="prune" src={photos.tressesDetail.src} alt={photos.tressesDetail.alt} ratio="3 / 4.2" sizes="(min-width: 768px) 25vw, 44vw" />
             <Arch frame="fenetre" tone="prune" src={photos.ongles2.src} alt={photos.ongles2.alt} ratio="3 / 4.2" position="60% center" sizes="(min-width: 768px) 25vw, 44vw" />
-            <Arch frame="legende" src={photos.tressesSalon.src} alt={photos.tressesSalon.alt} position={photos.tressesSalon.position} ratio="3 / 4.2" caption="tressé main." sizes="(min-width: 768px) 25vw, 44vw" />
+            <Arch frame="legende" src={photos.tresses.src} alt={photos.tresses.alt} position={photos.tresses.position} ratio="3 / 4.2" caption="tressé main." sizes="(min-width: 768px) 25vw, 44vw" />
           </div>
           <div className="more more--split">
             <a className="lb link-line" href={site.instagramUrl} target="_blank" rel="noopener noreferrer">Voir sur Instagram</a>

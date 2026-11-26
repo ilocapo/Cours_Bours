@@ -10,14 +10,14 @@ import { categories } from "@/data/categories";
 import { photos, type Photo } from "@/data/photos";
 
 const gallery: Record<string, Photo[]> = {
-  coiffure: [photos.bohemeDos, photos.nattes, photos.boucles, photos.tressesSalon],
-  spa: [photos.spa, photos.salonCabine, photos.salonPosteBleu],
+  coiffure: [photos.bohemeDos, photos.nattes, photos.boucles, photos.bouclesDos],
+  spa: [photos.cabineBlanche, photos.salonCabine, photos.salonPosteBleu],
   ongles: [photos.ongles2, photos.pedicure, photos.ongles],
 };
 // Chaque page a sa propre photo d'ouverture.
 const heroPhoto: Record<string, { photo: Photo; position: string; ratio: string }> = {
-  coiffure: { photo: photos.bohemeProfil, position: "50% 22%", ratio: "4 / 5" },
-  spa: { photo: photos.visage, position: "58% 40%", ratio: "4 / 5" },
+  coiffure: { photo: photos.bohemeDos, position: "50% 15%", ratio: "4 / 5" },
+  spa: { photo: photos.soinCuir, position: "50% 40%", ratio: "4 / 5" },
   ongles: { photo: photos.ongles, position: "50% 35%", ratio: "4 / 5" },
 };
 const pictoBy: Record<string, string> = { coiffure: "tresse", spa: "goutte", ongles: "vernis" };
