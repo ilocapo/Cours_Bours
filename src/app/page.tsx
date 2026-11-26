@@ -57,6 +57,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Le geste : vidéos, juste après l'ouverture */}
+      <VideoBand />
+
       {/* 3. Trois rituels */}
       <section className="sec sec--iv rituals panel" id="rituels">
         <div className="wrap">
@@ -122,8 +125,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <VideoBand />
 
       {/* Avis + questions */}
       <section className="sec sec--prune panel" id="avis">
