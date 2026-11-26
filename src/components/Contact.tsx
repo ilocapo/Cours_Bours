@@ -6,6 +6,7 @@ import Chrome from "./Chrome";
 import FaqPanel from "./FaqPanel";
 import MonoArch from "./MonoArch";
 import Pastille from "./Pastille";
+import Socials from "./Socials";
 import Title from "./Title";
 import { photos } from "@/data/photos";
 import { site } from "@/data/site";
@@ -55,6 +56,10 @@ export default function Contact({ photo = true, tone = "iv" }: { photo?: boolean
                   </ul>
                 ) : <p>À compléter</p>}
               </div>
+            </div>
+            <div className="contact__social" data-fade>
+              <p className="lb lb--s dim">Réservez aussi par message, surtout sur Instagram</p>
+              <Socials tone={tone === "iv" ? "prune" : "ivoire"} />
             </div>
             <p className="lb lb--s dim" data-fade>Paiement : {site.payments.join(" · ")}</p>
             <div className="contact__cta" data-fade>

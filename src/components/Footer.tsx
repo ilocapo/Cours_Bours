@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import Socials from "./Socials";
 import { site } from "@/data/site";
 
 const cols = [
@@ -57,15 +58,9 @@ export default function Footer() {
               {site.whatsapp && <li><a href={`https://wa.me/${site.whatsapp}`} target="_blank" rel="noopener noreferrer">WhatsApp</a></li>}
               {site.email && <li><a href={`mailto:${site.email}`}>{site.email}</a></li>}
             </ul>
+            <Socials tone="ivoire" className="foot__socials" />
           </div>
 
-          <div className="foot__col">
-            <h2 className="lb foot__h">Suivez-nous</h2>
-            <ul>
-              <li><a href={site.instagramUrl} target="_blank" rel="noopener noreferrer">Instagram</a></li>
-              <li><a href={site.facebookUrl} target="_blank" rel="noopener noreferrer">Facebook</a></li>
-            </ul>
-          </div>
         </div>
 
         <div className="foot__bottom lb lb--s">

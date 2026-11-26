@@ -347,6 +347,15 @@ html.motion .services__row:not(.is-in)::after { transform: scaleX(0); }
 .hours li { display: flex; justify-content: space-between; gap: 16px; opacity: 0.85; }
 .hours li.is-today { opacity: 1; font-weight: 400; }
 
+/* Réseaux : arche pleine, logo de la couleur inverse, tous sur une ligne */
+.socials { display: flex; flex-wrap: nowrap; gap: 12px; margin-top: 14px; }
+.social { display: inline-flex; align-items: flex-end; justify-content: center; width: 48px; height: 58px; padding-bottom: 13px; border-radius: 999px 999px 0 0; transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.3s; }
+.socials--ivoire .social { background: var(--iv); color: var(--prune); }
+.socials--prune .social { background: var(--prune); color: var(--iv); }
+.social:hover { transform: translateY(-4px); }
+.contact__social { display: grid; gap: 4px; }
+.foot__col ul.foot__socials, .foot__col .socials { display: flex; grid-template-columns: none; gap: 12px; margin-top: 18px; }
+
 /* Pied de page */
 .foot { padding-block: 88px 36px; }
 .foot__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px 28px; padding-bottom: 56px; border-bottom: 1px solid rgba(242, 234, 223, 0.16); }
@@ -426,7 +435,7 @@ html.motion [data-arch-band] { opacity: 0; }
   .slide__menu { padding: 36px 40px 40px; }
   .slide__name { font-size: 38px; }
   .slide__stat { font-size: 52px; }
-  .foot__grid { grid-template-columns: 1.5fr 1fr 1fr 1.3fr 1fr; gap: 56px 40px; }
+  .foot__grid { grid-template-columns: 1.5fr 1fr 1fr 1.3fr; gap: 56px 40px; }
   .foot__brand, .foot__contact { grid-column: auto; }
   
   .page-hero__grid { grid-template-columns: 1.1fr 0.9fr; gap: 72px; align-items: end; }

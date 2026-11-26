@@ -4,6 +4,7 @@ export const site = {
   slogan: "Là où commence la beauté.",
   instagram: "zst_beauty_center",
   instagramUrl: "https://www.instagram.com/zst_beauty_center/",
+  tiktokUrl: "https://www.tiktok.com/@zst_beautycenter",
   facebookUrl: "https://www.facebook.com/zstbc/",
   address: "Fidjrossè, Cotonou, Bénin" as string | null,
   addressNote: "4ème rue, en face de l'église Saint François d'Assise" as string | null,
