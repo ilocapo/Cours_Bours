@@ -1,0 +1,242 @@
+@font-face {
+  font-family: "ZST Plume";
+  src: url("/fonts/ZSTPlume.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root {
+  --noir: #070606;
+  --prune: #1c1013;
+  --iv: #f2eadf;
+  --iv2: #e3d8ca;
+  --bronze: #a07a52;
+  --pad: 24px;
+  --head-h: 76px;
+  --bar-h: 58px;
+  --f-title: "Bodoni Moda", serif;
+  --f-text: Jost, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+html.menu-open { overflow: hidden; }
+
+body {
+  margin: 0;
+  background: var(--prune);
+  color: var(--iv);
+  font-family: var(--f-text);
+  font-weight: 300;
+  font-size: 15px;
+  line-height: 1.6;
+  padding-bottom: calc(var(--bar-h) + env(safe-area-inset-bottom));
+  overflow-x: hidden;
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+p { margin: 0; }
+ul { list-style: none; margin: 0; padding: 0; }
+h1, h2, h3 { margin: 0; font-weight: 400; }
+
+:focus-visible { outline: 1.5px solid var(--bronze); outline-offset: 4px; }
+.skip { position: absolute; left: -9999px; top: 0; z-index: 100; background: var(--iv); color: var(--prune); padding: 10px 16px; }
+.skip:focus { left: 12px; top: 12px; }
+
+/* Typographie */
+.bod, .title { font-family: var(--f-title); font-weight: 400; letter-spacing: -0.02em; }
+.pl { font-family: "ZST Plume", var(--f-title); font-size: 1.45em; line-height: 0; margin-right: -0.03em; }
+.lb { font-family: var(--f-text); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; font-weight: 400; line-height: 1.4; }
+.lb--s { font-size: 9px; }
+.dim { opacity: 0.65; }
+.title { line-height: 1; }
+.line { display: block; overflow: hidden; padding-bottom: 0.12em; margin-bottom: -0.12em; }
+.line-in { display: block; }
+
+/* Mise en page */
+.wrap { width: 100%; max-width: 1480px; margin-inline: auto; padding-inline: var(--pad); }
+.sec { position: relative; padding-block: 72px; }
+.sec--noir { background: var(--noir); color: var(--iv); }
+.sec--prune { background: var(--prune); color: var(--iv); }
+.sec--iv { background: var(--iv); color: var(--prune); }
+.stack { display: flex; flex-direction: column; gap: 22px; }
+
+/* Arche */
+.arch { position: relative; overflow: hidden; border-radius: 999px 999px 0 0; background: var(--prune); }
+.arch img { transform-origin: center; }
+
+/* Boutons : arche, en plein */
+.btn { display: inline-flex; justify-content: center; align-items: center; gap: 10px; padding: 15px 28px 13px; border-radius: 999px 999px 0 0; transition: opacity 0.4s ease; }
+.btn:hover { opacity: 0.85; }
+.btn--ivoire { background: var(--iv); color: var(--prune); }
+.btn--prune { background: var(--prune); color: var(--iv); }
+.btn--sm { padding: 12px 22px 10px; }
+
+/* Logo dans son arche ivoire */
+.logo { background: var(--iv); border-radius: 999px 999px 0 0; padding: 8px 7px 4px; display: inline-flex; }
+.logo img { width: 42px; height: auto; }
+
+/* En-tête */
+.head { position: fixed; inset: 0 0 auto 0; z-index: 50; transition: background 0.5s ease; }
+.head--solid { background: rgba(28, 16, 19, 0.92); backdrop-filter: blur(8px); }
+.head__in { display: flex; justify-content: space-between; align-items: center; max-width: 1600px; margin-inline: auto; padding: 18px var(--pad) 8px; }
+.head--solid .head__in { padding-block: 10px; }
+.head__menu { background: none; border: 0; color: var(--iv); cursor: pointer; padding: 10px 0 10px 10px; position: relative; z-index: 2; }
+.head__nav { display: none; }
+.head__link { opacity: 0.85; transition: opacity 0.3s; }
+.head__link:hover { opacity: 1; }
+.overlay { position: fixed; inset: 0; z-index: 1; background: var(--prune); padding: 110px var(--pad) 40px; display: flex; flex-direction: column; justify-content: space-between; overflow-y: auto; animation: fade 0.5s ease both; }
+.overlay[hidden] { display: none; }
+.overlay__list { display: grid; gap: 6px; }
+.overlay__link { display: block; font-size: 34px; line-height: 1.25; }
+.overlay .btn { align-self: flex-start; margin-top: 30px; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* Barre fixe mobile */
+.bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; justify-content: space-between; align-items: center; padding: 18px var(--pad) calc(18px + env(safe-area-inset-bottom)); background: var(--iv); color: var(--prune); }
+
+/* 1. Ouverture */
+.hero { position: relative; min-height: 100svh; display: flex; flex-direction: column; justify-content: center; padding: 120px 0 130px; background: var(--noir); isolation: isolate; overflow: hidden; }
+.hero__bg { position: absolute; inset: 0; z-index: -1; }
+.hero__bg img { object-fit: cover; }
+.hero__title { font-size: clamp(50px, 14vw, 64px); line-height: 0.98; }
+.hero__sub { margin-bottom: 22px; opacity: 0.75; }
+.hero__trait { width: 62%; max-width: 560px; margin-top: 22px; }
+.hero__foot { position: absolute; left: 0; right: 0; bottom: calc(var(--bar-h) + 40px + env(safe-area-inset-bottom)); }
+.hero__foot .wrap { display: flex; justify-content: space-between; align-items: flex-end; }
+.scroll { display: flex; align-items: center; gap: 10px; }
+.scroll i { width: 1px; height: 46px; background: linear-gradient(var(--iv), transparent); }
+.scroll .lb { font-size: 9px; }
+
+/* 2. Le salon : l'arche qui s'ouvre */
+.open { background: var(--prune); }
+.open__intro { padding-top: 40px; padding-bottom: 36px; }
+.open__intro .title { font-size: clamp(34px, 9vw, 40px); margin: 18px 0 20px; }
+.open__intro p { opacity: 0.85; max-width: 46ch; }
+.open__arch { margin-inline: auto; width: min(90vw, 560px); height: 62svh; min-height: 380px; }
+.open__arch .open__img { position: absolute; inset: 0; }
+.open__veil, .open__slogan { display: none; }
+html.motion .open__pin { position: relative; height: 100svh; overflow: hidden; }
+html.motion .open__intro { position: absolute; inset: 0 0 auto 0; padding-top: 104px; }
+html.motion .open__arch { position: absolute; left: 0; right: 0; bottom: 0; width: min(84vw, 520px); height: 50svh; min-height: 0; }
+html.motion .open__veil { display: block; position: absolute; inset: 0; background: rgba(7, 6, 6, 0.5); opacity: 0; z-index: 1; }
+html.motion .open__slogan { display: flex; position: absolute; inset: 0; z-index: 2; opacity: 0; align-items: center; justify-content: center; text-align: center; padding: 0 var(--pad); }
+.open__slogan .title { font-size: clamp(44px, 12vw, 120px); line-height: 1; }
+
+/* 3. Trois rituels */
+.rituals__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+.rituals .title { font-size: clamp(38px, 10vw, 46px); margin-bottom: 30px; }
+.rituals__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.ritual { display: block; }
+.ritual__name { font-size: 19px; margin-top: 12px; line-height: 1.1; }
+.ritual__tag { font-size: 8.5px; margin-top: 5px; opacity: 0.7; letter-spacing: 0.24em; }
+.rituals__foot { display: flex; flex-direction: column; align-items: center; gap: 22px; margin-top: 40px; }
+.rituals__foot .trait { width: 70%; max-width: 420px; }
+
+/* 4. La carte */
+.menu .title { font-size: clamp(36px, 10vw, 46px); margin-bottom: 28px; }
+.menu__grid { display: grid; grid-template-columns: 1fr 112px; gap: 16px; align-items: end; }
+.menu__lists { display: grid; gap: 22px; }
+.services__cat { opacity: 0.6; font-size: 9px; margin-bottom: 4px; }
+.services__row { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(242, 234, 223, 0.22); }
+.sec--iv .services__row { border-color: rgba(28, 16, 19, 0.2); }
+.services__name { font-size: 17px; line-height: 1.2; }
+.services__meta { font-size: 9px; white-space: nowrap; }
+.link-under { display: inline-flex; flex-direction: column; margin-top: 34px; }
+.link-under .trait { width: 100%; margin-top: 4px; }
+
+/* 5. Le travail */
+.work__head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 26px; }
+.work .title { font-size: clamp(38px, 10vw, 46px); margin-bottom: 28px; }
+.work__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* 6. Pied de page */
+.foot { padding-bottom: 36px; }
+.foot__grid { display: grid; gap: 34px; }
+.foot__info { display: grid; gap: 24px; align-content: end; }
+.foot__cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.foot__cols p { margin-top: 6px; }
+.hours { margin-top: 6px; display: grid; gap: 2px; font-size: 13px; }
+.hours li { display: flex; justify-content: space-between; gap: 12px; }
+.foot__trait { width: 100%; opacity: 0.6; margin-top: 44px; }
+.foot__zst { font-size: clamp(132px, 38vw, 560px); line-height: 0.8; letter-spacing: -0.04em; text-align: center; margin: 28px 0 18px; overflow: hidden; padding-bottom: 0.06em; }
+.foot__links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 22px; }
+.foot__links a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
+
+/* Pages internes */
+.page-hero { padding-top: 130px; padding-bottom: 56px; }
+.page-hero__grid { display: grid; gap: 34px; }
+.page-hero .title { font-size: clamp(46px, 13vw, 64px); margin: 16px 0 22px; }
+.page-hero p { opacity: 0.85; max-width: 46ch; }
+.page-hero .btn { margin-top: 28px; }
+.block-title { font-size: clamp(32px, 9vw, 42px); margin-bottom: 26px; }
+.cards { display: grid; gap: 40px; }
+.legal { padding-top: 140px; min-height: 80svh; }
+.legal .wrap { max-width: 760px; }
+.legal h1 { font-size: clamp(38px, 10vw, 52px); margin-bottom: 30px; }
+.legal h2 { font-family: var(--f-title); font-size: 22px; margin: 32px 0 8px; letter-spacing: -0.01em; }
+.legal p, .legal li { opacity: 0.9; margin-bottom: 10px; }
+.legal a { text-decoration: underline; text-underline-offset: 3px; }
+.center-page { min-height: 100svh; display: flex; align-items: center; padding: 120px 0 80px; }
+
+/* Animations : états de départ (posés par le script d'entête, sauf si mouvement réduit) */
+html.motion [data-title] .line-in { opacity: 0; }
+html.motion [data-fade] { opacity: 0; }
+html.motion [data-draw] { clip-path: inset(0 100% 0 0); }
+
+/* ≥ 768 : tablette */
+@media (min-width: 768px) {
+  :root { --pad: 48px; }
+  .hero__foot { bottom: 40px; }
+  body { font-size: 16px; padding-bottom: 0; }
+  .bar { display: none; }
+  .lb { font-size: 11px; }
+  .head__menu { display: none; }
+  .head__nav { display: flex; align-items: center; gap: 28px; }
+  .overlay { display: none !important; }
+  .sec { padding-block: 110px; }
+  .hero__title { font-size: clamp(64px, 9vw, 104px); }
+  .open__intro .title { font-size: clamp(40px, 5vw, 56px); }
+  .open__intro { max-width: 640px; }
+  html.motion .open__arch { width: min(52vw, 520px); height: 54svh; }
+  .rituals__grid { gap: 24px; max-width: 1100px; margin-inline: auto; }
+  .ritual__name { font-size: 28px; }
+  .ritual__tag { font-size: 10px; }
+  .menu__grid { grid-template-columns: 1fr 280px; gap: 56px; max-width: 980px; }
+  .services__name { font-size: 22px; }
+  .services__meta { font-size: 10.5px; }
+  .work__grid { grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .foot__grid { grid-template-columns: 0.8fr 1fr; gap: 64px; align-items: end; }
+  .page-hero__grid { grid-template-columns: 1.1fr 0.9fr; gap: 64px; align-items: end; }
+  .cards { grid-template-columns: repeat(2, 1fr); gap: 56px 64px; }
+}
+
+/* ≥ 1280 : bureau */
+@media (min-width: 1280px) {
+  :root { --pad: 6vw; }
+  .sec { padding-block: 140px; }
+  .hero__title { font-size: clamp(100px, 8.4vw, 150px); }
+  .hero { padding-block: 140px; }
+  .hero__trait { width: 40%; }
+  .open__intro .title { font-size: 64px; }
+  html.motion .open__arch { width: 34vw; max-width: 560px; height: 56svh; }
+  .rituals .title, .work .title, .menu .title { font-size: 64px; }
+  .rituals__grid { max-width: 1240px; gap: 40px; }
+  .menu__grid { grid-template-columns: 1fr 380px; max-width: 1200px; }
+  .page-hero .title { font-size: 96px; }
+  .block-title { font-size: 56px; }
+}
+
+/* ≥ 1600 */
+@media (min-width: 1600px) {
+  .wrap { max-width: 1560px; }
+  .hero__title { font-size: 168px; }
+  .rituals__grid { max-width: 1400px; }
+  body { font-size: 17px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
