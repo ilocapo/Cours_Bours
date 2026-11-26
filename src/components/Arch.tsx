@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
+import LazyVideo from "./LazyVideo";
 
 type Props = {
   src: string;
@@ -18,14 +19,16 @@ type Props = {
   tone?: "iv" | "prune";
   /** Pastille / sticker posé sur l'arche (arche pleine). */
   sticker?: ReactNode;
+  /** Une vidéo (sans son) à la place de la photo. */
+  video?: { src: string; poster?: string; label: string };
 };
 
 // L'arche : forme signature. Demi-cercle en haut, base droite.
 export default function Arch({
   src, alt, position = "center", ratio = "3 / 4", sizes = "(min-width: 1280px) 30vw, 90vw",
-  priority, parallax = true, className = "", frame = "pleine", caption, tone = "iv", sticker,
+  priority, parallax = true, className = "", frame = "pleine", caption, tone = "iv", sticker, video,
 }: Props) {
-  const img = <Image src={src} alt={alt} fill sizes={sizes} priority={priority} style={{ objectFit: "cover", objectPosition: position }} />;
+  const img = video ? <LazyVideo src={video.src} poster={video.poster} label={video.label} /> : <Image src={src} alt={alt} fill sizes={sizes} priority={priority} style={{ objectFit: "cover", objectPosition: position }} />;
   const cls = `arch arch--${frame} ${frame === "fenetre" ? `arch--f-${tone}` : ""} ${className}`.trim();
   const attrs = { "data-arch": true, ...(parallax ? { "data-parallax": true } : {}) };
   if (frame === "pleine") {

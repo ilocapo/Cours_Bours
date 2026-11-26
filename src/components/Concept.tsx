@@ -6,7 +6,7 @@ import Title from "./Title";
 // Planche 01 du brand book : grand titre (une ligne en bronze italique), texte, trois pictos pleins, trois libellés.
 export default function Concept() {
   return (
-    <section className="sec sec--iv panel" id="concept">
+    <section className="sec sec--prune panel" id="concept">
       <div className="wrap wrap--narrow">
         <Chrome left="01 · Concept" right="ZST" />
         <Title initial accent={1} className="concept__title" lines={["La maison qui", "prend le temps."]} />
@@ -16,11 +16,11 @@ export default function Concept() {
         </p>
         <div className="concept__row">
           <div className="concept__pictos" data-fade>
-            <Pastille name="tresse" tone="prune" />
-            <Pastille name="goutte" tone="prune" />
-            <Pastille name="vernis" tone="prune" />
+            <Pastille name="tresse" tone="ivoire" />
+            <Pastille name="goutte" tone="ivoire" />
+            <Pastille name="vernis" tone="ivoire" />
           </div>
-          <MonoArch variant="filet" tone="prune" size={84} />
+          <MonoArch variant="filet" tone="ivoire" size={84} />
         </div>
         <div className="chrome lb concept__foot" data-fade>
           <span>Coiffure</span><span>Spa</span><span>Ongles</span>

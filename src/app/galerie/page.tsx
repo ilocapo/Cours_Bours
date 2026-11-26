@@ -27,7 +27,7 @@ export default function Page() {
           </div>
         </div>
       </section>
-      <VideoBand limit={6} tone="iv" chrome="Le geste" />
+      <VideoBand limit={6} tone="iv" />
       <section className="sec sec--prune">
         <div className="wrap">
           <Chrome left="Le salon" right="Cotonou" />
