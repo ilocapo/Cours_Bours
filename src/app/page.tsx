@@ -20,19 +20,17 @@ const sizesGal = "(min-width: 768px) 25vw, 44vw";
 export default function Home() {
   return (
     <>
-      {/* 1. Ouverture : texte à gauche, photo à droite, le concept dans une carte arrondie */}
+      {/* 1. Ouverture : titre en haut ; photo à gauche, carte prune à droite avec le bouton dedans */}
       <section className="hero sec--iv" id="accueil">
         <div className="wrap hero__in">
           <div className="hero__head">
-            <Title as="h1" className="hero__title" initial lines={["Là où", "commence", "la beauté."]} />
+            <Title as="h1" className="hero__title" initial lines={["Là où commence", "la beauté."]} />
             <Trait name="souligne" tone="prune" className="hero__trait" />
-            <div className="hero__cta"><BookingButton variant="prune">Réserver</BookingButton></div>
           </div>
 
-          <Arch className="hero__arch" priority parallax={false} ratio="3 / 4.4" src={photos.tresses.src} alt={photos.tresses.alt} position="60% 24%" sizes="(min-width: 1024px) 42vw, 44vw" />
+          <Arch className="hero__arch" priority parallax={false} ratio="3 / 4.4" src={photos.tresses.src} alt={photos.tresses.alt} position="60% 24%" sizes="(min-width: 1024px) 42vw, 40vw" />
 
           <div className="hero__card" id="concept">
-            <Chrome left="La maison" right="ZST" />
             <Title accent={1} className="hero__card-title" lines={["La maison qui", "prend le temps."]} />
             <p data-fade>
               ZST, c’est quatre univers : la coiffure (tresses, soins des cheveux crépus), le spa et les massages, les ongles,
@@ -41,6 +39,7 @@ export default function Home() {
             <div className="hero__pictos" data-fade>
               {categories.map((c) => <Pastille key={c.id} name={c.picto} tone="ivoire" />)}
             </div>
+            <div className="hero__cta" data-fade><BookingButton variant="ivoire" size="sm">Réserver</BookingButton></div>
           </div>
         </div>
       </section>
