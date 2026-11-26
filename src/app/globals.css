@@ -627,3 +627,9 @@ html.motion [data-arch-band] { opacity: 0; }
   .cal__ev--noshow { background: var(--bronze); }
   .cal__ev.is-sel { outline: 2px solid var(--bronze); outline-offset: 1px; }
 }
+
+.field__err { min-height: 1.2em; font-size: 13px; color: var(--bronze); line-height: 1.4; }
+.field input[aria-invalid="true"] { border-bottom-color: var(--bronze); }
+.phone { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr); gap: 14px; align-items: end; }
+.flow__note { margin-top: 6px; }
+.adm .field__err { color: #8a4b2a; }

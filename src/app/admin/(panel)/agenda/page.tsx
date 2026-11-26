@@ -5,6 +5,7 @@ import { addDays, dayName, hhmm, isoToLocal, localToIso, longDate, longWhen, sho
 import { STATUS_LABEL, viewsBetween } from "@/lib/admin/view";
 import { moveBooking, saveBookingNote, setStatus } from "../../actions";
 import type { BookingView } from "@/lib/booking/types";
+import { formatPhone } from "@/lib/phone";
 
 export const metadata: Metadata = { title: "Agenda" };
 export const dynamic = "force-dynamic";
@@ -110,7 +111,7 @@ export default async function Agenda({ searchParams }: { searchParams: Promise<{
             <p>{longWhen(sel.startsAt)}<br /><span className="dim">{sel.durationMin} min{sel.staffName ? ` · ${sel.staffName}` : ""} · {sel.source === "site" ? "réservé sur le site" : "ajouté par le salon"}</span></p>
             <span className={`pill pill--${sel.status}`}>{STATUS_LABEL[sel.status]}</span>
             <p className="adm__client"><Link href={`/admin/clients/${sel.clientId}`}><strong>{sel.clientName}</strong></Link><br />
-              <a href={`tel:${sel.clientPhone.replace(/\s/g, "")}`}>{sel.clientPhone}</a> · <a href={`https://wa.me/${sel.clientPhone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+              <a href={`tel:${sel.clientPhone.replace(/\s/g, "")}`}>{formatPhone(sel.clientPhone)}</a> · <a href={`https://wa.me/${sel.clientPhone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
               {sel.clientEmail && <><br /><a href={`mailto:${sel.clientEmail}`}>{sel.clientEmail}</a></>}</p>
             <div className="adm__actions">
               {sel.status !== "done" && <form action={setStatus}><input type="hidden" name="id" value={sel.id} /><input type="hidden" name="status" value="done" /><input type="hidden" name="back" value={back} /><button className="btn btn--prune btn--sm lb">Terminé</button></form>}

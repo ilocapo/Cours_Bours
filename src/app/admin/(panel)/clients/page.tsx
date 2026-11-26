@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getStore } from "@/lib/booking/store";
 import { longDate, isoToLocal } from "@/lib/booking/time";
+import { formatPhone } from "@/lib/phone";
 
 export const metadata: Metadata = { title: "Clients" };
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export default async function Clients({ searchParams }: { searchParams: Promise<
       {rows.length === 0 ? <p className="dim">Aucune cliente pour l&apos;instant. Elles apparaissent à la première réservation.</p> : (
         <ul className="adm__list">{rows.map(({ c, n, last }) => (
           <li key={c.id}><Link href={`/admin/clients/${c.id}`} className="adm__row adm__row--wide">
-            <span><strong>{c.name}</strong><br /><span className="dim">{c.phone}{c.email ? ` · ${c.email}` : ""}</span></span>
+            <span><strong>{c.name}</strong><br /><span className="dim">{formatPhone(c.phone)}{c.email ? ` · ${c.email}` : ""}</span></span>
             <span className="dim">{n} rendez-vous{last ? ` · dernier le ${longDate(isoToLocal(last).date)}` : ""}</span><span />
           </Link></li>))}</ul>
       )}

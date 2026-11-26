@@ -14,6 +14,6 @@ export async function POST(req: Request) {
     email: b.email ? String(b.email) : null, consentReminders: b.consentReminders === true, note: String(b.note ?? "").slice(0, 500),
     source: "site",
   });
-  if (!r.ok) return NextResponse.json({ error: r.error }, { status: 409 });
+  if (!r.ok) return NextResponse.json({ error: r.error }, { status: r.code === "taken" ? 409 : 422 });
   return NextResponse.json({ ok: true, token: r.booking.token });
 }

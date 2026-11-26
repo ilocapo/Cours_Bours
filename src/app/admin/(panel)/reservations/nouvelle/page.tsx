@@ -24,7 +24,7 @@ export default async function Nouvelle({ searchParams }: { searchParams: Promise
         {staff.filter((s) => s.active).length > 0 && <label className="field"><span className="lb lb--s">Avec</span><select name="staffId"><option value="">Peu importe</option>{staff.filter((s) => s.active).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>}
         <label className="field"><span className="lb lb--s">Nom et prénom</span><input name="name" list="clients" required autoComplete="off" /></label>
         <datalist id="clients">{clients.map((c) => <option key={c.id} value={c.name}>{c.phone}</option>)}</datalist>
-        <label className="field"><span className="lb lb--s">Téléphone</span><input name="phone" type="tel" required /></label>
+        <label className="field"><span className="lb lb--s">Téléphone</span><input name="phone" type="tel" required placeholder="+229 97 00 00 00" /><span className="lb lb--s dim">Sans indicatif, le Bénin (+229) est ajouté.</span></label>
         <label className="field"><span className="lb lb--s">E-mail</span><input name="email" type="email" /></label>
         <label className="field adm__wide"><span className="lb lb--s">Note</span><textarea name="note" rows={2} /></label>
         <label className="check adm__wide"><input type="checkbox" name="consent" /><span>La cliente accepte les rappels par e-mail (la veille et 2 h avant).</span></label>

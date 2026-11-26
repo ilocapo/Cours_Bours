@@ -5,6 +5,8 @@ import { buildIcs } from "./ics";
 import { confirmationMail, reminderMail, salonMail, sendMail, thanksMail } from "./mail";
 import { addDays, isoToLocal, localToIso, longWhen } from "./time";
 import type { Booking, BookingView, Notification, NotificationType } from "./types";
+import { parsePhone } from "@/lib/phone";
+import { checkEmail, checkName } from "@/lib/validate";
 
 export const newToken = () => randomBytes(18).toString("base64url");
 
@@ -25,24 +27,30 @@ export type CreateInput = {
   source: "site" | "admin"; skipSlotCheck?: boolean;
 };
 
-export type CreateResult = { ok: true; booking: Booking } | { ok: false; error: string };
+export type CreateResult = { ok: true; booking: Booking } | { ok: false; error: string; code: "invalid" | "taken" };
 
 export async function createBooking(input: CreateInput, now = new Date()): Promise<CreateResult> {
   const store = await getStore();
-  const name = input.name.trim();
-  const phone = input.phone.trim();
-  const email = input.email?.trim().toLowerCase() || null;
-  if (name.length < 2) return { ok: false, error: "Indiquez votre nom." };
-  if (phone.replace(/\D/g, "").length < 8) return { ok: false, error: "Indiquez un numéro de téléphone valide." };
-  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { ok: false, error: "Cette adresse e-mail ne semble pas valide." };
+  const n = checkName(input.name);
+  if (!n.ok) return { ok: false, error: n.error, code: "invalid" };
+  const p = parsePhone(input.phone);
+  if (!p.ok) return { ok: false, error: p.error, code: "invalid" };
+  let email: string | null = null;
+  if (input.email && input.email.trim()) {
+    const e = checkEmail(input.email);
+    if (!e.ok) return { ok: false, error: e.error, code: "invalid" };
+    email = e.email;
+  }
+  const name = n.name;
+  const phone = p.e164;
 
   const svcs = await store.listServices();
   const svc = svcs.find((s) => s.id === input.serviceId && s.active);
-  if (!svc) return { ok: false, error: "Ce rituel n'est plus proposé." };
+  if (!svc) return { ok: false, error: "Ce rituel n'est plus proposé.", code: "invalid" };
 
   if (!input.skipSlotCheck) {
     const free = await slotsFor(store, { serviceId: svc.id, date: input.date, staffId: input.staffId }, now);
-    if (!free.includes(input.minutes)) return { ok: false, error: "Ce créneau vient d'être pris. Choisissez-en un autre." };
+    if (!free.includes(input.minutes)) return { ok: false, error: "Ce créneau vient d'être pris. Choisissez-en un autre.", code: "taken" };
   }
 
   let client = await store.findClient(phone, email);

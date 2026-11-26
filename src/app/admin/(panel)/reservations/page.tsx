@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { addDays, hhmm, isoToLocal, longDate, todayLocal } from "@/lib/booking/time";
+import { formatPhone } from "@/lib/phone";
 import { STATUS_LABEL, viewsBetween } from "@/lib/admin/view";
 
 export const metadata: Metadata = { title: "Réservations" };
@@ -29,7 +30,7 @@ export default async function Reservations({ searchParams }: { searchParams: Pro
             return (
               <li key={b.id}><Link href={`/admin/agenda?d=${l.date}&b=${b.id}`} className="adm__row adm__row--wide">
                 <span><span className="bod">{hhmm(l.minutes)}</span><br /><span className="lb lb--s dim">{l.date === today ? "Aujourd'hui" : longDate(l.date)}</span></span>
-                <span><strong>{b.clientName}</strong><br /><span className="dim">{b.serviceName} · {b.clientPhone}</span></span>
+                <span><strong>{b.clientName}</strong><br /><span className="dim">{b.serviceName} · {formatPhone(b.clientPhone)}</span></span>
                 <span className={`pill pill--${b.status}`}>{STATUS_LABEL[b.status]}</span>
               </Link></li>
             );

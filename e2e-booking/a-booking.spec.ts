@@ -30,7 +30,7 @@ test("parcours complet : choisir, réserver, confirmation par e-mail avec .ics",
   await slot.click();
   await page.getByRole("button", { name: "Continuer" }).click();
   await page.getByLabel("Nom et prénom").fill("Awa Test");
-  await page.getByLabel("Téléphone").fill("+229 97 00 00 01");
+  await page.getByLabel("Téléphone").fill("97 00 00 01");
   await page.getByLabel(/E-mail/).fill("awa.test@example.com");
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Confirmer" }).click();
@@ -62,17 +62,73 @@ test("capacité : un créneau complet n'est plus proposé, et la réservation es
   expect(after).not.toContain(first.minutes);
 });
 
-test("validation : nom, téléphone et e-mail contrôlés, robots écartés", async ({ request }) => {
+test("validation : nom, téléphone avec indicatif et e-mail contrôlés, robots écartés", async ({ request }) => {
   const d = dayInDays(7);
-  const m = (await (await request.get(`/api/slots?serviceId=${SVC}&date=${d}`)).json()).slots[0].minutes;
-  const base = { serviceId: SVC, date: d, minutes: m, name: "Test", phone: "+229 97 00 00 99", consentReminders: false };
-  expect((await request.post("/api/bookings", { data: { ...base, name: "" } })).status()).toBe(409);
-  expect((await request.post("/api/bookings", { data: { ...base, phone: "12" } })).status()).toBe(409);
-  expect((await request.post("/api/bookings", { data: { ...base, email: "pas-un-mail" } })).status()).toBe(409);
+  const all = (await (await request.get(`/api/slots?serviceId=${SVC}&date=${d}`)).json()).slots;
+  const m = all[0].minutes;
+  const base = { serviceId: SVC, date: d, minutes: m, name: "Test Valide", phone: "+229 97 00 00 99", consentReminders: false };
+  const post = (over: Record<string, unknown>) => request.post("/api/bookings", { data: { ...base, ...over } });
+  const msg = async (over: Record<string, unknown>) => (await (await post(over)).json()).error as string;
+  // refusés (422), avec un message clair
+  for (const [over, mot] of [
+    [{ name: "" }, "nom"], [{ name: "1234" }, "nom"],
+    [{ phone: "" }, "téléphone"], [{ phone: "12" }, "indicatif"], [{ phone: "0597000001" }, "indicatif"],
+    [{ phone: "+229 1234" }, "invalide"], [{ phone: "+229 9700 abcd" }, "chiffres"], [{ phone: "+33 6 12 34" }, "invalide"],
+    [{ email: "pas-un-mail" }, "e-mail"], [{ email: "a@b" }, "e-mail"], [{ email: "jean..dupont@gmail.com" }, "e-mail"], [{ email: "marie@gmial.com" }, "orthographe"], [{ email: "avec espace@gmail.com" }, "e-mail"],
+  ] as [Record<string, unknown>, string][]) {
+    const r = await post(over);
+    expect(r.status(), JSON.stringify(over)).toBe(422);
+    expect((await r.json()).error.toLowerCase(), JSON.stringify(over)).toContain(mot);
+  }
+  void msg;
+  // acceptés, et enregistrés au format international
+  const okCases: [string, string][] = [["+229 97 00 00 41", "+22997000041"], ["+229 01 97 00 00 42", "+2290197000042"], ["00229 97 00 00 43", "+22997000043"], ["+33 06 12 34 56 78", "+33612345678"], ["+33 6 12 34 56 79", "+33612345679"]];
+  for (const [i, [input]] of okCases.entries()) {
+    const r = await post({ minutes: all[i * 2].minutes, phone: input, email: `ok${input.replace(/\D/g, "")}@example.com` });
+    expect(r.status(), input).toBe(200);
+  }
+  const phones = readStore().clients.map((c: { phone: string }) => c.phone);
+  for (const [, e164] of okCases) expect(phones).toContain(e164);
+  // robots
   const before = readStore().bookings.length;
-  const bot = await request.post("/api/bookings", { data: { ...base, website: "http://spam" } });
+  const bot = await post({ website: "http://spam", phone: "+229 97 00 00 98" });
   expect(bot.status()).toBe(200);
-  expect(readStore().bookings.length).toBe(before); // rien créé
+  expect(readStore().bookings.length).toBe(before);
+});
+
+test("formulaire : messages d'erreur, bouton bloqué tant que invalide, puis un autre rituel", async ({ page }) => {
+  await page.goto("/reserver");
+  await page.getByRole("tab", { name: "Ongles" }).click();
+  await page.getByRole("button", { name: /Manucure/ }).click();
+  await expect(page.getByText(/Un rituel par rendez-vous/)).toBeVisible();
+  await page.getByRole("button", { name: "Continuer" }).click();
+  await page.locator(".day:enabled").nth(8).click();
+  await page.locator(".slot").first().click();
+  await page.getByRole("button", { name: "Continuer" }).click();
+  const confirm = page.getByRole("button", { name: "Confirmer" });
+  await expect(confirm).toBeDisabled();
+  await page.getByLabel("Nom et prénom").fill("1");
+  await page.getByLabel("Nom et prénom").blur();
+  await expect(page.getByText("Indiquez votre nom et prénom.")).toBeVisible();
+  await page.getByLabel("Nom et prénom").fill("Awa Formulaire");
+  await page.getByLabel("Téléphone").fill("123");
+  await page.getByLabel("Téléphone").blur();
+  await expect(page.getByText(/Numéro Bénin invalide/)).toBeVisible();
+  await page.getByLabel("Indicatif du pays").selectOption("33");
+  await page.getByLabel("Téléphone").fill("06 12 34 56 80");
+  await expect(page.getByText(/invalide/)).toHaveCount(0);
+  await page.getByLabel(/E-mail/).fill("awa@gmial.com");
+  await page.getByLabel(/E-mail/).blur();
+  await expect(page.getByText("Vérifiez l'orthographe de votre adresse e-mail.")).toBeVisible();
+  await expect(confirm).toBeDisabled();
+  await page.getByLabel(/E-mail/).fill("awa.formulaire@example.com");
+  await expect(confirm).toBeEnabled();
+  await confirm.click();
+  await expect(page.getByTestId("booking-done")).toBeVisible();
+  expect(readStore().clients.map((c: { phone: string }) => c.phone)).toContain("+33612345680");
+  await page.getByRole("button", { name: "Réserver un autre rituel" }).click();
+  await expect(page.getByRole("tab", { name: "Coiffure" })).toBeVisible();
+  await expect(page.getByText("Un rituel par rendez-vous")).toBeVisible();
 });
 
 test("page de rendez-vous : lien dans l'e-mail, .ics, annulation, alerte salon", async ({ page, request }) => {

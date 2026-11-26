@@ -8,6 +8,14 @@ import { cancelBooking, createBooking, processDue } from "@/lib/booking/service"
 import { addDays, isoToLocal, localToIso, parseHHMM } from "@/lib/booking/time";
 import type { BookingStatus } from "@/lib/booking/types";
 import type { OpeningHours } from "@/data/hours";
+import { parsePhone } from "@/lib/phone";
+import { checkEmail } from "@/lib/validate";
+
+// Au comptoir, un numéro saisi sans indicatif est un numéro béninois.
+function withDefaultDial(p: string): string {
+  const t = p.trim();
+  return t.startsWith("+") || t.startsWith("00") ? t : `+229 ${t}`;
+}
 
 async function guard() {
   const c = (await cookies()).get(COOKIE)?.value;
@@ -85,7 +93,7 @@ export async function createManual(fd: FormData) {
   await guard();
   const r = await createBooking({
     serviceId: String(fd.get("serviceId")), date: String(fd.get("date")), minutes: parseHHMM(String(fd.get("time") || "09:00")),
-    staffId: String(fd.get("staffId") || "") || null, name: String(fd.get("name")), phone: String(fd.get("phone")),
+    staffId: String(fd.get("staffId") || "") || null, name: String(fd.get("name")), phone: withDefaultDial(String(fd.get("phone") ?? "")),
     email: String(fd.get("email") || "") || null, consentReminders: fd.get("consent") === "on", note: String(fd.get("note") ?? ""),
     source: "admin", skipSlotCheck: true,
   });
@@ -97,7 +105,10 @@ export async function saveClientNotes(fd: FormData) {
   await guard();
   const store = await getStore();
   const c = await store.getClient(String(fd.get("id")));
-  if (c) await store.saveClient({ ...c, name: String(fd.get("name") || c.name), phone: String(fd.get("phone") || c.phone), email: String(fd.get("email") || "") || null, notes: String(fd.get("notes") ?? "").slice(0, 4000) });
+  const ph = parsePhone(withDefaultDial(String(fd.get("phone") || c?.phone || "")));
+  const em = String(fd.get("email") || "").trim();
+  if (c && (!ph.ok || (em && !checkEmail(em).ok))) redirect(`/admin/clients/${c.id}?error=${encodeURIComponent(!ph.ok ? ph.error : "Adresse e-mail invalide.")}`);
+  if (c && ph.ok) await store.saveClient({ ...c, name: String(fd.get("name") || c.name), phone: ph.e164, email: em ? em.toLowerCase() : null, notes: String(fd.get("notes") ?? "").slice(0, 4000) });
   redirect(`/admin/clients/${String(fd.get("id"))}`);
 }
 
