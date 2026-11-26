@@ -8,6 +8,7 @@ import { site } from "@/data/site";
 import { todayHours } from "@/data/hours";
 import { getLenis } from "@/lib/lenis";
 import BookingButton, { bookingProps } from "./BookingButton";
+import Monogram from "./Monogram";
 
 // Une photo par lien (une photo fixe sur téléphone, elle change au toucher / au survol).
 const menuPhoto: Record<string, { src: string; alt: string; position?: string }> = {
@@ -93,6 +94,7 @@ export default function Header() {
             {site.whatsapp && <a href={`https://wa.me/${site.whatsapp}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>}
           </p>
           <BookingButton variant="ivoire">Réserver un rituel</BookingButton>
+          <div className="overlay__mono"><Monogram size={56} /></div>
         </div>
       </div>
     </header>

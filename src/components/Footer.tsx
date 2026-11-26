@@ -1,4 +1,5 @@
 import Link from "next/link";
+import MonoArch from "./MonoArch";
 import Trait from "./Trait";
 import { site } from "@/data/site";
 
@@ -7,6 +8,7 @@ export default function Footer() {
     <footer className="foot sec sec--noir">
       <div className="wrap">
         <Trait name="trait" className="foot__trait" />
+        <div className="foot__mono"><MonoArch variant="filet" tone="ivoire" size={84} /></div>
         <div className="foot__zst bod" aria-hidden="true" data-zst>ZST</div>
         <div className="lb foot__links">
           <a href={site.instagramUrl} target="_blank" rel="noopener noreferrer">Instagram</a>

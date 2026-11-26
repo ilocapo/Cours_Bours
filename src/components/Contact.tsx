@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Arch from "./Arch";
 import BookingButton from "./BookingButton";
 import Chrome from "./Chrome";
+import MonoArch from "./MonoArch";
 import Pastille from "./Pastille";
 import Title from "./Title";
 import { photos } from "@/data/photos";
@@ -20,9 +21,11 @@ export default function Contact({ photo = true, tone = "iv" }: { photo?: boolean
       <div className="wrap">
         <Chrome left="Nous trouver" right="Fidjrossè · Cotonou" />
         <Title lines={["Passez nous", "voir."]} />
-        <div className={`contact__grid ${photo ? "" : "contact__grid--solo"}`}>
-          {photo && (
+        <div className="contact__grid">
+          {photo ? (
             <Arch src={photos.salonLogo.src} alt={photos.salonLogo.alt} position={photos.salonLogo.position} ratio="4 / 5" sizes="(min-width: 1024px) 34vw, 86vw" />
+          ) : (
+            <MonoArch variant="pleine" tone={tone === "iv" ? "prune" : "ivoire"} size={120} className="monoarch--big" />
           )}
           <div className="contact__info">
             <div className="contact__block" data-fade>

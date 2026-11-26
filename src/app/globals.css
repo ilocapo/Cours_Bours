@@ -190,6 +190,20 @@ html.intro .mono__l--z2 { animation-delay: 0.5s; }
 html.intro .mono__l--t { animation-delay: 0.75s; }
 html.intro .curtain__cap { animation: fade 0.9s 1s both; }
 
+/* Monogramme en carré dans une arche (planche 10) */
+.monoarch { display: inline-flex; align-items: center; justify-content: center; width: calc(var(--mono, 96px) * 1.9); aspect-ratio: 3 / 4; border-radius: 999px 999px 0 0; padding-top: 18%; }
+.monoarch--filet { box-shadow: inset 0 0 0 1px currentColor; }
+.monoarch--pleine.monoarch--prune { background: var(--prune); color: var(--iv); }
+.monoarch--pleine.monoarch--ivoire { background: var(--iv); color: var(--prune); }
+.monoarch--filet.monoarch--prune { color: var(--prune); }
+.monoarch--filet.monoarch--ivoire { color: var(--iv); }
+.monoarch .mono { color: inherit; }
+.monoarch--big { max-width: 300px; justify-self: start; }
+.concept__row { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; margin-bottom: 64px; }
+.concept__row .concept__pictos { margin-bottom: 0; }
+.foot__mono { display: flex; justify-content: center; margin-top: 56px; }
+.overlay__mono { margin-top: 8px; color: var(--iv); opacity: 0.85; }
+
 /* 1. Ouverture */
 .hero { position: relative; z-index: 0; padding: calc(var(--head-h) + 36px) 0 calc(var(--space-sec) - 16px); background: var(--prune); color: var(--iv); }
 .hero__in { display: grid; gap: 56px; }
@@ -329,7 +343,7 @@ html.motion [data-arch-band] { opacity: 0; }
   .work__grid { grid-template-columns: repeat(4, 1fr); gap: 32px; }
   .work__grid > :nth-child(even) { margin-top: 44px; }
   .contact__grid { grid-template-columns: 0.8fr 1fr; gap: 72px; align-items: end; }
-  .contact__grid--solo { grid-template-columns: 1fr; max-width: 640px; }
+  
   .page-hero__grid { grid-template-columns: 1.1fr 0.9fr; gap: 72px; align-items: end; }
   .cards { grid-template-columns: repeat(2, 1fr); gap: 72px 72px; }
   .gallery-wide { grid-template-columns: 1fr 1fr; gap: 28px; }

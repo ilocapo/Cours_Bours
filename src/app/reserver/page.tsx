@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Title from "@/components/Title";
 import Chrome from "@/components/Chrome";
-import BookingButton from "@/components/BookingButton";
+import MonoArch from "@/components/MonoArch";
+import BookingButton, { ButtonLink } from "@/components/BookingButton";
 import { site } from "@/data/site";
 
 export const metadata: Metadata = { title: "Réserver", description: "Réserver un rituel chez ZST Beauty Center." };
@@ -12,6 +12,7 @@ export default function Reserver() {
   return (
     <section className="sec sec--prune center-page">
       <div className="wrap stack" style={{ maxWidth: 720 }}>
+        <MonoArch variant="pleine" tone="ivoire" size={84} />
         <Chrome left="Réservation" right="Bientôt en ligne" />
         <Title as="h1" initial lines={["La réservation", "en ligne arrive."]} />
         <p data-fade>
@@ -23,7 +24,7 @@ export default function Reserver() {
         </p>
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
           <BookingButton variant="ivoire">Réserver sur WhatsApp</BookingButton>
-          <Link className="btn btn--prune lb" style={{ border: "1px solid rgba(242,234,223,.4)" }} href="/">Retour</Link>
+          <ButtonLink href="/" variant="outline">Retour</ButtonLink>
         </div>
       </div>
     </section>
