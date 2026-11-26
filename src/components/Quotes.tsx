@@ -1,34 +1,24 @@
 "use client";
-import { useState } from "react";
 import { reviews } from "@/data/reviews";
 import { site } from "@/data/site";
 import { fr } from "@/lib/fr";
 
-// Une citation à la fois, en grand (Bodoni italique). La note Google reste discrète.
-export default function Quotes({ tone = "prune" }: { tone?: "prune" | "iv" }) {
-  const [i, setI] = useState(0);
-  const n = reviews.length;
-  if (n === 0) return null;
-  const r = reviews[i];
-  const go = (d: number) => setI((x) => (x + d + n) % n);
+// Avis : cartes ivoire à bord haut en arche, texte prune, posées sur le fond sombre.
+// Elles défilent horizontalement (glisser) ; la note Google reste discrète.
+export default function Quotes() {
+  if (reviews.length === 0) return null;
   const { score, count } = site.googleRating;
   return (
     <div className="quotes">
-      <figure className="quotes__fig" key={r.id} aria-live="polite">
-        <blockquote className="quotes__q">« {fr(r.text)} »</blockquote>
-        <figcaption className="lb">{r.author} · avis {r.source}</figcaption>
-      </figure>
-      <div className="quotes__nav">
-        <button type="button" className="quotes__btn quotes__btn--prev" onClick={() => go(-1)} aria-label="Avis précédent">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={tone === "iv" ? "/img/traits/fleche-prune.svg" : "/img/traits/fleche.svg"} alt="" width={44} height={16} />
-        </button>
-        <span className="lb" aria-hidden="true">{i + 1} / {n}</span>
-        <button type="button" className="quotes__btn" onClick={() => go(1)} aria-label="Avis suivant">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={tone === "iv" ? "/img/traits/fleche-prune.svg" : "/img/traits/fleche.svg"} alt="" width={44} height={16} />
-        </button>
-      </div>
+      <ul className="quotes__track" aria-label="Avis des clientes">
+        {reviews.map((r) => (
+          <li key={r.id} className="qcard">
+            <span className="qcard__mark bod" aria-hidden="true">«</span>
+            <blockquote className="qcard__q">{fr(r.text)}</blockquote>
+            <p className="lb qcard__by">{r.author}<span> · avis {r.source}</span></p>
+          </li>
+        ))}
+      </ul>
       <a className="lb quotes__rate" href={site.mapsUrl} target="_blank" rel="noopener noreferrer">
         Google · {String(score).replace(".", ",")} / 5 · {count} avis
       </a>

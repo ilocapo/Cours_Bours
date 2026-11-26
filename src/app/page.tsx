@@ -62,8 +62,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. Galerie : vidéo, photo, photo, vidéo */}
-      <section className="sec sec--prune work" id="travail">
+      {/* 4. Avis : une citation à la fois */}
+      <section className="sec sec--prune" id="avis">
+        <div className="wrap">
+          <Chrome left="Elles en parlent" right="Avis Google" />
+          <Quotes />
+        </div>
+      </section>
+
+      {/* 5. Galerie : vidéo, photo, photo, vidéo */}
+      <section className="sec sec--iv work" id="travail">
         <div className="wrap">
           <Title lines={["Fait main,", "de près."]} />
           <div className="work__grid work__grid--even">
@@ -76,14 +84,6 @@ export default function Home() {
             <a className="lb link-line" href={site.instagramUrl} target="_blank" rel="noopener noreferrer">Voir sur Instagram</a>
             <GalleryMore />
           </div>
-        </div>
-      </section>
-
-      {/* 5. Avis : une citation à la fois */}
-      <section className="sec sec--iv" id="avis">
-        <div className="wrap">
-          <Chrome left="Elles en parlent" right="Avis Google" />
-          <Quotes tone="iv" />
         </div>
       </section>
 

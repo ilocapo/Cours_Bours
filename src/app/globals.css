@@ -307,18 +307,29 @@ html.motion .services__row:not(.is-in)::after { transform: scaleX(0); }
 .gmore__in { overflow: hidden; min-height: 0; }
 .gmore.is-open .gmore__in { padding-top: 40px; }
 .gmore__close { margin-top: 40px; }
+/* glisse de la gauche à l'ouverture, repart vers la gauche à la fermeture */
+.gmore__slide, .slidein__slide { transform: translateX(-36px); opacity: 0; transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.5s ease; }
+.gmore.is-open .gmore__slide, .slidein.is-open .slidein__slide { transform: none; opacity: 1; }
+.slidein__btn { background-color: transparent; border-top: 0; border-left: 0; border-right: 0; color: inherit; cursor: pointer; font: inherit; letter-spacing: inherit; text-transform: inherit; }
+.slidein__panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.8s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.slidein.is-open .slidein__panel { grid-template-rows: 1fr; }
+.slidein__in { overflow: hidden; min-height: 0; }
+.slidein.is-open .slidein__in { padding-top: 28px; }
+.sec--prune .faq__item { border-color: rgba(242, 234, 223, 0.22); }
 /* vidéo, photo, photo, vidéo : les vidéos en grandes arches */
 .work__grid--mix { grid-template-columns: 1fr 1fr; }
 .work__grid--mix > :nth-child(1) { grid-row: span 2; }
 .work__grid--mix > :nth-child(4) { grid-column: 1 / -1; }
 
-/* 7. Avis */
-.quotes { display: grid; gap: 44px; max-width: 980px; }
-.quotes__fig { margin: 0; display: grid; gap: 28px; animation: fade 0.8s both; }
-.quotes__q { margin: 0; font-family: var(--f-title); font-style: italic; font-size: var(--fs-quote); line-height: 1.18; letter-spacing: -0.01em; text-wrap: balance; }
-.quotes__nav { display: flex; align-items: center; gap: 28px; }
-.quotes__btn { background: none; border: 0; padding: 14px 10px; cursor: pointer; }
-.quotes__btn--prev img { transform: scaleX(-1); }
+/* 7. Avis : cartes ivoire à bord haut en arche */
+.quotes { display: grid; gap: 36px; }
+.quotes__track { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: calc(var(--pad) * -1); padding-inline: var(--pad); scroll-padding-inline: var(--pad); overscroll-behavior-x: contain; }
+.quotes__track::-webkit-scrollbar { display: none; }
+.qcard { flex: 0 0 82%; max-width: 420px; scroll-snap-align: start; background: var(--iv); color: var(--prune); border-radius: 999px 999px 24px 24px / 190px 190px 24px 24px; padding: 128px 28px 34px; display: flex; flex-direction: column; gap: 18px; min-height: 440px; }
+.qcard__mark { font-size: 56px; line-height: 0.6; opacity: 0.45; }
+.qcard__q { margin: 0; font-family: var(--f-title); font-style: italic; font-size: 24px; line-height: 1.22; letter-spacing: -0.01em; flex: 1; }
+.qcard__by { opacity: 0.85; }
+.qcard__by span { opacity: 0.7; }
 .quotes__rate { opacity: 0.75; justify-self: start; }
 
 /* 8. Nous trouver */
@@ -329,7 +340,8 @@ html.motion .services__row:not(.is-in)::after { transform: scaleX(0); }
 .contact__block p { margin-top: 6px; }
 .contact__lines { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 12px !important; }
 .contact__lines a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; text-decoration-color: rgba(128, 128, 128, 0.6); }
-.contact__cta { display: flex; flex-wrap: wrap; gap: 16px; }
+.contact__cta { display: flex; flex-wrap: nowrap; gap: 12px; }
+.contact__cta .btn--md { padding-inline: 26px; flex: 1 1 0; min-width: 0; white-space: nowrap; }
 .contact .link-line { margin-top: 0; justify-self: start; }
 .hours { margin-top: 8px; display: grid; gap: 4px; font-size: 15px; max-width: 320px; }
 .hours li { display: flex; justify-content: space-between; gap: 16px; opacity: 0.85; }
@@ -421,6 +433,8 @@ html.motion [data-arch-band] { opacity: 0; }
   .cards { grid-template-columns: repeat(2, 1fr); gap: 72px 72px; }
   .gallery-wide { grid-template-columns: 1fr 1fr; gap: 28px; }
   .faq__q { font-size: 26px; }
+  .qcard { flex-basis: 380px; }
+  .quotes__track { margin-inline: 0; padding-inline: 0; }
   .overlay__link { font-size: 44px; }
 }
 

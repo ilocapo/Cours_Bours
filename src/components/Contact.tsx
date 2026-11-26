@@ -1,9 +1,9 @@
 "use client";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import Arch from "./Arch";
 import BookingButton from "./BookingButton";
 import Chrome from "./Chrome";
+import FaqPanel from "./FaqPanel";
 import MonoArch from "./MonoArch";
 import Pastille from "./Pastille";
 import Title from "./Title";
@@ -61,7 +61,7 @@ export default function Contact({ photo = true, tone = "iv" }: { photo?: boolean
               <BookingButton variant={tone === "iv" ? "prune" : "ivoire"}>Réserver</BookingButton>
               <a className={`btn btn--${tone === "iv" ? "outline-prune" : "outline"} btn--md lb`} href={site.mapsUrl} target="_blank" rel="noopener noreferrer">Itinéraire</a>
             </div>
-            <Link className="lb link-line" href="/faq" data-fade>Questions fréquentes</Link>
+            <FaqPanel />
           </div>
         </div>
       </div>
