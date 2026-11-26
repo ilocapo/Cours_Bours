@@ -4,9 +4,11 @@ import Arch from "@/components/Arch";
 import Band from "@/components/Band";
 import BookingButton, { ButtonLink } from "@/components/BookingButton";
 import Chrome from "@/components/Chrome";
+import Concept from "@/components/Concept";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import Pastille from "@/components/Pastille";
+import Picto from "@/components/Picto";
 import Quotes from "@/components/Quotes";
 import Seam from "@/components/Seam";
 import ServiceList from "@/components/ServiceList";
@@ -18,7 +20,6 @@ import { photos } from "@/data/photos";
 import { salonVideo } from "@/data/videos";
 import { site } from "@/data/site";
 
-const work = [photos.boucles, photos.tressesDetail, photos.tresses, photos.spa];
 const pictoByCat: Record<string, string> = { coiffure: "tresse", spa: "goutte", ongles: "vernis" };
 const tags: Record<string, string> = {
   coiffure: "Tresses · Soins · Femme, homme, enfant",
@@ -45,11 +46,15 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Concept (planche 01 du brand book) */}
+      <Concept />
+
       {/* 2. Le salon : un seul plan de la vidéo, voile ivoire vers la droite */}
-      <section className="sec sec--iv panel" id="salon">
+      <section className="sec sec--prune" id="salon">
+        <Seam tone="ivoire" />
         <div className="wrap">
           <Chrome left="02 · Le salon" right="Marbre · Lumière douce" />
-          <Band tone="iv" size="lg" video={salonVideo}>
+          <Band tone="prune" size="lg" video={salonVideo}>
             <Title initial lines={["Un lieu où l'on", "prend le temps."]} />
             <p>Marbre, lumière douce et mains expertes : trois rituels sous un même toit, pour elle comme pour lui.</p>
           </Band>
@@ -90,7 +95,7 @@ export default function Home() {
                 <ServiceList key={c.id} categoryId={c.id} limit={c.slug === "coiffure" ? 2 : 1} />
               ))}
             </div>
-            <Arch className="rise" src={photos.tressesIvoire.src} alt={photos.tressesIvoire.alt} ratio="3 / 4" sizes="(min-width: 1024px) 380px, 40vw" />
+            <Arch className="rise" src={photos.tressesIvoire.src} alt={photos.tressesIvoire.alt} ratio="3 / 4" sizes="(min-width: 1024px) 380px, 40vw" sticker={<span className="sticker"><Picto name="sablier" tone="ivoire" size={20} /><span className="bod">4 h</span><span className="lb lb--s">Tresses bohème</span></span>} />
           </div>
           <Link href="/carte" className="lb link-line">Toute la carte</Link>
         </div>
@@ -103,9 +108,10 @@ export default function Home() {
           <Chrome left="06 · Le travail" right={`@${site.instagram}`} />
           <Title lines={["Fait main,", "de près."]} />
           <div className="work__grid">
-            {work.map((p) => (
-              <Arch key={p.src} src={p.src} alt={p.alt} position={p.position} ratio="3 / 4.2" sizes="(min-width: 768px) 25vw, 44vw" />
-            ))}
+            <Arch frame="pleine" src={photos.boucles.src} alt={photos.boucles.alt} ratio="3 / 4.2" sizes="(min-width: 768px) 25vw, 44vw" />
+            <Arch frame="filet" tone="prune" src={photos.tressesDetail.src} alt={photos.tressesDetail.alt} ratio="3 / 4.2" sizes="(min-width: 768px) 25vw, 44vw" />
+            <Arch frame="fenetre" tone="prune" src={photos.ongles2.src} alt={photos.ongles2.alt} ratio="3 / 4.2" position="60% center" sizes="(min-width: 768px) 25vw, 44vw" />
+            <Arch frame="legende" src={photos.tressesSalon.src} alt={photos.tressesSalon.alt} position={photos.tressesSalon.position} ratio="3 / 4.2" caption="tressé main." sizes="(min-width: 768px) 25vw, 44vw" />
           </div>
           <div className="more more--split">
             <a className="lb link-line" href={site.instagramUrl} target="_blank" rel="noopener noreferrer">Voir sur Instagram</a>

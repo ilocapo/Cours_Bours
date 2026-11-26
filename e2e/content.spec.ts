@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test("accueil : les six sections de la maquette sont présentes", async ({ page }) => {
   await page.goto("/");
-  for (const id of ["salon", "rituels", "carte", "travail", "avis", "contact"]) {
+  for (const id of ["concept", "salon", "rituels", "video", "carte", "travail", "avis", "contact"]) {
     await expect(page.locator(`#${id}`)).toHaveCount(1);
   }
   await expect(page.getByText("Là où commence la beauté.").first()).toBeAttached();
@@ -10,17 +10,18 @@ test("accueil : les six sections de la maquette sont présentes", async ({ page 
 
 test("coordonnées du salon dans le pied de page", async ({ page }) => {
   await page.goto("/");
-  const foot = page.locator("footer");
+  const foot = page.locator("#contact");
   await expect(foot).toContainText("Fidjrossè, Cotonou");
   await expect(foot).toContainText("+229 67 70 35 35");
   await expect(foot.locator('a[href^="tel:"]')).toHaveAttribute("href", "tel:+22967703535");
-  await expect(foot.locator('a[href^="mailto:"]')).toHaveAttribute("href", "mailto:contact@zstbeautycenter.com");
+  const bottom = page.locator("footer");
+  await expect(bottom.locator('a[href^="mailto:"]')).toHaveAttribute("href", "mailto:contact@zstbeautycenter.com");
   await expect(foot.locator('a[href*="wa.me/22967703535"]').first()).toBeAttached();
-  await expect(foot.locator('a[href*="facebook.com/zstbc"]')).toBeAttached();
-  await expect(foot.locator('a[href*="instagram.com/zst_beauty_center"]')).toBeAttached();
+  await expect(bottom.locator('a[href*="facebook.com/zstbc"]')).toBeAttached();
+  await expect(bottom.locator('a[href*="instagram.com/zst_beauty_center"]')).toBeAttached();
   await expect(foot).toContainText("MTN Mobile Money");
-  await expect(foot).toContainText("09:00 – 20:00");
-  await expect(foot).toContainText("15:00 – 20:00");
+  await expect(foot).toContainText("9 h – 20 h");
+  await expect(foot).toContainText("15 h – 20 h");
 });
 
 test("le bouton Réserver ouvre WhatsApp avec un message prérempli", async ({ page }) => {
@@ -54,23 +55,26 @@ test("la FAQ s'ouvre et se ferme", async ({ page }) => {
   await expect(item).not.toHaveAttribute("open", "");
 });
 
-test("avis Google affichés avec la note", async ({ page }) => {
+test("avis Google : une citation à la fois, navigation", async ({ page }) => {
   await page.goto("/");
   const avis = page.locator("#avis");
   await avis.scrollIntoViewIfNeeded();
-  await expect(avis).toContainText("30 avis sur Google");
-  await expect(avis).toContainText("Annie G.");
-  await expect(avis.locator("[data-count]")).toHaveText("4,1", { timeout: 5000 });
+  await expect(avis).toContainText("30 avis");
+  await expect(avis.locator("blockquote")).toHaveCount(1);
+  const first = await avis.locator("blockquote").innerText();
+  await avis.getByRole("button", { name: "Avis suivant" }).click();
+  await expect.poll(() => avis.locator("blockquote").innerText()).not.toBe(first);
 });
 
 test("les vidéos sont chargeables et sans son", async ({ page, request }) => {
   await page.goto("/galerie");
   const videos = page.locator("video");
-  expect(await videos.count()).toBe(6);
-  for (let i = 0; i < 6; i++) {
+  const n = await videos.count();
+  expect(n).toBe(5);
+  for (let i = 0; i < n; i++) {
     expect(await videos.nth(i).evaluate((v: HTMLVideoElement) => v.muted)).toBe(true);
-    const src = await videos.nth(i).getAttribute("src");
-    const res = await request.get(src!);
+    const poster = await videos.nth(i).getAttribute("poster");
+    const res = await request.get(poster!);
     expect(res.status()).toBe(200);
   }
 });
@@ -89,4 +93,29 @@ test("le logo n'est jamais déformé", async ({ page }) => {
   await expect.poll(() => logo.evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);
   const { w, h, nw, nh } = await logo.evaluate((i: HTMLImageElement) => ({ w: i.clientWidth, h: i.clientHeight, nw: i.naturalWidth, nh: i.naturalHeight }));
   expect(Math.abs(w / h - nw / nh)).toBeLessThan(0.03);
+});
+
+test("accueil : pas de texte provisoire, deux vidéos seulement", async ({ page }) => {
+  await page.goto("/carte");
+  await expect(page.locator("body")).not.toContainText("exemple");
+  await page.goto("/");
+  expect(await page.locator("#video video").count()).toBe(2);
+  await expect(page.locator("#contact")).toContainText("Questions fréquentes");
+  await expect(page.locator("details")).toHaveCount(0);
+});
+
+test("une seule lettrine Plume par écran d'accueil", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForTimeout(3000);
+  const total = await page.evaluate(() => document.documentElement.scrollHeight);
+  const vh = page.viewportSize()!.height;
+  for (let y = 0; y < total; y += vh / 2) {
+    await page.evaluate((y) => window.scrollTo(0, y), y);
+    const visible = await page.evaluate(() =>
+      Array.from(document.querySelectorAll(".pl")).filter((e) => {
+        const r = e.getBoundingClientRect();
+        return r.bottom > 0 && r.top < window.innerHeight;
+      }).length);
+    expect(visible, `position ${y}`).toBeLessThanOrEqual(1);
+  }
 });

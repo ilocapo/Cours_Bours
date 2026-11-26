@@ -7,7 +7,7 @@ const pages = [
   { path: "/ongles", h1: /Ongles/ },
   { path: "/carte", h1: /carte/i },
   { path: "/galerie", h1: /Galerie/ },
-  { path: "/a-propos", h1: /commence/i },
+  { path: "/a-propos", h1: /maison/i },
   { path: "/faq", h1: /savoir/i },
   { path: "/reserver", h1: /réservation/i },
   { path: "/mentions-legales", h1: /Mentions/ },
