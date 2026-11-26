@@ -1,0 +1,113 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>ZST site</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400..500&family=Jost:wght@300..400&display=swap">
+<style>
+@font-face{font-family:"ZST Plume";src:url(fonts/ZSTPlume.ttf)}
+:root{--noir:#070606;--prune:#1C1013;--iv:#F2EADF;--iv2:#E3D8CA;--bronze:#A07A52}
+*{box-sizing:border-box}body{margin:0;background:#000;font-family:Jost;font-weight:300}
+.sc{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;padding:22px 24px}
+.d{background:var(--prune);color:var(--iv)}.n{background:var(--noir);color:var(--iv)}.i{background:var(--iv);color:var(--prune)}
+.bod{font-family:"Bodoni Moda";font-weight:400;letter-spacing:-.02em}
+.pl{font-family:"ZST Plume";font-size:1.45em;line-height:0;margin-right:-.03em}
+.lb{font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;font-weight:400}
+.top{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:3}
+.logo{background:var(--iv);border-radius:999px 999px 0 0;padding:8px 7px 4px;display:inline-flex}.logo img{width:42px}
+.btn{display:inline-flex;justify-content:center;align-items:center;gap:10px;padding:15px 26px 13px;border-radius:999px 999px 0 0}
+.bi{background:var(--iv);color:var(--prune)}.bp{background:var(--prune);color:var(--iv)}
+.arch{border-radius:999px 999px 0 0;background-size:cover;background-position:center}
+.bar{position:absolute;left:0;right:0;bottom:0;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;z-index:4}
+p{font-size:14.5px;line-height:1.6;margin:0}
+</style></head><body>
+
+<!-- 1 HERO -->
+<section class="sc n" style="background:url(img/ruban-noir.jpg) center/cover">
+  <div class="top"><span class="logo"><img src="img/logo-zst.png"></span><span class="lb">Menu</span></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:22px">
+    <div class="lb" style="opacity:.75">Coiffure · Spa · Ongles</div>
+    <div class="bod" style="font-size:50px;line-height:.98"><span class="pl">L</span>à où<br>commence<br>la beauté.</div>
+    <img src="img/traits/souligne.svg" style="width:62%">
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:70px"><span class="btn bi lb">Réserver</span><span style="display:flex;align-items:center;gap:10px"><span style="width:1px;height:46px;background:linear-gradient(var(--iv),transparent)"></span><span class="lb" style="font-size:9px">Défiler</span></span></div>
+</section>
+
+<!-- 2 ARCHE QUI S'OUVRE -->
+<section class="sc d">
+  <div class="top"><span class="logo"><img src="img/logo-zst.png"></span><span class="lb">Menu</span></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:26px">
+    <div class="lb" style="opacity:.75">Le salon</div>
+    <div class="bod" style="font-size:34px;line-height:1.05"><span class="pl">U</span>n lieu où l'on<br>prend le temps.</div>
+    <p style="opacity:.85">Marbre, lumière douce et mains expertes : trois rituels sous un même toit, pour elle comme pour lui.</p>
+    <div class="arch" style="height:400px;margin:0 -2px -22px;background-image:url(img/salon-vue.jpg)"></div>
+  </div>
+</section>
+
+<!-- 3 TROIS UNIVERS -->
+<section class="sc i">
+  <div class="top"><span class="lb">Trois rituels</span><img src="img/pictos/goutte-prune.svg" style="width:22px"></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:22px">
+    <div class="bod" style="font-size:38px;line-height:1"><span class="pl">T</span>rois mains,<br>une maison.</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      <div><div class="arch" style="aspect-ratio:3/4.8;background-image:url(img/presta-nattes.jpg);background-position:70% 20%"></div><div class="bod" style="font-size:19px;margin-top:10px">Coiffure</div><div class="lb" style="font-size:8.5px;margin-top:4px;opacity:.7">Femme &amp; homme</div></div>
+      <div><div class="arch" style="aspect-ratio:3/4.8;background-image:url(img/presta-visage.jpg);background-position:55% center"></div><div class="bod" style="font-size:19px;margin-top:10px">Spa</div><div class="lb" style="font-size:8.5px;margin-top:4px;opacity:.7">Visage · corps</div></div>
+      <div><div class="arch" style="aspect-ratio:3/4.8;background-image:url(img/presta-ongles2m.jpg);background-position:70% center"></div><div class="bod" style="font-size:19px;margin-top:10px">Ongles</div><div class="lb" style="font-size:8.5px;margin-top:4px;opacity:.7">Manucure · gel</div></div>
+    </div>
+    <img src="img/traits/fleuron-prune.svg" style="width:70%;margin:6px auto 0">
+    <div style="display:flex;justify-content:center"><span class="btn bp lb">Voir la carte</span></div>
+  </div>
+</section>
+
+<!-- 4 LA CARTE -->
+<section class="sc d">
+  <div class="top"><span class="logo"><img src="img/logo-zst.png"></span><span class="lb">Menu</span></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px">
+    <div class="bod" style="font-size:36px;line-height:1"><span class="pl">L</span>a carte<br>des rituels</div>
+    <div style="display:grid;grid-template-columns:1fr 112px;gap:16px;align-items:end">
+      <div style="display:grid;gap:13px">
+        <div class="lb" style="opacity:.6;font-size:9px">Coiffure</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="bod" style="font-size:17px">Tresses bohème</span><span class="lb" style="font-size:9px">4 h</span></div>
+        <div style="height:1px;background:rgba(242,234,223,.22)"></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="bod" style="font-size:17px">Soin profond</span><span class="lb" style="font-size:9px">60 min</span></div>
+        <div style="height:1px;background:rgba(242,234,223,.22)"></div>
+        <div class="lb" style="opacity:.6;font-size:9px;margin-top:6px">Spa</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="bod" style="font-size:17px">Soin visage éclat</span><span class="lb" style="font-size:9px">60 min</span></div>
+        <div style="height:1px;background:rgba(242,234,223,.22)"></div>
+        <div class="lb" style="opacity:.6;font-size:9px;margin-top:6px">Ongles</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="bod" style="font-size:17px">Pose gel</span><span class="lb" style="font-size:9px">75 min</span></div>
+      </div>
+      <div class="arch" style="aspect-ratio:3/4.6;background-image:url(img/presta-boheme-profil-serre.jpg)"></div>
+    </div>
+    <div style="display:inline-flex;flex-direction:column;align-self:flex-start;margin-top:8px"><span class="lb">Toute la carte</span><img src="img/traits/souligne.svg" style="width:100%;margin-top:4px"></div>
+  </div>
+  <div class="bar" style="background:var(--iv);color:var(--prune)"><span class="lb">Réserver un rituel</span><img src="img/traits/fleche-prune.svg" style="width:34px"></div>
+</section>
+
+<!-- 5 GALERIE -->
+<section class="sc i">
+  <div class="top"><span class="lb">Le travail</span><span class="lb" style="opacity:.6">@zst_beauty_center</span></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px">
+    <div class="bod" style="font-size:38px;line-height:1"><span class="pl">F</span>ait main,<br>de près.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="arch" style="aspect-ratio:3/4.2;background-image:url(img/presta-boheme-dos.jpg);background-position:center 15%"></div>
+      <div class="arch" style="aspect-ratio:3/4.2;background-image:url(img/presta-boucles.jpg)"></div>
+      <div class="arch" style="aspect-ratio:3/4.2;background-image:url(img/presta-tresses-salon.jpg);background-position:center 20%"></div>
+      <div class="arch" style="aspect-ratio:3/4.2;background-image:url(img/presta-tresses-detail.jpg)"></div>
+    </div>
+  </div>
+  <div class="bar" style="background:var(--prune);color:var(--iv)"><span class="lb">Réserver un rituel</span><img src="img/traits/fleche.svg" style="width:34px"></div>
+</section>
+
+<!-- 6 FOOTER -->
+<section class="sc n" style="padding-bottom:28px">
+  <div class="top"><span class="lb" style="opacity:.6">Nous trouver</span><span class="logo"><img src="img/logo-zst.png"></span></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:20px">
+    <div class="arch" style="height:250px;background-image:url(img/salon-logo-hd.jpg);background-position:center 45%"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div><div class="lb" style="font-size:9px;opacity:.6">Adresse</div><p style="margin-top:6px">À compléter</p></div>
+      <div><div class="lb" style="font-size:9px;opacity:.6">Horaires</div><p style="margin-top:6px">À compléter</p></div>
+    </div>
+    <span class="btn bi lb" style="align-self:flex-start">Réserver</span>
+    <img src="img/traits/trait.svg" style="width:100%;opacity:.6">
+    <div class="bod" style="font-size:132px;line-height:.8;letter-spacing:-.04em;text-align:center">ZST</div>
+    <div class="lb" style="font-size:9px;text-align:center;opacity:.6">Beauty Center · Instagram · Contact</div>
+  </div>
+</section>
+</body></html>
