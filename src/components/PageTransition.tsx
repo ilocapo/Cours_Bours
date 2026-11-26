@@ -62,6 +62,7 @@ export default function PageTransition() {
       const href = a.getAttribute("href");
       if (!href || a.target === "_blank" || a.hasAttribute("download")) return;
       const url = new URL(a.href, window.location.href);
+      if (url.pathname.startsWith("/admin") || window.location.pathname.startsWith("/admin")) return;
       if (url.origin !== window.location.origin || url.pathname === window.location.pathname) return;
       e.preventDefault();
       if (busy.current) return;
@@ -79,6 +80,7 @@ export default function PageTransition() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
+  if (pathname.startsWith("/admin")) return null;
   return (
     <div ref={ref} className="curtain" aria-hidden="true">
       <div className="curtain__mono"><Monogram size={132} /></div>

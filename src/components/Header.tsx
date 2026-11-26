@@ -2,6 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { nav } from "@/data/nav";
 import { photos } from "@/data/photos";
 import { site } from "@/data/site";
@@ -26,6 +27,7 @@ const menuPhoto: Record<string, { src: string; alt: string; position?: string }>
 const fmt = (t: string | null) => (t ? t.replace(":", " h ").replace(" h 00", " h") : "");
 
 export default function Header() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [solid, setSolid] = useState(false);
   const [photo, setPhoto] = useState<{ src: string; alt: string; position?: string }>(photos.salonVue);
@@ -48,6 +50,7 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  if (pathname.startsWith("/admin")) return null;
   const book = bookingProps();
   const show = (href: string) => setPhoto(menuPhoto[href] ?? photos.salonVue);
 

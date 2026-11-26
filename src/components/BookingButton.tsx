@@ -9,10 +9,11 @@ type Props = {
   children?: ReactNode;
 };
 
-// Sans lien Planity/Fresha, on réserve par WhatsApp (message prérempli).
+// Ordre : lien Planity/Fresha, sinon réservation interne (v2, NEXT_PUBLIC_BOOKING_INTERNAL=1), sinon WhatsApp.
+const INTERNAL = process.env.NEXT_PUBLIC_BOOKING_INTERNAL === "1";
 export const BOOKING_URL =
   process.env.NEXT_PUBLIC_BOOKING_URL ||
-  (site.whatsapp
+  (INTERNAL ? "" : site.whatsapp
     ? `https://wa.me/${site.whatsapp}?text=${encodeURIComponent("Bonjour, je souhaite réserver un rituel chez ZST Beauty Center.")}`
     : "");
 

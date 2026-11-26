@@ -3,7 +3,7 @@ import { categories } from "@/data/categories";
 
 type Props = { categoryId: string; limit?: number; showTitle?: boolean; fade?: boolean };
 
-// Tant que les tarifs ne sont pas validés (priceCents null), seules les durées s'affichent.
+// Tant que les tarifs ne sont pas validés (price null), seules les durées s'affichent.
 export default function ServiceList({ categoryId, limit, showTitle = true, fade = true }: Props) {
   const cat = categories.find((c) => c.id === categoryId);
   let list = servicesByCategory(categoryId);
@@ -13,7 +13,7 @@ export default function ServiceList({ categoryId, limit, showTitle = true, fade 
       {showTitle && cat && <div className="lb services__cat">{cat.name}</div>}
       <ul className="services__list">
         {list.map((s) => {
-          const price = formatPrice(s.priceCents);
+          const price = formatPrice(s.price);
           return (
             <li key={s.id} className="services__row">
               <span className="bod services__name">{s.name}</span>
