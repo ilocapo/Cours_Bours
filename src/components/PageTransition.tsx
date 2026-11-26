@@ -1,12 +1,13 @@
 "use client";
-import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import gsap from "gsap";
+import Monogram from "./Monogram";
 
 // Un seul geste, repris partout : un panneau à bord en dôme (comme les sections) qui monte.
-//  - à l'arrivée sur l'accueil (une fois par visite) : le logo dans son arche, puis le panneau se lève ;
-//  - entre deux pages : le panneau recouvre la page, la page change, il se lève.
+//  - à l'arrivée sur l'accueil (une fois par visite) : écran noir sur le ruban de zeste, le monogramme ZST en carré,
+//    puis le panneau se lève sur le site brun prune ;
+//  - entre deux pages : le même panneau recouvre la page, la page change, il se lève.
 export default function PageTransition() {
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -28,7 +29,6 @@ export default function PageTransition() {
     });
   };
 
-  // Arrivée sur la page / changement de route.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -38,7 +38,7 @@ export default function PageTransition() {
       if (html.classList.contains("intro")) {
         gsap.set(el, { yPercent: 0, visibility: "visible" });
         try { sessionStorage.setItem("zst-intro", "1"); } catch {}
-        lift(1.3);
+        lift(1.9);
       } else {
         gsap.set(el, { yPercent: 112, visibility: "visible" });
       }
@@ -51,7 +51,6 @@ export default function PageTransition() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  // Clic sur un lien interne : on recouvre, puis on change de page.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -82,7 +81,8 @@ export default function PageTransition() {
 
   return (
     <div ref={ref} className="curtain" aria-hidden="true">
-      <span className="logo"><Image src="/logo/logo-zst.png" alt="" width={64} height={64} /></span>
+      <div className="curtain__mono"><Monogram size={132} /></div>
+      <p className="lb curtain__cap">Là où commence la beauté.</p>
     </div>
   );
 }

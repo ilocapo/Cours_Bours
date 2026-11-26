@@ -17,3 +17,11 @@ export const openingHours: OpeningHours[] = [
 ];
 
 export const hoursDefined = openingHours.some((h) => h.opens && h.closes);
+
+/** Horaires du jour (fuseau du Bénin), côté client. */
+export function todayHours(now = new Date()): { label: string; open: string | null; close: string | null } {
+  const wd = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "Africa/Porto-Novo" }).format(now);
+  const map: Record<string, number> = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
+  const h = openingHours.find((x) => x.weekday === map[wd]) ?? openingHours[0];
+  return { label: h.label, open: h.opens, close: h.closes };
+}

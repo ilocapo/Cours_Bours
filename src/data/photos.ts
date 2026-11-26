@@ -13,6 +13,8 @@ export const photos = {
   salonMiroirs: p("salon-miroirs.jpg", "Les postes de coiffure face aux grands miroirs, sol en marbre brun", 918, 610),
   salonLavage: p("salon-lavage.jpg", "L'espace lavage et les fauteuils du salon", 918, 610),
   salonPosteBleu: p("salon-poste-bleu.jpg", "Un poste de soin avec fauteuil bleu et miroir", 918, 610),
+  bohemeProfil: p("presta-boheme-profil.jpg", "Tresses bohème, vues de profil", 705, 1241, "50% 20%"),
+  tressesIvoire: p("presta-tresses-ivoire.jpg", "Coiffure en nattes collées avec des boucles", 632, 672),
   bohemeProfilSerre: p("presta-boheme-profil-serre.jpg", "Tresses bohème, vues de profil", 615, 880),
   bohemeDos: p("presta-boheme-dos.jpg", "Tresses bohème, vues de dos", 737, 1495, "center 15%"),
   boucles: p("presta-boucles.jpg", "Boucles définies", 1086, 1448),

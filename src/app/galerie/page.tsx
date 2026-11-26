@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Arch from "@/components/Arch";
+import Chrome from "@/components/Chrome";
+import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import VideoBand from "@/components/VideoBand";
 import Title from "@/components/Title";
@@ -16,7 +18,7 @@ export default function Page() {
     <>
       <section className="sec sec--prune page-hero">
         <div className="wrap">
-          <div className="lb dim">Le travail et le salon</div>
+          <Chrome left="Le travail" right="Et le salon" />
           <Title as="h1" initial lines={["Galerie"]} />
           <div className="work__grid" style={{ marginTop: 40 }}>
             {prestations.map((p) => (
@@ -25,18 +27,19 @@ export default function Page() {
           </div>
         </div>
       </section>
-      <VideoBand limit={6} />
-      <section className="sec sec--iv panel">
+      <VideoBand limit={6} tone="iv" chrome="Le geste" />
+      <section className="sec sec--prune">
         <div className="wrap">
-          <Title lines={["Le salon"]} className="block-title" />
+          <Chrome left="Le salon" right="Cotonou" />
           <div className="gallery-wide">
             {salon.map((p) => (
               <Arch key={p.src} src={p.src} alt={p.alt} ratio="4 / 3" sizes="(min-width: 768px) 45vw, 90vw" />
             ))}
           </div>
-          <a className="link-under" href={site.instagramUrl} target="_blank" rel="noopener noreferrer"><span className="lb">Plus sur Instagram</span></a>
+          <a className="link-line" href={site.instagramUrl} target="_blank" rel="noopener noreferrer"><span className="lb">Plus sur Instagram</span></a>
         </div>
       </section>
+      <Contact photo={false} tone="iv" />
       <Footer />
     </>
   );

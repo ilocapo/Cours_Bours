@@ -3,6 +3,7 @@ import { categories } from "@/data/categories";
 
 type Props = { categoryId: string; limit?: number; showTitle?: boolean };
 
+// Tant que les tarifs ne sont pas validés (priceCents null), seules les durées s'affichent.
 export default function ServiceList({ categoryId, limit, showTitle = true }: Props) {
   const cat = categories.find((c) => c.id === categoryId);
   let list = servicesByCategory(categoryId);

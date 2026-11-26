@@ -1,37 +1,25 @@
-"use client";
-import { useEffect, useRef } from "react";
 import { videos } from "@/data/videos";
+import Chrome from "./Chrome";
+import LazyVideo from "./LazyVideo";
+import Seam from "./Seam";
 import Title from "./Title";
 
-function Clip({ src, poster, label }: { src: string; poster?: string; label: string }) {
-  const ref = useRef<HTMLVideoElement>(null);
-  useEffect(() => {
-    const v = ref.current;
-    if (!v) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) v.play().catch(() => {}); else v.pause(); }, { threshold: 0.4 });
-    io.observe(v);
-    return () => io.disconnect();
-  }, []);
-  return (
-    <figure className="video" data-arch style={{ margin: 0 }}>
-      <video ref={ref} src={src} poster={poster} muted loop playsInline preload="none" aria-label={label} />
-    </figure>
-  );
-}
-
-// Section masquée tant qu'aucune vidéo n'est listée dans src/data/videos.ts.
-export default function VideoBand({ limit = 4 }: { limit?: number }) {
+// « Le geste » : deux vidéos au plus sur l'accueil (les plus nettes), toutes sur la galerie.
+export default function VideoBand({ limit = 2, tone = "iv", chrome = "04 · Le geste" }: { limit?: number; tone?: "iv" | "prune"; chrome?: string }) {
   const list = videos.slice(0, limit);
   if (list.length === 0) return null;
   return (
-    <section className="sec sec--noir panel" id="video">
+    <section className={`sec sec--${tone}`} id="video">
+      <Seam tone={tone === "iv" ? "prune" : "ivoire"} />
       <div className="wrap">
-        <div className="lb dim" style={{ marginBottom: 18 }}>Le geste</div>
-        <Title lines={["Prendre", "le temps."]} />
-        <div className="videos" style={{ marginTop: 48 }}>
-          {list.map((v) => <Clip key={v.src} {...v} />)}
+        <Chrome left={chrome} right="Sans le son" />
+        <Title lines={["Le geste,", "sans se presser."]} />
+        <div className="videos">
+          {list.map((v) => (
+            <figure className="video" data-arch key={v.src}>
+              <LazyVideo src={v.src} poster={v.poster} label={v.label} />
+            </figure>
+          ))}
         </div>
       </div>
     </section>

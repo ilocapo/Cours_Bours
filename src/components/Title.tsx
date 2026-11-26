@@ -1,4 +1,5 @@
 import { createElement } from "react";
+import { fr } from "@/lib/fr";
 
 // Lettres lisibles en ZST Plume (vérifié à l'écran). Les autres (B, F, H, I, J, K, P, Q, R, T, X…)
 // se lisent mal : la lettrine passe alors en Bodoni Moda italique.
@@ -15,13 +16,16 @@ type Props = {
   className?: string;
   /** Lettrine sur la première lettre. Une seule par écran. */
   initial?: boolean;
+  /** Indice d'une ligne en italique bronze (touche rare, comme dans le brand book). */
+  accent?: number;
 };
 
-export default function Title({ lines, as = "h2", className = "", initial = false }: Props) {
+export default function Title({ lines, as = "h2", className = "", initial = false, accent }: Props) {
   return createElement(
     as,
     { className: `bod title ${className}`.trim(), "data-title": true },
-    lines.map((line, i) => {
+    lines.map((raw, i) => {
+      const line = fr(raw);
       const first = line.charAt(0);
       const upper = first.toUpperCase();
       let content: React.ReactNode = line;
@@ -40,7 +44,7 @@ export default function Title({ lines, as = "h2", className = "", initial = fals
       }
       return (
         <span className="line" key={i}>
-          <span className="line-in">{content}</span>
+          <span className={`line-in${accent === i ? " accent" : ""}`}>{content}</span>
         </span>
       );
     }),

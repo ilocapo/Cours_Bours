@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Title from "@/components/Title";
+import Chrome from "@/components/Chrome";
 import BookingButton from "@/components/BookingButton";
 import { site } from "@/data/site";
 
@@ -11,7 +12,7 @@ export default function Reserver() {
   return (
     <section className="sec sec--prune center-page">
       <div className="wrap stack" style={{ maxWidth: 720 }}>
-        <div className="lb dim">Réservation</div>
+        <Chrome left="Réservation" right="Bientôt en ligne" />
         <Title as="h1" initial lines={["La réservation", "en ligne arrive."]} />
         <p data-fade>
           En attendant, réservez par WhatsApp ou par téléphone au {site.phone}. Vous pouvez aussi nous écrire sur Instagram :{" "}

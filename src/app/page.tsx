@@ -1,140 +1,132 @@
 import Image from "next/image";
 import Link from "next/link";
 import Arch from "@/components/Arch";
-import BookingButton from "@/components/BookingButton";
+import Band from "@/components/Band";
+import BookingButton, { ButtonLink } from "@/components/BookingButton";
+import Chrome from "@/components/Chrome";
+import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
-import Faq from "@/components/Faq";
-import VideoBand from "@/components/VideoBand";
-import Rating from "@/components/Rating";
-import Picto from "@/components/Picto";
+import Pastille from "@/components/Pastille";
+import Quotes from "@/components/Quotes";
+import Seam from "@/components/Seam";
 import ServiceList from "@/components/ServiceList";
 import Title from "@/components/Title";
 import Trait from "@/components/Trait";
+import VideoBand from "@/components/VideoBand";
 import { categories } from "@/data/categories";
 import { photos } from "@/data/photos";
+import { salonVideo } from "@/data/videos";
 import { site } from "@/data/site";
 
-const work = [photos.bohemeDos, photos.boucles, photos.tressesSalon, photos.tressesDetail];
+const work = [photos.boucles, photos.tressesDetail, photos.tresses, photos.spa];
+const pictoByCat: Record<string, string> = { coiffure: "tresse", spa: "goutte", ongles: "vernis" };
+const tags: Record<string, string> = {
+  coiffure: "Tresses · Soins · Femme, homme, enfant",
+  spa: "Visage · Corps · Massage",
+  ongles: "Manucure · Pédicure · Gel",
+};
 
 export default function Home() {
   return (
     <>
-      {/* 1. Ouverture */}
-      <section className="hero" >
-        <div className="hero__bg">
-          <Image src="/img/textures/ruban-noir.jpg" alt="" fill priority sizes="100vw" quality={70} />
-        </div>
-        <div className="wrap">
-          <div className="lb hero__sub">Coiffure · Spa · Ongles</div>
-          <Title as="h1" className="hero__title" initial lines={["Là où", "commence", "la beauté."]} />
-          <Trait name="souligne" className="hero__trait" />
-        </div>
-        <div className="hero__foot">
-          <div className="wrap">
+      {/* 1. Ouverture (le noir et le monogramme sont dans le rideau d'arrivée) */}
+      <section className="hero sec--prune" id="accueil">
+        <div className="wrap hero__in">
+          <div className="hero__txt">
+            <div className="lb dim hero__sub">Coiffure · Spa · Ongles</div>
+            <Title as="h1" className="hero__title" initial lines={["Là où", "commence", "la beauté."]} />
+            <Trait name="souligne" className="hero__trait" />
+          </div>
+          <Arch className="hero__arch" priority ratio="4 / 5" src={photos.bohemeProfil.src} alt={photos.bohemeProfil.alt} position="50% 18%" sizes="(min-width: 1024px) 42vw, 88vw" />
+          <div className="hero__cta">
             <BookingButton variant="ivoire">Réserver</BookingButton>
             <span className="scroll" aria-hidden="true"><i /><span className="lb">Défiler</span></span>
           </div>
         </div>
       </section>
 
-      {/* 2. Le salon : l'arche s'agrandit doucement au défilement */}
-      <section className="open panel" id="salon" data-open>
-        <div className="wrap open__intro">
-          <div className="lb dim">Le salon</div>
-          <Title initial lines={["Un lieu où l'on", "prend le temps."]} />
-          <p>Marbre, lumière douce et mains expertes : trois rituels sous un même toit, pour elle comme pour lui.</p>
-        </div>
-        <div className="wrap open__stage">
-          <div className="open__arch arch">
-            <Image src={photos.salonVue.src} alt={photos.salonVue.alt} fill sizes="(min-width: 1024px) 90vw, 92vw" style={{ objectFit: "cover", objectPosition: "50% 55%" }} />
-          </div>
+      {/* 2. Le salon : un seul plan de la vidéo, voile ivoire vers la droite */}
+      <section className="sec sec--iv panel" id="salon">
+        <div className="wrap">
+          <Chrome left="02 · Le salon" right="Marbre · Lumière douce" />
+          <Band tone="iv" size="lg" video={salonVideo}>
+            <Title initial lines={["Un lieu où l'on", "prend le temps."]} />
+            <p>Marbre, lumière douce et mains expertes : trois rituels sous un même toit, pour elle comme pour lui.</p>
+          </Band>
         </div>
       </section>
 
-      {/* Le geste : vidéos, juste après l'ouverture */}
-      <VideoBand />
-
-      {/* 3. Trois rituels */}
-      <section className="sec sec--iv rituals panel" id="rituels">
+      {/* 3. Trois univers : un voile par rituel */}
+      <section className="sec sec--noir" id="rituels">
+        <Seam tone="ivoire" />
         <div className="wrap">
-          <div className="rituals__head">
-            <span className="lb">Trois rituels</span>
-            <Picto name="goutte" tone="prune" size={22} />
-          </div>
-          <Title initial lines={["Trois mains,", "une maison."]} />
-          <div className="rituals__grid" data-fade>
+          <Chrome left="03 · Trois univers" right="Un voile par rituel" />
+          <Title lines={["Trois mains,", "une maison."]} />
+          <div className="bands">
             {categories.map((c) => (
-              <Link href={`/${c.slug}`} className="ritual" key={c.id}>
-                <Arch src={c.image} alt={`${c.name} chez ZST`} position={c.imagePosition} ratio="3 / 4.8" sizes="(min-width: 1280px) 30vw, 30vw" />
-                <div className="bod ritual__name">{c.name}</div>
-                <div className="lb ritual__tag">{c.tagline}</div>
-              </Link>
+              <Band key={c.id} href={`/${c.slug}`} tone={c.slug === "ongles" ? "iv" : "prune"} image={{ src: c.image, alt: `${c.name} chez ZST`, position: c.imagePosition }}>
+                <Pastille name={pictoByCat[c.slug]} tone={c.slug === "ongles" ? "prune" : "ivoire"} />
+                <h3 className="bod band__title">{c.name}</h3>
+                <span className="lb lb--s band__tags">{tags[c.slug]}</span>
+              </Band>
             ))}
           </div>
-          <div className="rituals__foot">
-            <Trait name="fleuron" tone="prune" />
-            <Link href="/carte" className="btn btn--prune lb">Voir la carte</Link>
-          </div>
+          <div className="more"><ButtonLink href="/carte" variant="outline">Voir la carte</ButtonLink></div>
         </div>
       </section>
 
-      {/* 4. La carte des rituels */}
-      <section className="sec sec--prune menu panel" id="carte">
+      {/* 4. Le geste : deux vidéos */}
+      <VideoBand limit={2} />
+
+      {/* 5. Extrait de la carte */}
+      <section className="sec sec--prune" id="carte">
+        <Seam tone="ivoire" />
         <div className="wrap">
-          <Title initial lines={["La carte", "des rituels"]} />
+          <Chrome left="05 · La carte" right="Durées" />
+          <Title accent={1} lines={["La carte", "des rituels"]} />
           <div className="menu__grid">
             <div className="menu__lists">
               {categories.map((c) => (
                 <ServiceList key={c.id} categoryId={c.id} limit={c.slug === "coiffure" ? 2 : 1} />
               ))}
             </div>
-            <Arch className="rise" src={photos.bohemeProfilSerre.src} alt={photos.bohemeProfilSerre.alt} ratio="3 / 4.6" sizes="(min-width: 1280px) 380px, (min-width: 768px) 280px, 112px" />
+            <Arch className="rise" src={photos.tressesIvoire.src} alt={photos.tressesIvoire.alt} ratio="3 / 4" sizes="(min-width: 1024px) 380px, 40vw" />
           </div>
-          <Link href="/carte" className="link-under">
-            <span className="lb">Toute la carte</span>
-            <Trait name="souligne" />
-          </Link>
+          <Link href="/carte" className="lb link-line">Toute la carte</Link>
         </div>
       </section>
 
-      {/* 5. Le travail */}
-      <section className="sec sec--iv work panel" id="travail">
+      {/* 6. Galerie : quatre photos */}
+      <section className="sec sec--iv work" id="travail">
+        <Seam tone="prune" />
         <div className="wrap">
-          <div className="work__head">
-            <span className="lb">Le travail</span>
-            <a className="lb dim" href={site.instagramUrl} target="_blank" rel="noopener noreferrer">@{site.instagram}</a>
-          </div>
-          <Title initial lines={["Fait main,", "de près."]} />
+          <Chrome left="06 · Le travail" right={`@${site.instagram}`} />
+          <Title lines={["Fait main,", "de près."]} />
           <div className="work__grid">
             {work.map((p) => (
-              <Arch key={p.src} src={p.src} alt={p.alt} position={p.position} ratio="3 / 4.2" sizes="(min-width: 768px) 25vw, 45vw" />
+              <Arch key={p.src} src={p.src} alt={p.alt} position={p.position} ratio="3 / 4.2" sizes="(min-width: 768px) 25vw, 44vw" />
             ))}
           </div>
-          <div style={{ display: "flex", gap: 34, flexWrap: "wrap" }}>
-            <Link className="link-under" href="/galerie"><span className="lb">Toute la galerie</span><Trait name="souligne" tone="prune" /></Link>
-            <a className="link-under" href={site.instagramUrl} target="_blank" rel="noopener noreferrer">
-              <span className="lb">Voir sur Instagram</span>
-              <Trait name="souligne" tone="prune" />
-            </a>
+          <div className="more more--split">
+            <a className="lb link-line" href={site.instagramUrl} target="_blank" rel="noopener noreferrer">Voir sur Instagram</a>
+            <Link className="lb link-plain" href="/galerie">Toute la galerie</Link>
           </div>
         </div>
       </section>
 
-      {/* Avis + questions */}
-      <section className="sec sec--prune panel" id="avis">
-        <div className="wrap faq-grid">
-          <div>
-            <div className="lb dim" style={{ marginBottom: 18 }}>Elles en parlent</div>
-            <Rating />
-          </div>
-          <div>
-            <Title lines={["Bon à savoir"]} className="block-title" />
-            <Faq />
-          </div>
+      {/* 7. Avis : une citation à la fois */}
+      <section className="sec sec--prune" id="avis">
+        <Seam tone="ivoire" />
+        <div className="wrap">
+          <Chrome left="07 · Elles en parlent" right="Avis Google" />
+          <Quotes />
         </div>
       </section>
 
-      {/* 6. Nous trouver */}
+      {/* 8. Nous trouver */}
+      <Contact />
+
+      {/* 9. Pied de page : le grand ZST */}
       <Footer />
     </>
   );

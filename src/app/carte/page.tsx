@@ -1,44 +1,49 @@
 import type { Metadata } from "next";
+import Arch from "@/components/Arch";
 import BookingButton from "@/components/BookingButton";
+import Chrome from "@/components/Chrome";
+import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
-import Picto from "@/components/Picto";
+import Pastille from "@/components/Pastille";
 import ServiceList from "@/components/ServiceList";
 import Title from "@/components/Title";
-import Arch from "@/components/Arch";
 import { categories } from "@/data/categories";
 import { photos } from "@/data/photos";
 
 export const metadata: Metadata = { title: "La carte des rituels", description: "Coiffure, spa et ongles : tous les rituels et leurs durées." };
+const pictoBy: Record<string, string> = { coiffure: "tresse", spa: "goutte", ongles: "vernis" };
 
 export default function Carte() {
   return (
     <>
       <section className="sec sec--prune page-hero">
-        <div className="wrap page-hero__grid">
-          <div>
-            <div className="lb dim">Coiffure · Spa · Ongles</div>
-            <Title as="h1" initial lines={["La carte", "des rituels"]} />
-            <p data-fade>Carte d&apos;exemple. Les tarifs et durées définitifs arrivent bientôt.</p>
+        <div className="wrap">
+          <Chrome left="La carte" right="Coiffure · Spa · Ongles" />
+          <div className="page-hero__grid">
+            <div>
+              <Title as="h1" initial accent={1} lines={["La carte", "des rituels"]} />
+            </div>
+            <Arch src={photos.salonPostes.src} alt={photos.salonPostes.alt} ratio="4 / 5" position="50% 40%" priority sizes="(min-width: 768px) 40vw, 88vw" />
           </div>
-          <Arch src={photos.bohemeProfilSerre.src} alt={photos.bohemeProfilSerre.alt} ratio="3 / 4" priority sizes="(min-width: 768px) 40vw, 90vw" />
         </div>
       </section>
-      <section className="sec sec--prune"  style={{ paddingTop: 0 }}>
+      <section className="sec sec--iv">
         <div className="wrap cards">
           {categories.map((c) => (
             <div key={c.id}>
-              <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 6 }}>
-                <Picto name={c.picto} size={26} />
-                <h2 className="bod block-title" style={{ margin: 0, fontSize: 32 }}>{c.name}</h2>
+              <div className="cards__head" data-fade>
+                <Pastille name={pictoBy[c.slug]} tone="prune" />
+                <h2 className="bod cards__title">{c.name}</h2>
               </div>
               <ServiceList categoryId={c.id} showTitle={false} />
             </div>
           ))}
         </div>
-        <div className="wrap" style={{ marginTop: 56, display: "flex", justifyContent: "center" }}>
-          <BookingButton variant="ivoire">Réserver un rituel</BookingButton>
+        <div className="wrap more" style={{ justifyContent: "center", display: "flex" }}>
+          <BookingButton variant="prune">Réserver un rituel</BookingButton>
         </div>
       </section>
+      <Contact photo={false} tone="prune" />
       <Footer />
     </>
   );

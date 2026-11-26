@@ -13,8 +13,13 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: { default: `${site.name} — ${site.slogan}`, template: `%s — ${site.name}` },
-  description: "Salon de beauté afro : coiffure femme et homme, spa et ongles. Là où commence la beauté.",
-  openGraph: { title: site.name, description: site.slogan, type: "website", locale: "fr_FR", images: ["/img/photos/salon-vue.jpg"] },
+  description: "Salon de beauté afro à Fidjrossè, Cotonou : coiffure femme, homme et enfant, spa et massages, manucure et pédicure. Là où commence la beauté.",
+  alternates: { canonical: "./" },
+  openGraph: {
+    title: site.name, description: site.slogan, type: "website", locale: "fr_FR", url: "./", siteName: site.name,
+    images: [{ url: "/og.jpg", width: 1200, height: 630, alt: "Le salon ZST Beauty Center : marbre, miroirs et postes de coiffure" }],
+  },
+  twitter: { card: "summary_large_image", title: site.name, description: site.slogan, images: ["/og.jpg"] },
 };
 
 export const viewport: Viewport = { themeColor: "#1C1013", width: "device-width", initialScale: 1 };

@@ -34,7 +34,7 @@ export default function Motion() {
     const mm = gsap.matchMedia();
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       // Pendant l'ouverture (rideau), l'ouverture de l'accueil attend.
-      const wait = document.documentElement.classList.contains("intro") ? 1.9 : 0;
+      const wait = document.documentElement.classList.contains("intro") ? 2.5 : 0;
       const q = <T extends Element = HTMLElement>(s: string) => gsap.utils.toArray<T>(s);
 
       // Titres : ligne par ligne, glissement léger + fondu.
@@ -61,16 +61,6 @@ export default function Motion() {
         if (!arches.length) return;
         gsap.fromTo(arches, { clipPath: "inset(100% 0% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 1.3, ease: "power3.out", stagger: 0.18,
           scrollTrigger: { trigger: grid, start: "top 85%", once: true } });
-      });
-
-      // Ouverture : le ruban dérive lentement, le titre s'efface quand le panneau arrive.
-      q(".hero").forEach((hero) => {
-        const bg = hero.querySelector(".hero__bg");
-        const content = hero.querySelectorAll(".wrap");
-        if (bg) gsap.fromTo(bg, { yPercent: 0, scale: 1.08 }, { yPercent: 12, scale: 1, ease: "none",
-          scrollTrigger: { trigger: hero, start: "top top", end: "bottom top", scrub: true } });
-        gsap.to(content, { opacity: 0.15, y: -60, ease: "none",
-          scrollTrigger: { trigger: hero, start: "top top", end: "bottom 30%", scrub: true } });
       });
 
       // Vidéos : deux colonnes qui se croisent doucement.
@@ -130,15 +120,10 @@ export default function Motion() {
           scrollTrigger: { trigger: el, start: "top 105%", end: "bottom 85%", scrub: true } });
       });
 
-      // Le salon : l'arche grandit doucement jusqu'à ~90 % de la largeur (échelle, sans pin ni zoom).
-      q("[data-open]").forEach((root) => {
-        const arch = root.querySelector<HTMLElement>(".open__arch");
-        const img = root.querySelector<HTMLElement>(".open__arch img");
-        if (!arch) return;
-        gsap.fromTo(arch, { scale: 0.68 }, { scale: 1, ease: "none",
-          scrollTrigger: { trigger: arch, start: "top 92%", end: "top 28%", scrub: 0.6 } });
-        if (img) gsap.fromTo(img, { scale: 1.12 }, { scale: 1, ease: "none",
-          scrollTrigger: { trigger: arch, start: "top 92%", end: "top 28%", scrub: 0.6 } });
+      // Bandes : elles montent doucement, le voile se révèle avec elles.
+      q("[data-arch-band]").forEach((el) => {
+        gsap.fromTo(el, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 1, ease: "power2.out",
+          scrollTrigger: { trigger: el, start: "top 90%", once: true } });
       });
     });
 

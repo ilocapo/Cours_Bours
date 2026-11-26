@@ -10,7 +10,7 @@ export const site = {
   phone: "+229 67 70 35 35" as string | null,
   whatsapp: "22967703535" as string | null,
   email: "contact@zstbeautycenter.com" as string | null,
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com",
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://cours-bours.vercel.app",
   payments: ["Espèces", "Carte bancaire", "MTN Mobile Money"],
   mapsUrl: "https://www.google.com/maps/search/?api=1&query=ZST+Beauty+Center+Fidjross%C3%A8+Cotonou",
   googleRating: { score: 4.1, count: 30 },
