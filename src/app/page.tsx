@@ -7,7 +7,7 @@ import Concept from "@/components/Concept";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import Quotes from "@/components/Quotes";
-import Rituals from "@/components/Rituals";
+import CategorySlider from "@/components/CategorySlider";
 import Title from "@/components/Title";
 import Trait from "@/components/Trait";
 import { photos } from "@/data/photos";
@@ -44,11 +44,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. Trois univers : un clic ouvre la carte de la catégorie */}
+      {/* 3. Trois univers : diapositives en mosaïque d'arches (planche 10) */}
       <section className="sec sec--noir" id="rituels">
         <div className="wrap">
           <Title lines={["Trois mains,", "une maison."]} />
-          <Rituals />
+          <CategorySlider />
         </div>
       </section>
 
