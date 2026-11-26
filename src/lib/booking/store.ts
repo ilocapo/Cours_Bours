@@ -1,4 +1,4 @@
-import type { Booking, Client, Notification, NotificationStatus, Settings } from "./types";
+import type { Booking, Client, Invoice, Notification, NotificationStatus, Settings, User } from "./types";
 import type { OpeningHours } from "@/data/hours";
 import type { Service } from "@/data/services";
 import type { Staff } from "@/data/staff";
@@ -24,6 +24,16 @@ export interface Store {
   getBooking(id: string): Promise<Booking | null>;
   getBookingByToken(token: string): Promise<Booking | null>;
   saveBooking(b: Booking): Promise<void>;
+
+  listUsers(): Promise<User[]>;
+  getUser(id: string): Promise<User | null>;
+  getUserByEmail(email: string): Promise<User | null>;
+  saveUser(u: User): Promise<void>;
+
+  listInvoices(): Promise<Invoice[]>;
+  getInvoice(id: string): Promise<Invoice | null>;
+  getInvoiceByToken(token: string): Promise<Invoice | null>;
+  saveInvoice(i: Invoice): Promise<void>;
 
   listNotifications(filter?: { bookingId?: string; status?: NotificationStatus; dueBefore?: string; limit?: number }): Promise<Notification[]>;
   saveNotification(n: Notification): Promise<void>;

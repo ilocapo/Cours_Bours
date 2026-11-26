@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { COOKIE, verifySession } from "@/lib/admin/auth";
 
-// L'espace de gestion (/admin) et ses API exigent une session. Tout le reste est public.
+// L'espace de gestion (/admin) et ses API exigent une session valide. Les droits fins sont vérifiés dans chaque page et action.
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isAdmin = pathname.startsWith("/admin") && pathname !== "/admin/login";

@@ -1,10 +1,10 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { getStore, type Store } from "./store";
-import { slotsFor } from "./availability";
+import { pickStaff, slotsFor } from "./availability";
 import { buildIcs } from "./ics";
 import { confirmationMail, reminderMail, salonMail, sendMail, thanksMail } from "./mail";
 import { addDays, isoToLocal, localToIso, longWhen } from "./time";
-import type { Booking, BookingView, Notification, NotificationType } from "./types";
+import type { Booking, BookingSource, BookingView, Notification, NotificationType } from "./types";
 import { parsePhone } from "@/lib/phone";
 import { checkEmail, checkName } from "@/lib/validate";
 
@@ -24,7 +24,7 @@ export async function toView(store: Store, b: Booking): Promise<BookingView> {
 export type CreateInput = {
   serviceId: string; date: string; minutes: number; staffId?: string | null;
   name: string; phone: string; email?: string | null; consentReminders: boolean; note?: string;
-  source: "site" | "admin"; skipSlotCheck?: boolean;
+  source: BookingSource; skipSlotCheck?: boolean;
 };
 
 export type CreateResult = { ok: true; booking: Booking } | { ok: false; error: string; code: "invalid" | "taken" };
@@ -59,7 +59,9 @@ export async function createBooking(input: CreateInput, now = new Date()): Promi
   await store.saveClient(client);
 
   const booking: Booking = {
-    id: randomUUID(), token: newToken(), serviceId: svc.id, staffId: input.staffId ?? null, clientId: client.id,
+    id: randomUUID(), token: newToken(), serviceId: svc.id,
+    // Sans choix de la cliente, on assigne la première personne libre et compétente : le planning de l'équipe reste à jour.
+    staffId: input.staffId || (await pickStaff(store, svc.id, input.date, input.minutes)), clientId: client.id,
     startsAt: localToIso(input.date, input.minutes), endsAt: localToIso(input.date, input.minutes + svc.durationMin),
     status: "confirmed", source: input.source, note: input.note?.trim() ?? "", createdAt: now.toISOString(),
   };

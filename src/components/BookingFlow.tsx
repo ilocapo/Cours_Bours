@@ -2,12 +2,12 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { addDays, dayName, longDate, shortDate, weekdayOf } from "@/lib/booking/time";
-import { formatDuration, formatPrice } from "@/data/services";
+import { formatDuration } from "@/data/services";
 import { COUNTRIES, checkNational } from "@/lib/phone";
 import { checkEmail, checkName } from "@/lib/validate";
 
 type Cat = { id: string; name: string; picto: string };
-type Svc = { id: string; categoryId: string; name: string; durationMin: number; price: number | null };
+type Svc = { id: string; categoryId: string; name: string; durationMin: number };
 type Person = { id: string; name: string; categoryIds: string[] };
 type Slot = { minutes: number; label: string };
 
@@ -97,7 +97,7 @@ export default function BookingFlow(p: FlowProps) {
               <li key={s.id}>
                 <button type="button" className={`opt ${serviceId === s.id ? "is-on" : ""}`} aria-pressed={serviceId === s.id} onClick={() => { setServiceId(s.id); setStaffId(""); }}>
                   <span className="bod opt__name">{s.name}</span>
-                  <span className="lb lb--s">{formatDuration(s.durationMin)}{formatPrice(s.price) ? ` · ${formatPrice(s.price)}` : ""}</span>
+                  <span className="lb lb--s">{formatDuration(s.durationMin)}</span>
                 </button>
               </li>
             ))}

@@ -3,23 +3,28 @@ import { dirname, join } from "node:path";
 import { services as seedServices, type Service } from "@/data/services";
 import { staff as seedStaff, type Staff } from "@/data/staff";
 import { openingHours as seedHours, type OpeningHours } from "@/data/hours";
-import { DEFAULT_SETTINGS, type Booking, type Client, type Notification, type NotificationStatus, type Settings } from "./types";
+import { DEFAULT_SETTINGS, type Booking, type Client, type Invoice, type Notification, type NotificationStatus, type Settings, type User } from "./types";
 import type { Store } from "./store";
 
 type Data = {
   services: Service[]; staff: Staff[]; hours: OpeningHours[]; settings: Settings;
-  clients: Client[]; bookings: Booking[]; notifications: Notification[];
+  clients: Client[]; bookings: Booking[]; notifications: Notification[]; users: User[]; invoices: Invoice[];
 };
 
 // Stockage dans .data/store.json : pour le développement et les tests. Pas pour la production.
 const FILE = process.env.ZST_STORE_FILE || join(process.cwd(), ".data", "store.json");
 
 function load(): Data {
-  if (existsSync(FILE)) { try { return JSON.parse(readFileSync(FILE, "utf8")); } catch { /* repart du modèle */ } }
+  if (existsSync(FILE)) {
+    try {
+      const d = JSON.parse(readFileSync(FILE, "utf8"));
+      return { users: [], invoices: [], ...d, staff: (d.staff ?? []).map((s: Staff) => ({ ...s, serviceIds: s.serviceIds ?? [], schedule: s.schedule ?? null, color: s.color ?? "#1C1013" })) };
+    } catch { /* repart du modèle */ }
+  }
   return {
     services: structuredClone(seedServices), staff: structuredClone(seedStaff),
     hours: structuredClone(seedHours).map((h) => ({ ...h, opens: h.opens ?? "09:00", closes: h.closes ?? "20:00" })),
-    settings: { ...DEFAULT_SETTINGS }, clients: [], bookings: [], notifications: [],
+    settings: { ...DEFAULT_SETTINGS }, clients: [], bookings: [], notifications: [], users: [], invoices: [],
   };
 }
 
@@ -63,6 +68,16 @@ export class MemoryStore implements Store {
   async getBooking(id: string) { return this.fresh().bookings.find((b) => b.id === id) ?? null; }
   async getBookingByToken(token: string) { return this.fresh().bookings.find((b) => b.token === token) ?? null; }
   async saveBooking(b: Booking) { this.fresh(); this.upsert(this.d.bookings, b); }
+
+  async listUsers() { return this.fresh().users; }
+  async getUser(id: string) { return this.fresh().users.find((u) => u.id === id) ?? null; }
+  async getUserByEmail(email: string) { return this.fresh().users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase()) ?? null; }
+  async saveUser(u: User) { this.fresh(); this.upsert(this.d.users, u); }
+
+  async listInvoices() { return this.fresh().invoices.sort((a, b) => b.issuedAt.localeCompare(a.issuedAt)); }
+  async getInvoice(id: string) { return this.fresh().invoices.find((i) => i.id === id) ?? null; }
+  async getInvoiceByToken(token: string) { return this.fresh().invoices.find((i) => i.token === token) ?? null; }
+  async saveInvoice(i: Invoice) { this.fresh(); this.upsert(this.d.invoices, i); }
 
   async listNotifications(f: { bookingId?: string; status?: NotificationStatus; dueBefore?: string; limit?: number } = {}) {
     let l = this.fresh().notifications.filter((n) => (!f.bookingId || n.bookingId === f.bookingId) && (!f.status || n.status === f.status) && (!f.dueBefore || n.sendAt <= f.dueBefore));

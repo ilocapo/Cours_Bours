@@ -1,11 +1,15 @@
-// Connexion à l'espace de gestion : mot de passe unique (ADMIN_PASSWORD) + cookie signé (HMAC), valable 12 h.
-// Compatible Edge (middleware) : Web Crypto uniquement.
+// Session de l'espace de gestion : cookie signé (HMAC) contenant l'utilisateur et son rôle, valable 12 h.
+// Compatible Edge (middleware) : Web Crypto uniquement. Le hachage des mots de passe est dans password.ts (Node).
+import type { Role } from "@/lib/booking/types";
+
 export const COOKIE = "zst_admin";
 const TTL_MS = 12 * 3_600_000;
+export const ENV_ADMIN_ID = "env-admin"; // compte de secours : identifiant « admin » + ADMIN_PASSWORD
 
 const enc = new TextEncoder();
 const secret = () => process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || "zst-dev-secret";
 export const adminPassword = () => process.env.ADMIN_PASSWORD || (process.env.NODE_ENV === "production" ? "" : "zst-dev");
+const ROLES: Role[] = ["super_admin", "gerant", "employe", "comptable"];
 
 async function hmac(data: string): Promise<string> {
   const key = await crypto.subtle.importKey("raw", enc.encode(secret()), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
@@ -13,20 +17,22 @@ async function hmac(data: string): Promise<string> {
   return Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export async function makeSession(now = Date.now()): Promise<string> {
-  const exp = String(now + TTL_MS);
-  return `${exp}.${await hmac(exp)}`;
+export async function makeSession(uid: string, role: Role, now = Date.now()): Promise<string> {
+  const body = `${uid}.${role}.${now + TTL_MS}`;
+  return `${body}.${await hmac(body)}`;
 }
 
-export async function verifySession(value: string | undefined, now = Date.now()): Promise<boolean> {
-  if (!value) return false;
-  const [exp, sig] = value.split(".");
-  if (!exp || !sig || Number(exp) < now) return false;
-  const good = await hmac(exp);
-  if (good.length !== sig.length) return false;
+export async function verifySession(value: string | undefined, now = Date.now()): Promise<{ uid: string; role: Role } | null> {
+  if (!value) return null;
+  const parts = value.split(".");
+  if (parts.length !== 4) return null;
+  const [uid, role, exp, sig] = parts;
+  if (!ROLES.includes(role as Role) || Number(exp) < now) return null;
+  const good = await hmac(`${uid}.${role}.${exp}`);
+  if (good.length !== sig.length) return null;
   let diff = 0;
   for (let i = 0; i < good.length; i++) diff |= good.charCodeAt(i) ^ sig.charCodeAt(i);
-  return diff === 0;
+  return diff === 0 ? { uid, role: role as Role } : null;
 }
 
 export function checkPassword(input: string): boolean {

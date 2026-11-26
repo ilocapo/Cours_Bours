@@ -2,7 +2,9 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { site } from "@/data/site";
 import { longWhen } from "./time";
-import type { BookingView } from "./types";
+import type { BookingView, Invoice } from "./types";
+import { METHOD_LABEL } from "./types";
+import { formatXof } from "./money";
 
 export type Mail = { to: string; subject: string; html: string; text: string; attachments?: { filename: string; content: string }[] };
 
@@ -99,5 +101,28 @@ export function salonMail(b: BookingView, kind: "salon_new" | "salon_cancel"): M
     to: "", subject: `${title} : ${b.clientName}, ${longWhen(b.startsAt)}`,
     html: layout(title, `${recap(b)}<p>${esc(b.clientName)}<br>${esc(b.clientPhone)}${b.clientEmail ? `<br>${esc(b.clientEmail)}` : ""}</p>${b.note ? `<p>Note : ${esc(b.note)}</p>` : ""}<p>${btn(`${site.url}/admin/agenda?b=${b.id}`, "Ouvrir dans l'agenda")}</p>`, esc(site.name)),
     text: `${title}\n${b.clientName} (${b.clientPhone})\n${b.serviceName}, ${longWhen(b.startsAt)}`,
+  };
+}
+
+export function invoiceMail(inv: Invoice, clientName: string, to: string): Mail {
+  const first = clientName.split(" ")[0];
+  const rows = inv.lines.map((l) => `<tr><td style="padding:6px 0">${esc(l.label)}${l.qty > 1 ? ` × ${l.qty}` : ""}</td><td align="right" style="padding:6px 0">${esc(formatXof(l.qty * l.unitXof))}</td></tr>`).join("");
+  const remise = inv.discountXof ? `<tr><td style="padding:6px 0;opacity:.8">Remise</td><td align="right" style="padding:6px 0">− ${esc(formatXof(inv.discountXof))}</td></tr>` : "";
+  const reste = inv.totalXof - inv.paidXof;
+  const state = inv.status === "paid" ? `Réglée${inv.method ? ` · ${METHOD_LABEL[inv.method]}` : ""}` : reste > 0 ? `Reste à régler : ${formatXof(reste)}` : "";
+  const table = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 24px;border-top:1px solid rgba(242,234,223,.25);border-bottom:1px solid rgba(242,234,223,.25)">${rows}${remise}
+<tr><td style="padding:12px 0 6px;font-family:Georgia,serif;font-size:20px">Total</td><td align="right" style="padding:12px 0 6px;font-family:Georgia,serif;font-size:20px">${esc(formatXof(inv.totalXof))}</td></tr></table>`;
+  return {
+    to, subject: `Votre facture ${inv.number} · ${site.name}`,
+    html: layout(`Facture ${esc(inv.number)}`, `<p>Bonjour ${esc(first)},</p><p>Merci pour votre visite. Voici votre facture.</p>${table}${state ? `<p>${esc(state)}</p>` : ""}<p>${btn(`${site.url}/facture/${inv.token}`, "Voir et imprimer")}</p>`, `${esc(site.name)} · ${esc(site.phone ?? "")}`),
+    text: `Bonjour ${first},\n\nFacture ${inv.number} : ${formatXof(inv.totalXof)}.${state ? `\n${state}` : ""}\nVoir et imprimer : ${site.url}/facture/${inv.token}\n\n${site.name}`,
+  };
+}
+
+export function testMail(to: string): Mail {
+  return {
+    to, subject: "Test d'envoi : ZST Beauty Center",
+    html: layout("L'envoi d'e-mails fonctionne.", `<p>Ce message confirme que la gestion peut envoyer des e-mails aux couleurs de ZST.</p>`, esc(site.name)),
+    text: "L'envoi d'e-mails fonctionne.",
   };
 }

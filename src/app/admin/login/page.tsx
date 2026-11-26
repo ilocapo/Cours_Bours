@@ -1,15 +1,21 @@
 import LoginForm from "./LoginForm";
-import MonoArch from "@/components/MonoArch";
+import Image from "next/image";
+import Link from "next/link";
+import { ensureTestUsers } from "@/lib/admin/session";
+
+export const dynamic = "force-dynamic";
 
 export default async function Login({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const sp = await searchParams;
-  const missing = process.env.NODE_ENV === "production" && !process.env.ADMIN_PASSWORD;
+  await ensureTestUsers();
   return (
     <main className="adm__login">
-      <MonoArch variant="pleine" tone="ivoire" size={84} />
-      <h1 className="bod adm__h1">Gestion</h1>
-      <p className="lb dim">ZST Beauty Center</p>
-      {missing ? <p className="adm__warn">L&apos;accès n&apos;est pas configuré : ajoutez ADMIN_PASSWORD dans les variables d&apos;environnement.</p> : <LoginForm next={sp.next ?? ""} />}
+      <section className="adm__login-card">
+        <Link href="/" className="logo" aria-label="Retour au site"><Image src="/logo/logo-zst.png" alt="ZST" width={46} height={46} priority /></Link>
+        <h1 className="bod adm__h1">Gestion</h1>
+        <p className="lb dim">ZST Beauty Center · espace réservé à l&apos;équipe</p>
+        <LoginForm next={sp.next ?? ""} />
+      </section>
     </main>
   );
 }

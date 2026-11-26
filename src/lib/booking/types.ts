@@ -1,4 +1,7 @@
 // Même forme que les tables Supabase (voir supabase/migrations/0001_init.sql).
+export type Role = "super_admin" | "gerant" | "employe" | "comptable";
+export type BookingSource = "site" | "instagram" | "whatsapp" | "telephone" | "comptoir" | "admin";
+export type PayMethod = "especes" | "mtn_momo" | "moov_money" | "carte" | "virement" | "autre";
 export type BookingStatus = "confirmed" | "cancelled" | "done" | "noshow";
 export type NotificationType = "confirmation" | "reminder_d1" | "reminder_h2" | "salon_new" | "salon_cancel" | "thanks";
 export type NotificationStatus = "pending" | "sent" | "failed" | "skipped";
@@ -22,7 +25,7 @@ export type Booking = {
   startsAt: string; // ISO UTC
   endsAt: string;
   status: BookingStatus;
-  source: "site" | "admin";
+  source: BookingSource;
   note: string;
   createdAt: string;
 };
@@ -46,6 +49,7 @@ export type Settings = {
   maxDaysAhead: number;
   capacity: number; // postes en parallèle quand aucune personne n'est choisie
   salonEmail: string;
+  lastCronAt?: string; // dernière exécution de la tâche planifiée des rappels
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -66,3 +70,39 @@ export type BookingView = Booking & {
   clientEmail: string | null;
   staffName: string | null;
 };
+
+export type User = {
+  id: string;
+  email: string; // identifiant de connexion
+  name: string;
+  role: Role;
+  passwordHash: string;
+  staffId: string | null; // pour un employé : sa fiche dans l'équipe
+  active: boolean;
+  createdAt: string;
+};
+
+export type InvoiceLine = { label: string; qty: number; unitXof: number };
+export type Invoice = {
+  id: string;
+  number: string; // FAC-2026-0001
+  token: string; // lien public d'impression
+  bookingId: string | null;
+  clientId: string;
+  staffId: string | null;
+  issuedAt: string;
+  lines: InvoiceLine[];
+  discountXof: number;
+  totalXof: number;
+  paidXof: number;
+  method: PayMethod | null;
+  paidAt: string | null;
+  status: "due" | "partial" | "paid" | "void";
+  note: string;
+  sentAt: string | null;
+  createdBy: string | null;
+};
+
+export const SOURCE_LABEL: Record<BookingSource, string> = { site: "Site", instagram: "Instagram", whatsapp: "WhatsApp", telephone: "Téléphone", comptoir: "Au salon", admin: "Salon" };
+export const METHOD_LABEL: Record<PayMethod, string> = { especes: "Espèces", mtn_momo: "MTN Mobile Money", moov_money: "Moov Money", carte: "Carte bancaire", virement: "Virement", autre: "Autre" };
+export const ROLE_LABEL: Record<Role, string> = { super_admin: "Super admin", gerant: "Gérante", employe: "Employée", comptable: "Comptable" };

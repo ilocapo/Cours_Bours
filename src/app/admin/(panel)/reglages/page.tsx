@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { getStore } from "@/lib/booking/store";
+import { requireUser } from "@/lib/admin/session";
 import { saveSettingsAction } from "../../actions";
 
 export const metadata: Metadata = { title: "Réglages" };
 export const dynamic = "force-dynamic";
 
 export default async function Reglages({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
+  await requireUser("settings");
   const sp = await searchParams;
   const store = await getStore();
   const [s, hours] = await Promise.all([store.getSettings(), store.getHours()]);

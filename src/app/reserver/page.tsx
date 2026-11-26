@@ -42,7 +42,7 @@ export default async function Reserver({ searchParams }: { searchParams: Promise
         <Title as="h1" initial accent={1} lines={["Réserver", "un rituel."]} />
         <BookingFlow
           categories={categories.map((c) => ({ id: c.id, name: c.name, picto: c.picto }))}
-          services={services.filter((s) => s.active).map((s) => ({ id: s.id, categoryId: s.categoryId, name: s.name, durationMin: s.durationMin, price: s.price }))}
+          services={services.filter((s) => s.active).map((s) => ({ id: s.id, categoryId: s.categoryId, name: s.name, durationMin: s.durationMin }))}
           staff={staff.filter((s) => s.active).map((s) => ({ id: s.id, name: s.name, categoryIds: s.categoryIds }))}
           closedWeekdays={hours.filter((h) => !h.opens || !h.closes).map((h) => h.weekday)}
           today={todayLocal()} maxDaysAhead={settings.maxDaysAhead} whatsappUrl={whatsappUrl} initialServiceId={sp.rituel}

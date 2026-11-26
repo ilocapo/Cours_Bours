@@ -1,4 +1,4 @@
-import { servicesByCategory, formatDuration, formatPrice } from "@/data/services";
+import { servicesByCategory, formatDuration } from "@/data/services";
 import { categories } from "@/data/categories";
 
 type Props = { categoryId: string; limit?: number; showTitle?: boolean; fade?: boolean };
@@ -13,13 +13,11 @@ export default function ServiceList({ categoryId, limit, showTitle = true, fade 
       {showTitle && cat && <div className="lb services__cat">{cat.name}</div>}
       <ul className="services__list">
         {list.map((s) => {
-          const price = formatPrice(s.price);
           return (
             <li key={s.id} className="services__row">
               <span className="bod services__name">{s.name}</span>
               <span className="lb services__meta">
                 {formatDuration(s.durationMin)}
-                {price ? ` · ${price}` : ""}
               </span>
             </li>
           );

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getStore } from "@/lib/booking/store";
+import { requireUser } from "@/lib/admin/session";
+import { formatXof } from "@/lib/booking/money";
 import { toView } from "@/lib/booking/service";
 import { isoToLocal, longWhen } from "@/lib/booking/time";
 import { formatPhone } from "@/lib/phone";
@@ -10,11 +12,13 @@ import { saveClientNotes } from "../../../actions";
 export const dynamic = "force-dynamic";
 
 export default async function Fiche({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }) {
+  await requireUser("clients");
   const { id } = await params;
   const sp = await searchParams;
   const store = await getStore();
   const c = await store.getClient(id);
   if (!c) notFound();
+  const invs = (await store.listInvoices()).filter((i) => i.clientId === id && i.status !== "void");
   const mine = (await store.listBookings()).filter((b) => b.clientId === id).reverse();
   const views = await Promise.all(mine.map((b) => toView(store, b)));
   const done = mine.filter((b) => b.status === "done").length; const noshow = mine.filter((b) => b.status === "noshow").length;
@@ -38,6 +42,7 @@ export default async function Fiche({ params, searchParams }: { params: Promise<
         <label className="field adm__wide"><span className="lb lb--s">Notes (préférences, allergies, coiffures habituelles…)</span><textarea name="notes" rows={5} defaultValue={c.notes} /></label>
         <div className="adm__wide"><button className="btn btn--prune btn--sm lb">Enregistrer la fiche</button></div>
       </form>
+      {invs.length > 0 && (<><h2 className="bod adm__h2">Factures · {formatXof(invs.reduce((t, i) => t + i.totalXof, 0))}</h2><ul className="adm__list">{invs.map((i) => <li key={i.id}><Link href={`/admin/factures/${i.id}`} className="adm__row adm__row--wide"><span className="bod">{i.number}</span><span>{formatXof(i.totalXof)}</span><span className={`pill pill--${i.status === "paid" ? "confirmed" : "noshow"}`}>{i.status === "paid" ? "Payée" : "À payer"}</span></Link></li>)}</ul></>)}
       <h2 className="bod adm__h2">Historique</h2>
       {views.length === 0 ? <p className="dim">Aucun rendez-vous.</p> : <ul className="adm__list">{views.map((b) => (
         <li key={b.id}><Link href={`/admin/agenda?d=${isoToLocal(b.startsAt).date}&b=${b.id}`} className="adm__row adm__row--wide"><span>{longWhen(b.startsAt)}</span><span>{b.serviceName}</span><span className={`pill pill--${b.status}`}>{STATUS_LABEL[b.status]}</span></Link></li>))}</ul>}

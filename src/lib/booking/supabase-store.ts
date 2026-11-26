@@ -1,7 +1,7 @@
 import type { OpeningHours } from "@/data/hours";
 import type { Service } from "@/data/services";
 import type { Staff } from "@/data/staff";
-import { DEFAULT_SETTINGS, type Booking, type Client, type Notification, type NotificationStatus, type Settings } from "./types";
+import { DEFAULT_SETTINGS, type Booking, type Client, type Invoice, type Notification, type NotificationStatus, type Settings, type User } from "./types";
 import type { Store } from "./store";
 
 // Accès à Supabase par l'API REST (PostgREST), côté serveur, avec la clé service_role.
@@ -42,9 +42,9 @@ export class SupabaseStore implements Store {
   }
   async listStaff(): Promise<Staff[]> {
     const rows = await this.get<Row>("staff?select=*&order=name");
-    return rows.map((r) => ({ id: r.id as string, name: r.name as string, categoryIds: (r.category_ids as string[]) ?? [], active: r.active as boolean }));
+    return rows.map((r) => ({ id: r.id as string, name: r.name as string, categoryIds: (r.category_ids as string[]) ?? [], serviceIds: (r.service_ids as string[]) ?? [], schedule: (r.schedule as Staff["schedule"]) ?? null, color: (r.color as string) ?? "#1C1013", active: r.active as boolean }));
   }
-  async saveStaff(s: Staff) { await this.upsert("staff", { id: s.id, name: s.name, category_ids: s.categoryIds, active: s.active }); }
+  async saveStaff(s: Staff) { await this.upsert("staff", { id: s.id, name: s.name, category_ids: s.categoryIds, service_ids: s.serviceIds, schedule: s.schedule, color: s.color, active: s.active }); }
   async getHours(): Promise<OpeningHours[]> {
     const rows = await this.get<Row>("opening_hours?select=*&order=weekday");
     return rows.map((r) => ({ weekday: r.weekday as OpeningHours["weekday"], label: r.label as string, opens: (r.opens as string) ?? null, closes: (r.closes as string) ?? null }));
@@ -78,6 +78,20 @@ export class SupabaseStore implements Store {
   async getBooking(id: string) { return (await this.get<Row>(`bookings?select=*&id=eq.${encodeURIComponent(id)}`)).map(this.toBooking)[0] ?? null; }
   async getBookingByToken(token: string) { return (await this.get<Row>(`bookings?select=*&token=eq.${encodeURIComponent(token)}`)).map(this.toBooking)[0] ?? null; }
   async saveBooking(b: Booking) { await this.upsert("bookings", { id: b.id, token: b.token, service_id: b.serviceId, staff_id: b.staffId, client_id: b.clientId, starts_at: b.startsAt, ends_at: b.endsAt, status: b.status, source: b.source, note: b.note, created_at: b.createdAt }); }
+
+  // --- utilisateurs de la gestion
+  private toUser = (r: Row): User => ({ id: r.id as string, email: r.email as string, name: r.name as string, role: r.role as User["role"], passwordHash: r.password_hash as string, staffId: (r.staff_id as string) ?? null, active: r.active as boolean, createdAt: r.created_at as string });
+  async listUsers() { return (await this.get<Row>("users?select=*&order=created_at")).map(this.toUser); }
+  async getUser(id: string) { return (await this.get<Row>(`users?select=*&id=eq.${encodeURIComponent(id)}`)).map(this.toUser)[0] ?? null; }
+  async getUserByEmail(email: string) { return (await this.get<Row>(`users?select=*&email=eq.${encodeURIComponent(email.trim().toLowerCase())}`)).map(this.toUser)[0] ?? null; }
+  async saveUser(u: User) { await this.upsert("users", { id: u.id, email: u.email.toLowerCase(), name: u.name, role: u.role, password_hash: u.passwordHash, staff_id: u.staffId, active: u.active, created_at: u.createdAt }); }
+
+  // --- factures
+  private toInvoice = (r: Row): Invoice => ({ id: r.id as string, number: r.number as string, token: r.token as string, bookingId: (r.booking_id as string) ?? null, clientId: r.client_id as string, staffId: (r.staff_id as string) ?? null, issuedAt: new Date(r.issued_at as string).toISOString(), lines: (r.lines as Invoice["lines"]) ?? [], discountXof: (r.discount_xof as number) ?? 0, totalXof: r.total_xof as number, paidXof: (r.paid_xof as number) ?? 0, method: (r.method as Invoice["method"]) ?? null, paidAt: r.paid_at ? new Date(r.paid_at as string).toISOString() : null, status: r.status as Invoice["status"], note: (r.note as string) ?? "", sentAt: r.sent_at ? new Date(r.sent_at as string).toISOString() : null, createdBy: (r.created_by as string) ?? null });
+  async listInvoices() { return (await this.get<Row>("invoices?select=*&order=issued_at.desc")).map(this.toInvoice); }
+  async getInvoice(id: string) { return (await this.get<Row>(`invoices?select=*&id=eq.${encodeURIComponent(id)}`)).map(this.toInvoice)[0] ?? null; }
+  async getInvoiceByToken(token: string) { return (await this.get<Row>(`invoices?select=*&token=eq.${encodeURIComponent(token)}`)).map(this.toInvoice)[0] ?? null; }
+  async saveInvoice(i: Invoice) { await this.upsert("invoices", { id: i.id, number: i.number, token: i.token, booking_id: i.bookingId, client_id: i.clientId, staff_id: i.staffId, issued_at: i.issuedAt, lines: i.lines, discount_xof: i.discountXof, total_xof: i.totalXof, paid_xof: i.paidXof, method: i.method, paid_at: i.paidAt, status: i.status, note: i.note, sent_at: i.sentAt, created_by: i.createdBy }); }
 
   // --- notifications
   private toNotif = (r: Row): Notification => ({ id: r.id as string, bookingId: r.booking_id as string, type: r.type as Notification["type"], channel: r.channel as Notification["channel"], sendAt: new Date(r.send_at as string).toISOString(), status: r.status as NotificationStatus, sentAt: r.sent_at ? new Date(r.sent_at as string).toISOString() : null, error: (r.error as string) ?? null });
