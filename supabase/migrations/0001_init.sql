@@ -75,6 +75,69 @@ alter table clients enable row level security;
 alter table bookings enable row level security;
 alter table notifications enable row level security;
 -- Lecture publique du catalogue (affichage de la carte) : seulement les prestations actives.
+drop policy if exists "carte publique" on services;
+drop policy if exists "catégories publiques" on categories;
+drop policy if exists "horaires publics" on opening_hours;
 create policy "carte publique" on services for select using (active);
 create policy "catégories publiques" on categories for select using (true);
 create policy "horaires publics" on opening_hours for select using (true);
+
+-- ---------------------------------------------------------------------------
+-- Données de départ (carte d'exemple, sans prix : à compléter dans /admin > Prestations).
+-- Peut être relancé sans danger : les lignes existantes ne sont pas écrasées.
+insert into categories (id, slug, name, tagline, position) values
+  ('cat-coiffure', 'coiffure', 'Coiffure', 'Femme, homme, enfant', 1),
+  ('cat-spa', 'spa', 'Spa', 'Massage · soins du corps', 2),
+  ('cat-ongles', 'ongles', 'Ongles', 'Manucure · pédicure · gel', 3),
+  ('cat-esthetique', 'esthetique', 'Esthétique', 'Visage · épilation · maquillage', 4)
+on conflict (id) do nothing;
+
+insert into services (id, category_id, name, duration_min, price_xof, active) values
+  ('tresses-boheme', 'cat-coiffure', 'Tresses bohème', 240, null, true),
+  ('knotless', 'cat-coiffure', 'Knotless braids', 300, null, true),
+  ('nattes-collees', 'cat-coiffure', 'Nattes collées', 150, null, true),
+  ('vanilles', 'cat-coiffure', 'Vanilles et twists', 180, null, true),
+  ('tissage', 'cat-coiffure', 'Pose de tissage', 150, null, true),
+  ('perruque', 'cat-coiffure', 'Pose de perruque', 60, null, true),
+  ('brushing', 'cat-coiffure', 'Brushing', 45, null, true),
+  ('boucles', 'cat-coiffure', 'Boucles définies', 90, null, true),
+  ('soin-profond', 'cat-coiffure', 'Soin profond', 60, null, true),
+  ('coupe-femme', 'cat-coiffure', 'Coupe femme', 60, null, true),
+  ('coupe-homme', 'cat-coiffure', 'Coupe homme', 45, null, true),
+  ('coiffure-enfant', 'cat-coiffure', 'Coiffure enfant', 90, null, true),
+  ('massage-relaxant', 'cat-spa', 'Massage relaxant', 60, null, true),
+  ('massage-galets', 'cat-spa', 'Massage aux galets', 75, null, true),
+  ('massage-dos', 'cat-spa', 'Massage du dos', 30, null, true),
+  ('gommage', 'cat-spa', 'Gommage corps', 45, null, true),
+  ('enveloppement', 'cat-spa', 'Enveloppement hydratant', 60, null, true),
+  ('soin-pieds', 'cat-spa', 'Soin des pieds', 45, null, true),
+  ('manucure', 'cat-ongles', 'Manucure', 45, null, true),
+  ('pedicure', 'cat-ongles', 'Pédicure', 60, null, true),
+  ('vernis-semi', 'cat-ongles', 'Vernis semi-permanent', 60, null, true),
+  ('french', 'cat-ongles', 'French', 75, null, true),
+  ('pose-gel', 'cat-ongles', 'Pose gel', 90, null, true),
+  ('capsules', 'cat-ongles', 'Pose de capsules', 90, null, true),
+  ('nail-art', 'cat-ongles', 'Nail art', 30, null, true),
+  ('depose', 'cat-ongles', 'Dépose', 30, null, true),
+  ('soin-visage', 'cat-esthetique', 'Soin visage éclat', 60, null, true),
+  ('nettoyage-peau', 'cat-esthetique', 'Nettoyage de peau', 75, null, true),
+  ('epilation-sourcils', 'cat-esthetique', 'Épilation des sourcils', 20, null, true),
+  ('epilation-corps', 'cat-esthetique', 'Épilation jambes et corps', 45, null, true),
+  ('teinture-sourcils', 'cat-esthetique', 'Teinture des sourcils', 30, null, true),
+  ('rehaussement-cils', 'cat-esthetique', 'Rehaussement de cils', 60, null, true),
+  ('maquillage-jour', 'cat-esthetique', 'Maquillage de jour', 45, null, true),
+  ('maquillage-soiree', 'cat-esthetique', 'Maquillage de soirée', 60, null, true),
+  ('mise-en-beaute', 'cat-esthetique', 'Mise en beauté mariée', 120, null, true)
+on conflict (id) do nothing;
+
+insert into opening_hours (weekday, label, opens, closes) values
+  (1, 'Lundi', '09:00', '20:00'),
+  (2, 'Mardi', '09:00', '20:00'),
+  (3, 'Mercredi', '09:00', '20:00'),
+  (4, 'Jeudi', '09:00', '20:00'),
+  (5, 'Vendredi', '09:00', '20:00'),
+  (6, 'Samedi', '09:00', '20:00'),
+  (7, 'Dimanche', '15:00', '20:00')
+on conflict (weekday) do nothing;
+
+insert into settings (id, data) values (1, '{}'::jsonb) on conflict (id) do nothing;
