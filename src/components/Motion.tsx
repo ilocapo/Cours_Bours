@@ -48,9 +48,54 @@ export default function Motion() {
       });
 
       // L'arche se remplit par le bas, comme un verre : le même geste pour toutes les photos en arche.
+      const GROUPS = ".rituals__grid, .work__grid, .videos, .gallery-wide";
       q("[data-arch]").forEach((el) => {
+        if (el.closest(GROUPS)) return;
         gsap.fromTo(el, { clipPath: "inset(100% 0% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 1.3, ease: "power3.out",
           scrollTrigger: { trigger: el, start: "top 92%", once: true } });
+      });
+
+      // En série : les arches d'une même grille se remplissent l'une après l'autre.
+      q(GROUPS).forEach((grid) => {
+        const arches = Array.from(grid.querySelectorAll("[data-arch]"));
+        if (!arches.length) return;
+        gsap.fromTo(arches, { clipPath: "inset(100% 0% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 1.3, ease: "power3.out", stagger: 0.18,
+          scrollTrigger: { trigger: grid, start: "top 85%", once: true } });
+      });
+
+      // Ouverture : le ruban dérive lentement, le titre s'efface quand le panneau arrive.
+      q(".hero").forEach((hero) => {
+        const bg = hero.querySelector(".hero__bg");
+        const content = hero.querySelectorAll(".wrap");
+        if (bg) gsap.fromTo(bg, { yPercent: 0, scale: 1.08 }, { yPercent: 12, scale: 1, ease: "none",
+          scrollTrigger: { trigger: hero, start: "top top", end: "bottom top", scrub: true } });
+        gsap.to(content, { opacity: 0.15, y: -60, ease: "none",
+          scrollTrigger: { trigger: hero, start: "top top", end: "bottom 30%", scrub: true } });
+      });
+
+      // Vidéos : deux colonnes qui se croisent doucement.
+      q(".video").forEach((el, i) => {
+        gsap.fromTo(el, { y: i % 2 ? 60 : 0 }, { y: i % 2 ? -20 : -50, ease: "none",
+          scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true } });
+      });
+
+      // Carte : les filets se tracent, les noms montent, rangée après rangée.
+      q(".services").forEach((list) => {
+        const rows = Array.from(list.querySelectorAll<HTMLElement>(".services__row"));
+        gsap.fromTo(rows.map((r) => r.querySelectorAll(".services__name, .services__meta")), { y: 16, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.8, ease: "power3.out", stagger: 0.09,
+            scrollTrigger: { trigger: list, start: "top 88%", once: true } });
+        ScrollTrigger.create({ trigger: list, start: "top 88%", once: true, onEnter: () => {
+          rows.forEach((r, i) => { r.style.transitionDelay = `${i * 0.09}s`; r.classList.add("is-in"); });
+        } });
+      });
+
+      // Avis : la note se compte jusqu'à sa valeur.
+      q("[data-count]").forEach((el) => {
+        const end = parseFloat(el.dataset.count || "0");
+        const o = { v: 0 };
+        gsap.to(o, { v: end, duration: 1.6, ease: "power2.out", onUpdate: () => { el.textContent = o.v.toFixed(1).replace(".", ","); },
+          scrollTrigger: { trigger: el, start: "top 90%", once: true } });
       });
 
       // Apparitions douces.

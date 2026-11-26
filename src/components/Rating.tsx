@@ -5,7 +5,7 @@ export default function Rating() {
   const { score, count } = site.googleRating;
   return (
     <div className="rating" data-fade>
-      <div className="bod rating__score">{score.toString().replace(".", ",")}<span> / 5</span></div>
+      <div className="bod rating__score"><span data-count={score}>{score.toString().replace(".", ",")}</span><small> / 5</small></div>
       <div className="lb dim">{count} avis sur Google</div>
       <a className="link-under" href={site.mapsUrl} target="_blank" rel="noopener noreferrer">
         <span className="lb">Lire les avis</span>
