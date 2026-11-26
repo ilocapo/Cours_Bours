@@ -22,15 +22,16 @@ function Clip({ src, poster, label }: { src: string; poster?: string; label: str
 }
 
 // Section masquée tant qu'aucune vidéo n'est listée dans src/data/videos.ts.
-export default function VideoBand() {
-  if (videos.length === 0) return null;
+export default function VideoBand({ limit = 4 }: { limit?: number }) {
+  const list = videos.slice(0, limit);
+  if (list.length === 0) return null;
   return (
     <section className="sec sec--noir panel" id="video">
       <div className="wrap">
         <div className="lb dim" style={{ marginBottom: 18 }}>Le geste</div>
         <Title lines={["Prendre", "le temps."]} />
         <div className="videos" style={{ marginTop: 48 }}>
-          {videos.map((v) => <Clip key={v.src} {...v} />)}
+          {list.map((v) => <Clip key={v.src} {...v} />)}
         </div>
       </div>
     </section>

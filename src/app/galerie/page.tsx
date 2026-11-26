@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Arch from "@/components/Arch";
 import Footer from "@/components/Footer";
+import VideoBand from "@/components/VideoBand";
 import Title from "@/components/Title";
 import { photos } from "@/data/photos";
 import { site } from "@/data/site";
@@ -24,6 +25,7 @@ export default function Page() {
           </div>
         </div>
       </section>
+      <VideoBand limit={6} />
       <section className="sec sec--iv panel">
         <div className="wrap">
           <Title lines={["Le salon"]} className="block-title" />
