@@ -108,6 +108,8 @@ main { position: relative; }
 .hero { position: sticky; top: 0; z-index: 0; min-height: 100svh; display: flex; flex-direction: column; justify-content: center; padding: 120px 0 130px; background: var(--noir); isolation: isolate; overflow: hidden; }
 .hero__bg { position: absolute; inset: 0; z-index: -1; }
 .hero__bg img { object-fit: cover; }
+/* Voile doux derrière le titre pour que le ruban ne le traverse pas */
+.hero__bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(7, 6, 6, 0.82) 0%, rgba(7, 6, 6, 0.6) 55%, rgba(7, 6, 6, 0.2) 100%); }
 .hero__title { font-size: clamp(50px, 14vw, 64px); line-height: 0.98; }
 .hero__sub { margin-bottom: 22px; opacity: 0.75; }
 .hero__trait { width: 62%; max-width: 560px; margin-top: 22px; }
