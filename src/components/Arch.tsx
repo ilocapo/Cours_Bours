@@ -17,7 +17,7 @@ export default function Arch({
   priority, parallax = true, className = "",
 }: Props) {
   return (
-    <div className={`arch ${className}`.trim()} style={{ aspectRatio: ratio }} {...(parallax ? { "data-parallax": true } : {})}>
+    <div className={`arch ${className}`.trim()} style={{ aspectRatio: ratio }} data-arch {...(parallax ? { "data-parallax": true } : {})}>
       <Image src={src} alt={alt} fill sizes={sizes} priority={priority} style={{ objectFit: "cover", objectPosition: position }} />
     </div>
   );

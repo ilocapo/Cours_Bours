@@ -76,10 +76,16 @@ main { position: relative; }
 .arch img { transform-origin: center; }
 
 /* Boutons : arche, en plein */
-.btn { display: inline-flex; justify-content: center; align-items: center; gap: 10px; padding: 15px 28px 13px; border-radius: 999px 999px 0 0; transition: opacity 0.4s ease; }
-.btn:hover { opacity: 0.85; }
+.btn { position: relative; overflow: hidden; isolation: isolate; display: inline-flex; justify-content: center; align-items: center; gap: 10px; padding: 15px 28px 13px; border-radius: 999px 999px 0 0; transition: color 0.5s ease, box-shadow 0.5s ease; }
+/* Au survol, le bouton se remplit par le bas avec l'autre couleur : même geste que l'arche. */
+.btn::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: translateY(101%); transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.btn:hover::before, .btn:focus-visible::before { transform: none; }
 .btn--ivoire { background: var(--iv); color: var(--prune); }
+.btn--ivoire::before { background: var(--prune); }
+.btn--ivoire:hover { color: var(--iv); box-shadow: inset 0 0 0 1px var(--iv); }
 .btn--prune { background: var(--prune); color: var(--iv); }
+.btn--prune::before { background: var(--iv); }
+.btn--prune:hover { color: var(--prune); box-shadow: inset 0 0 0 1px var(--prune); }
 .btn--sm { padding: 12px 22px 10px; }
 
 /* Logo dans son arche ivoire */
@@ -211,6 +217,14 @@ html.motion .open__slogan { display: flex; position: absolute; inset: 0; z-index
 html.motion [data-title] .line-in { opacity: 0; }
 html.motion [data-fade] { opacity: 0; }
 html.motion [data-draw] { clip-path: inset(0 100% 0 0); }
+html.motion [data-arch] { clip-path: inset(100% 0 0 0); }
+
+/* Rideau : panneau à bord en dôme (page d'arrivée et changements de page) */
+.curtain { position: fixed; inset: -14vh 0; z-index: 90; visibility: hidden; display: flex; align-items: center; justify-content: center; background: var(--prune); border-radius: 50% 50% 50% 50% / 14vh 14vh 14vh 14vh; pointer-events: none; }
+html.intro .curtain { visibility: visible; }
+html.intro .curtain .logo { animation: arch-in 0.9s 0.15s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.curtain .logo img { width: 64px; height: auto; }
+@keyframes arch-in { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
 
 /* ≥ 768 : tablette */
 @media (min-width: 768px) {

@@ -15,7 +15,7 @@ function Clip({ src, poster, label }: { src: string; poster?: string; label: str
     return () => io.disconnect();
   }, []);
   return (
-    <figure className="video" data-fade style={{ margin: 0 }}>
+    <figure className="video" data-arch style={{ margin: 0 }}>
       <video ref={ref} src={src} poster={poster} muted loop playsInline preload="none" aria-label={label} />
     </figure>
   );

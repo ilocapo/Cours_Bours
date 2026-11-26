@@ -5,6 +5,7 @@ import "@fontsource/jost/latin-400.css";
 import Header from "@/components/Header";
 import StickyBar from "@/components/StickyBar";
 import Motion from "@/components/Motion";
+import PageTransition from "@/components/PageTransition";
 import { site } from "@/data/site";
 import "./globals.css";
 
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: "#1C1013", width: "device-width", initialScale: 1 };
 
 // Pose la classe « motion » avant le premier rendu, sauf si l'utilisatrice réduit les animations.
-const boot = `(function(){var d=document.documentElement;if(!matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('motion')}})()`;
+const boot = `(function(){var d=document.documentElement;if(!matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('motion');var seen=0;try{seen=sessionStorage.getItem('zst-intro')}catch(e){}if(!seen&&location.pathname==='/'){d.classList.add('intro');setTimeout(function(){d.classList.remove('intro')},6000)}}})()`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
         <main id="main">{children}</main>
         <StickyBar />
+        <PageTransition />
         <Motion />
       </body>
     </html>

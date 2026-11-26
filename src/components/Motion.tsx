@@ -33,6 +33,8 @@ export default function Motion() {
   useEffect(() => {
     const mm = gsap.matchMedia();
     mm.add("(prefers-reduced-motion: no-preference)", () => {
+      // Pendant l'ouverture (rideau), l'ouverture de l'accueil attend.
+      const wait = document.documentElement.classList.contains("intro") ? 1.9 : 0;
       const q = <T extends Element = HTMLElement>(s: string) => gsap.utils.toArray<T>(s);
 
       // Titres : ligne par ligne, glissement léger + fondu.
@@ -40,9 +42,15 @@ export default function Motion() {
         gsap.fromTo(
           el.querySelectorAll(".line-in"),
           { yPercent: 105, opacity: 0 },
-          { yPercent: 0, opacity: 1, duration: 0.9, ease: "power3.out", stagger: 0.12,
+          { yPercent: 0, opacity: 1, duration: 0.9, ease: "power3.out", stagger: 0.12, delay: el.closest(".hero") ? wait : 0,
             scrollTrigger: { trigger: el, start: "top 90%", once: true } },
         );
+      });
+
+      // L'arche se remplit par le bas, comme un verre : le même geste pour toutes les photos en arche.
+      q("[data-arch]").forEach((el) => {
+        gsap.fromTo(el, { clipPath: "inset(100% 0% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 1.3, ease: "power3.out",
+          scrollTrigger: { trigger: el, start: "top 92%", once: true } });
       });
 
       // Apparitions douces.
