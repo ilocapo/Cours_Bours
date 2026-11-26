@@ -14,7 +14,6 @@ export default function CategorySlider({ tone = "iv" }: { tone?: "iv" | "prune" 
   const track = useRef<HTMLDivElement>(null);
   const [i, setI] = useState(0);
   const [open, setOpen] = useState<string | null>(null);
-  const arrow = tone === "iv" ? "/img/traits/fleche-prune.svg" : "/img/traits/fleche.svg";
 
   useEffect(() => {
     const el = track.current;
@@ -90,17 +89,6 @@ export default function CategorySlider({ tone = "iv" }: { tone?: "iv" | "prune" 
         })}
       </div>
 
-      <div className="slider__nav">
-        <button type="button" className="quotes__btn quotes__btn--prev" onClick={() => go(i - 1)} aria-label="Univers précédent">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={arrow} alt="" width={44} height={16} />
-        </button>
-        <span className="lb" aria-hidden="true">{i + 1} / {categories.length}</span>
-        <button type="button" className="quotes__btn" onClick={() => go(i + 1)} aria-label="Univers suivant">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={arrow} alt="" width={44} height={16} />
-        </button>
-      </div>
     </div>
   );
 }

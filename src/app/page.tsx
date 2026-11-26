@@ -1,4 +1,3 @@
-import Link from "next/link";
 import Arch from "@/components/Arch";
 import Band from "@/components/Band";
 import BookingButton from "@/components/BookingButton";
@@ -6,6 +5,7 @@ import CategorySlider from "@/components/CategorySlider";
 import Chrome from "@/components/Chrome";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
+import GalleryMore from "@/components/GalleryMore";
 import Pastille from "@/components/Pastille";
 import Quotes from "@/components/Quotes";
 import Title from "@/components/Title";
@@ -66,15 +66,15 @@ export default function Home() {
       <section className="sec sec--prune work" id="travail">
         <div className="wrap">
           <Title lines={["Fait main,", "de près."]} />
-          <div className="work__grid work__grid--mix">
+          <div className="work__grid work__grid--even">
+            <Arch frame="pleine" src={photos.boucles.src} alt={photos.boucles.alt} ratio="3 / 4" sizes={sizesGal} />
             <Arch frame="pleine" video={videos[0]} src="" alt="" ratio="3 / 4" parallax={false} />
-            <Arch frame="filet" src={photos.boucles.src} alt={photos.boucles.alt} ratio="3 / 4" sizes={sizesGal} />
-            <Arch frame="legende" src={photos.bouclesDos.src} alt={photos.bouclesDos.alt} position={photos.bouclesDos.position} ratio="3 / 4" caption="tressé main." sizes={sizesGal} />
             <Arch frame="pleine" video={videos[1]} src="" alt="" ratio="3 / 4" parallax={false} />
+            <Arch frame="pleine" src={photos.bouclesDos.src} alt={photos.bouclesDos.alt} position={photos.bouclesDos.position} ratio="3 / 4" sizes={sizesGal} />
           </div>
           <div className="more more--split">
             <a className="lb link-line" href={site.instagramUrl} target="_blank" rel="noopener noreferrer">Voir sur Instagram</a>
-            <Link className="lb link-plain" href="/galerie">Toute la galerie</Link>
+            <GalleryMore />
           </div>
         </div>
       </section>
