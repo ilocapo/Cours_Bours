@@ -38,6 +38,7 @@ export default function Footer() {
               )}
             </div>
           </div>
+          <p className="lb lb--s dim" data-fade>Paiement : {site.payments.join(" · ")}</p>
           <div data-fade style={{ display: "flex", gap: 22, alignItems: "center", flexWrap: "wrap" }}><BookingButton variant="ivoire">Réserver</BookingButton><a className="lb" href={site.mapsUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline", textUnderlineOffset: 5 }}>Itinéraire</a></div>
         </div>
       </div>

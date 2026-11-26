@@ -4,6 +4,7 @@ import Arch from "@/components/Arch";
 import BookingButton from "@/components/BookingButton";
 import Footer from "@/components/Footer";
 import Faq from "@/components/Faq";
+import VideoBand from "@/components/VideoBand";
 import Rating from "@/components/Rating";
 import Picto from "@/components/Picto";
 import ServiceList from "@/components/ServiceList";
@@ -121,6 +122,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <VideoBand />
 
       {/* Avis + questions */}
       <section className="sec sec--prune panel" id="avis">

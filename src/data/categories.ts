@@ -26,7 +26,7 @@ export const categories: Category[] = [
     id: "cat-spa",
     slug: "spa",
     name: "Spa",
-    tagline: "Visage · corps",
+    tagline: "Visage · corps · massage",
     intro:
       "Une cabine au calme, des gestes lents. Le temps de souffler avant le reste de la journée.",
     image: "/img/photos/presta-visage.jpg",
