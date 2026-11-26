@@ -11,7 +11,7 @@ export default function Page() {
       <section className="sec sec--prune page-hero">
         <div className="wrap" style={{ maxWidth: 860 }}>
           <div className="lb dim">Questions</div>
-          <Title as="h1" lines={["Bon à savoir"]} />
+          <Title as="h1" initial lines={["Bon à savoir"]} />
           <Faq />
         </div>
       </section>

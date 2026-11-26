@@ -51,6 +51,7 @@ h1, h2, h3 { margin: 0; font-weight: 400; }
 .bod, .title { font-family: var(--f-title); font-weight: 400; letter-spacing: -0.02em; font-optical-sizing: auto; font-variation-settings: "opsz" 96; }
 .bod { font-variation-settings: normal; }
 .title { font-variation-settings: normal; }
+.ini { font-style: italic; font-family: var(--f-title); font-variation-settings: normal; margin-right: 0.01em; }
 .pl { font-family: "ZST Plume", var(--f-title); font-size: 1.45em; line-height: 0; margin-right: -0.03em; }
 .lb { font-family: var(--f-text); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; font-weight: 400; line-height: 1.4; }
 .lb--s { font-size: 9px; }
@@ -127,20 +128,14 @@ main { position: relative; }
 .scroll .lb { font-size: 9px; }
 
 /* 2. Le salon : l'arche qui s'ouvre */
-.open { background: var(--prune); }
-.open.panel { padding: 0; }
-.open__intro { padding-top: 40px; padding-bottom: 36px; }
+.open { background: var(--prune); overflow: clip; }
+.open.panel { padding: var(--r) 0 calc(72px + var(--r)); }
+.open__intro { padding-top: 56px; padding-bottom: 44px; }
 .open__intro .title { font-size: clamp(34px, 9vw, 40px); margin: 18px 0 20px; }
 .open__intro p { opacity: 0.85; max-width: 46ch; line-height: 1.75; }
-.open__arch { margin-inline: auto; width: min(90vw, 560px); height: 62svh; min-height: 380px; }
-.open__arch .open__img { position: absolute; inset: 0; }
-.open__veil, .open__slogan { display: none; }
-html.motion .open__pin { position: relative; height: 100svh; overflow: hidden; }
-html.motion .open__intro { position: absolute; inset: 0 0 auto 0; padding-top: 104px; }
-html.motion .open__arch { position: absolute; left: 0; right: 0; bottom: 0; width: min(84vw, 520px); height: 50svh; min-height: 0; }
-html.motion .open__veil { display: block; position: absolute; inset: 0; background: linear-gradient(to top, rgba(7, 6, 6, 0.65), rgba(7, 6, 6, 0.1) 60%); opacity: 0; z-index: 1; }
-html.motion .open__slogan { display: flex; position: absolute; inset: 0; z-index: 2; opacity: 0; align-items: flex-end; justify-content: flex-start; text-align: left; padding: 0 var(--pad) 12svh; }
-.open__slogan .title { font-size: clamp(44px, 12vw, 120px); line-height: 1; }
+/* L'arche finit à ~90 % de la largeur ; elle part plus petite et grandit au défilement (transform, sans saut de mise en page). */
+.open__stage { display: flex; justify-content: center; padding-inline: 0; }
+.open__arch { width: 90vw; max-width: 1180px; aspect-ratio: 4 / 5; transform-origin: 50% 100%; }
 
 /* 3. Trois rituels */
 .rituals__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
@@ -248,7 +243,7 @@ html.intro .curtain .logo { animation: arch-in 0.9s 0.15s cubic-bezier(0.2, 0.7,
   .hero__title { font-size: clamp(64px, 9vw, 104px); }
   .open__intro .title { font-size: clamp(40px, 5vw, 56px); }
   .open__intro { max-width: 640px; }
-  html.motion .open__arch { width: min(52vw, 520px); height: 54svh; }
+  .open__arch { aspect-ratio: 1 / 1; }
   .rituals__grid { gap: 40px; max-width: 1100px; margin-inline: auto; }
   .ritual__name { font-size: 28px; }
   .ritual__tag { font-size: 10px; }
@@ -280,7 +275,7 @@ html.intro .curtain .logo { animation: arch-in 0.9s 0.15s cubic-bezier(0.2, 0.7,
   .hero { padding-block: 140px; }
   .hero__trait { width: 40%; }
   .open__intro .title { font-size: 64px; }
-  html.motion .open__arch { width: min(34vw, 560px); height: 56svh; }
+  .open__arch { width: 90vw; aspect-ratio: 1.6 / 1; }
   .rituals .title, .work .title, .menu .title { font-size: 64px; }
   .rituals__grid { max-width: 1240px; gap: 40px; }
   .menu__grid { grid-template-columns: 1fr 380px; max-width: 1200px; }

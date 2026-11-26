@@ -17,7 +17,7 @@ export default function Carte() {
         <div className="wrap page-hero__grid">
           <div>
             <div className="lb dim">Coiffure · Spa · Ongles</div>
-            <Title as="h1" lines={["La carte", "des rituels"]} />
+            <Title as="h1" initial lines={["La carte", "des rituels"]} />
             <p data-fade>Carte d&apos;exemple. Les tarifs et durées définitifs arrivent bientôt.</p>
           </div>
           <Arch src={photos.bohemeProfilSerre.src} alt={photos.bohemeProfilSerre.alt} ratio="3 / 4" priority sizes="(min-width: 768px) 40vw, 90vw" />

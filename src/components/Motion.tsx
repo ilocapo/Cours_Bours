@@ -130,26 +130,15 @@ export default function Motion() {
           scrollTrigger: { trigger: el, start: "top 105%", end: "bottom 85%", scrub: true } });
       });
 
-      // L'arche qui s'ouvre.
+      // Le salon : l'arche grandit doucement jusqu'à ~90 % de la largeur (échelle, sans pin ni zoom).
       q("[data-open]").forEach((root) => {
         const arch = root.querySelector<HTMLElement>(".open__arch");
         const img = root.querySelector<HTMLElement>(".open__arch img");
-        const intro = root.querySelector<HTMLElement>(".open__intro");
-        const veil = root.querySelector<HTMLElement>(".open__veil");
-        const slogan = root.querySelector<HTMLElement>(".open__slogan");
-        if (!arch || !intro) return;
-        const tl = gsap.timeline({
-          defaults: { ease: "none" },
-          scrollTrigger: { trigger: root, start: "top top", end: "+=130%", pin: root.querySelector(".open__pin") ?? true, scrub: 0.6, invalidateOnRefresh: true },
-        });
-        tl.to(intro, { opacity: 0, y: -50, duration: 0.3 }, 0)
-          .fromTo(arch,
-            { width: () => arch.offsetWidth, height: () => arch.offsetHeight, borderTopLeftRadius: () => arch.offsetWidth / 2, borderTopRightRadius: () => arch.offsetWidth / 2 },
-            { width: () => window.innerWidth, height: () => root.clientHeight, borderTopLeftRadius: 0, borderTopRightRadius: 0, duration: 0.75 }, 0.05)
-          .fromTo(img, { scale: 1.15 }, { scale: 1, duration: 0.75 }, 0.05)
-          .to(veil, { opacity: 1, duration: 0.2 }, 0.65)
-          .fromTo(slogan, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.25 }, 0.75)
-          .to({}, { duration: 0.15 });
+        if (!arch) return;
+        gsap.fromTo(arch, { scale: 0.68 }, { scale: 1, ease: "none",
+          scrollTrigger: { trigger: arch, start: "top 92%", end: "top 28%", scrub: 0.6 } });
+        if (img) gsap.fromTo(img, { scale: 1.12 }, { scale: 1, ease: "none",
+          scrollTrigger: { trigger: arch, start: "top 92%", end: "top 28%", scrub: 0.6 } });
       });
     });
 

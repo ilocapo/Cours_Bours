@@ -12,7 +12,7 @@ export default function Reserver() {
     <section className="sec sec--prune center-page">
       <div className="wrap stack" style={{ maxWidth: 720 }}>
         <div className="lb dim">Réservation</div>
-        <Title as="h1" lines={["La réservation", "en ligne arrive."]} />
+        <Title as="h1" initial lines={["La réservation", "en ligne arrive."]} />
         <p data-fade>
           En attendant, réservez par WhatsApp ou par téléphone au {site.phone}. Vous pouvez aussi nous écrire sur Instagram :{" "}
           <a href={site.instagramUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline", textUnderlineOffset: 4 }}>

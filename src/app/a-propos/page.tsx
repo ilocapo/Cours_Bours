@@ -16,7 +16,7 @@ export default function Page() {
         <div className="wrap page-hero__grid">
           <div>
             <div className="lb dim">À propos</div>
-            <Title as="h1" lines={["Là où commence", "la beauté."]} />
+            <Title as="h1" initial lines={["Là où commence", "la beauté."]} />
             <p data-fade>ZST Beauty Center est un salon de beauté à Fidjrossè, à Cotonou. Coiffure pour femmes, hommes et enfants, soins du visage et du corps, massages, manucure et pédicure : trois univers sous un même toit.</p>
             <p data-fade style={{ marginTop: 14 }}>Chaque rituel se prépare avec vous, sans précipitation.</p>
             <div data-fade><BookingButton variant="ivoire">Réserver</BookingButton></div>

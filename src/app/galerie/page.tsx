@@ -17,7 +17,7 @@ export default function Page() {
       <section className="sec sec--prune page-hero">
         <div className="wrap">
           <div className="lb dim">Le travail et le salon</div>
-          <Title as="h1" lines={["Galerie"]} />
+          <Title as="h1" initial lines={["Galerie"]} />
           <div className="work__grid" style={{ marginTop: 40 }}>
             {prestations.map((p) => (
               <Arch key={p.src} src={p.src} alt={p.alt} position={p.position} ratio="3 / 4.2" sizes="(min-width: 768px) 25vw, 45vw" />

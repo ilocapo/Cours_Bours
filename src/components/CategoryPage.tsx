@@ -27,7 +27,7 @@ export default function CategoryPage({ slug }: { slug: "coiffure" | "spa" | "ong
             <div className="lb dim" style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <Picto name={cat.picto} size={22} /> {cat.tagline}
             </div>
-            <Title as="h1" lines={[cat.name]} />
+            <Title as="h1" initial lines={[cat.name]} />
             <p data-fade>{cat.intro}</p>
             <div data-fade><BookingButton variant="ivoire">Réserver</BookingButton></div>
           </div>

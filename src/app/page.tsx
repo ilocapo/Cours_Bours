@@ -26,7 +26,7 @@ export default function Home() {
         </div>
         <div className="wrap">
           <div className="lb hero__sub">Coiffure · Spa · Ongles</div>
-          <Title as="h1" className="hero__title" lines={["Là où", "commence", "la beauté."]} />
+          <Title as="h1" className="hero__title" initial lines={["Là où", "commence", "la beauté."]} />
           <Trait name="souligne" className="hero__trait" />
         </div>
         <div className="hero__foot">
@@ -37,22 +37,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. Le salon : l'arche qui s'ouvre */}
+      {/* 2. Le salon : l'arche s'agrandit doucement au défilement */}
       <section className="open panel" id="salon" data-open>
-        <div className="open__pin">
-          <div className="open__intro wrap">
-            <div className="lb dim">Le salon</div>
-            <Title lines={["Un lieu où l'on", "prend le temps."]} />
-            <p>Marbre, lumière douce et mains expertes : trois rituels sous un même toit, pour elle comme pour lui.</p>
-          </div>
+        <div className="wrap open__intro">
+          <div className="lb dim">Le salon</div>
+          <Title initial lines={["Un lieu où l'on", "prend le temps."]} />
+          <p>Marbre, lumière douce et mains expertes : trois rituels sous un même toit, pour elle comme pour lui.</p>
+        </div>
+        <div className="wrap open__stage">
           <div className="open__arch arch">
-            <div className="open__img">
-              <Image src={photos.salonVue.src} alt={photos.salonVue.alt} fill sizes="100vw" style={{ objectFit: "cover", objectPosition: "50% 38%" }} />
-            </div>
-            <div className="open__veil" />
-            <div className="open__slogan">
-              <p className="bod title" style={{ margin: 0 }}>Là où commence la beauté.</p>
-            </div>
+            <Image src={photos.salonVue.src} alt={photos.salonVue.alt} fill sizes="(min-width: 1024px) 90vw, 92vw" style={{ objectFit: "cover", objectPosition: "50% 55%" }} />
           </div>
         </div>
       </section>
@@ -67,7 +61,7 @@ export default function Home() {
             <span className="lb">Trois rituels</span>
             <Picto name="goutte" tone="prune" size={22} />
           </div>
-          <Title lines={["Trois mains,", "une maison."]} />
+          <Title initial lines={["Trois mains,", "une maison."]} />
           <div className="rituals__grid" data-fade>
             {categories.map((c) => (
               <Link href={`/${c.slug}`} className="ritual" key={c.id}>
@@ -87,7 +81,7 @@ export default function Home() {
       {/* 4. La carte des rituels */}
       <section className="sec sec--prune menu panel" id="carte">
         <div className="wrap">
-          <Title lines={["La carte", "des rituels"]} />
+          <Title initial lines={["La carte", "des rituels"]} />
           <div className="menu__grid">
             <div className="menu__lists">
               {categories.map((c) => (
@@ -110,7 +104,7 @@ export default function Home() {
             <span className="lb">Le travail</span>
             <a className="lb dim" href={site.instagramUrl} target="_blank" rel="noopener noreferrer">@{site.instagram}</a>
           </div>
-          <Title lines={["Fait main,", "de près."]} />
+          <Title initial lines={["Fait main,", "de près."]} />
           <div className="work__grid">
             {work.map((p) => (
               <Arch key={p.src} src={p.src} alt={p.alt} position={p.position} ratio="3 / 4.2" sizes="(min-width: 768px) 25vw, 45vw" />
