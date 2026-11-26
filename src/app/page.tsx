@@ -55,7 +55,7 @@ export default function Home() {
         <div className="wrap">
           <Chrome left="02 · Le salon" right="Marbre · Lumière douce" />
           <Band tone="prune" size="lg" video={salonVideo}>
-            <Title initial lines={["Un lieu où l'on", "prend le temps."]} />
+            <Title lines={["Un lieu où l'on", "prend le temps."]} />
             <p>Marbre, lumière douce et mains expertes : trois rituels sous un même toit, pour elle comme pour lui.</p>
           </Band>
         </div>
