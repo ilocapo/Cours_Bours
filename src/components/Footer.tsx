@@ -18,8 +18,9 @@ export default function Footer() {
           <div className="foot__cols" data-fade>
             <div>
               <div className="lb lb--s dim">Adresse</div>
-              <p>{site.address ?? "À compléter"}</p>
+              <p>{site.address ?? "À compléter"}{site.addressNote && <><br /><span className="dim">{site.addressNote}</span></>}</p>
               {site.phone && <p><a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a></p>}
+              {site.whatsapp && <p><a href={`https://wa.me/${site.whatsapp}`} target="_blank" rel="noopener noreferrer">WhatsApp</a></p>}
             </div>
             <div>
               <div className="lb lb--s dim">Horaires</div>

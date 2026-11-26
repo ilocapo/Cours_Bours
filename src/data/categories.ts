@@ -15,7 +15,7 @@ export const categories: Category[] = [
     id: "cat-coiffure",
     slug: "coiffure",
     name: "Coiffure",
-    tagline: "Femme & homme",
+    tagline: "Femme, homme, enfant",
     intro:
       "Tresses, nattes, boucles et soins. Chaque coiffure se prépare avec vous, sans précipitation.",
     image: "/img/photos/presta-nattes.jpg",
@@ -37,7 +37,7 @@ export const categories: Category[] = [
     id: "cat-ongles",
     slug: "ongles",
     name: "Ongles",
-    tagline: "Manucure · gel",
+    tagline: "Manucure · pédicure",
     intro:
       "Des mains soignées, un geste précis. Manucure, gel et vernis, dans un décor de marbre.",
     image: "/img/photos/presta-ongles2m.jpg",

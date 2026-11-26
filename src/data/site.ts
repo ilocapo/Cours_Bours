@@ -4,8 +4,10 @@ export const site = {
   slogan: "Là où commence la beauté.",
   instagram: "zst_beauty_center",
   instagramUrl: "https://www.instagram.com/zst_beauty_center/",
-  address: null as string | null,
-  phone: null as string | null,
-  email: null as string | null,
+  address: "Fidjrossè, Cotonou, Bénin" as string | null,
+  addressNote: "4ème rue, en face de l'église Saint François d'Assise" as string | null,
+  phone: "+229 67 70 35 35" as string | null,
+  whatsapp: "22967703535" as string | null,
+  email: "contact@zstbeautycenter.com" as string | null,
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com",
 };

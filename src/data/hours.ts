@@ -1,4 +1,4 @@
-// Même forme que la future table `opening_hours`. À compléter avec le salon.
+// Même forme que la future table `opening_hours`. Source : page Facebook du salon.
 export type OpeningHours = {
   weekday: 1 | 2 | 3 | 4 | 5 | 6 | 7; // 1 = lundi
   label: string;
@@ -7,13 +7,13 @@ export type OpeningHours = {
 };
 
 export const openingHours: OpeningHours[] = [
-  { weekday: 1, label: "Lundi", opens: null, closes: null },
-  { weekday: 2, label: "Mardi", opens: null, closes: null },
-  { weekday: 3, label: "Mercredi", opens: null, closes: null },
-  { weekday: 4, label: "Jeudi", opens: null, closes: null },
-  { weekday: 5, label: "Vendredi", opens: null, closes: null },
-  { weekday: 6, label: "Samedi", opens: null, closes: null },
-  { weekday: 7, label: "Dimanche", opens: null, closes: null },
+  { weekday: 1, label: "Lundi", opens: "09:00", closes: "20:00" },
+  { weekday: 2, label: "Mardi", opens: "09:00", closes: "20:00" },
+  { weekday: 3, label: "Mercredi", opens: "09:00", closes: "20:00" },
+  { weekday: 4, label: "Jeudi", opens: "09:00", closes: "20:00" },
+  { weekday: 5, label: "Vendredi", opens: "09:00", closes: "20:00" },
+  { weekday: 6, label: "Samedi", opens: "09:00", closes: "20:00" },
+  { weekday: 7, label: "Dimanche", opens: "15:00", closes: "20:00" },
 ];
 
 export const hoursDefined = openingHours.some((h) => h.opens && h.closes);

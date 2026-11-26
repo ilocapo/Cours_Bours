@@ -19,6 +19,8 @@ export const services: Service[] = [
   { id: "soin-visage", categoryId: "cat-spa", name: "Soin visage éclat", durationMin: 60, priceCents: null, active: true },
   { id: "rituel-galets", categoryId: "cat-spa", name: "Rituel corps aux galets", durationMin: 75, priceCents: null, active: true },
   { id: "gommage", categoryId: "cat-spa", name: "Gommage doux", durationMin: 45, priceCents: null, active: true },
+  { id: "massage", categoryId: "cat-spa", name: "Séance de massage", durationMin: 60, priceCents: null, active: true },
+  { id: "pedicure", categoryId: "cat-ongles", name: "Pédicure", durationMin: 60, priceCents: null, active: true },
   { id: "pose-gel", categoryId: "cat-ongles", name: "Pose gel", durationMin: 75, priceCents: null, active: true },
   { id: "manucure", categoryId: "cat-ongles", name: "Manucure", durationMin: 45, priceCents: null, active: true },
   { id: "vernis-semi", categoryId: "cat-ongles", name: "Vernis semi-permanent", durationMin: 60, priceCents: null, active: true },
