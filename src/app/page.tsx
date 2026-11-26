@@ -3,6 +3,8 @@ import Link from "next/link";
 import Arch from "@/components/Arch";
 import BookingButton from "@/components/BookingButton";
 import Footer from "@/components/Footer";
+import Faq from "@/components/Faq";
+import Rating from "@/components/Rating";
 import Picto from "@/components/Picto";
 import ServiceList from "@/components/ServiceList";
 import Title from "@/components/Title";
@@ -110,10 +112,27 @@ export default function Home() {
               <Arch key={p.src} src={p.src} alt={p.alt} position={p.position} ratio="3 / 4.2" sizes="(min-width: 768px) 25vw, 45vw" />
             ))}
           </div>
-          <a className="link-under" href={site.instagramUrl} target="_blank" rel="noopener noreferrer">
-            <span className="lb">Voir sur Instagram</span>
-            <Trait name="souligne" tone="prune" />
-          </a>
+          <div style={{ display: "flex", gap: 34, flexWrap: "wrap" }}>
+            <Link className="link-under" href="/galerie"><span className="lb">Toute la galerie</span><Trait name="souligne" tone="prune" /></Link>
+            <a className="link-under" href={site.instagramUrl} target="_blank" rel="noopener noreferrer">
+              <span className="lb">Voir sur Instagram</span>
+              <Trait name="souligne" tone="prune" />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Avis + questions */}
+      <section className="sec sec--prune panel" id="avis">
+        <div className="wrap faq-grid">
+          <div>
+            <div className="lb dim" style={{ marginBottom: 18 }}>Elles en parlent</div>
+            <Rating />
+          </div>
+          <div>
+            <Title lines={["Bon à savoir"]} className="block-title" />
+            <Faq />
+          </div>
         </div>
       </section>
 

@@ -10,4 +10,6 @@ export const site = {
   whatsapp: "22967703535" as string | null,
   email: "contact@zstbeautycenter.com" as string | null,
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com",
+  mapsUrl: "https://www.google.com/maps/search/?api=1&query=ZST+Beauty+Center+Fidjross%C3%A8+Cotonou",
+  googleRating: { score: 4.1, count: 30 },
 };

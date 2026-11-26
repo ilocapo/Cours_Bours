@@ -38,7 +38,7 @@ export default function Footer() {
               )}
             </div>
           </div>
-          <div data-fade><BookingButton variant="ivoire">Réserver</BookingButton></div>
+          <div data-fade style={{ display: "flex", gap: 22, alignItems: "center", flexWrap: "wrap" }}><BookingButton variant="ivoire">Réserver</BookingButton><a className="lb" href={site.mapsUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline", textUnderlineOffset: 5 }}>Itinéraire</a></div>
         </div>
       </div>
 

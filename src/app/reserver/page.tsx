@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Title from "@/components/Title";
+import BookingButton from "@/components/BookingButton";
 import { site } from "@/data/site";
 
 export const metadata: Metadata = { title: "Réserver", description: "Réserver un rituel chez ZST Beauty Center." };
@@ -13,13 +14,16 @@ export default function Reserver() {
         <div className="lb dim">Réservation</div>
         <Title as="h1" lines={["La réservation", "en ligne arrive."]} />
         <p data-fade>
-          En attendant, vous pouvez nous écrire sur Instagram :{" "}
+          En attendant, réservez par WhatsApp ou par téléphone au {site.phone}. Vous pouvez aussi nous écrire sur Instagram :{" "}
           <a href={site.instagramUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline", textUnderlineOffset: 4 }}>
             @{site.instagram}
           </a>
           .
         </p>
-        <div><Link className="btn btn--ivoire lb" href="/">Retour à l&apos;accueil</Link></div>
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+          <BookingButton variant="ivoire">Réserver sur WhatsApp</BookingButton>
+          <Link className="btn btn--prune lb" style={{ border: "1px solid rgba(242,234,223,.4)" }} href="/">Retour</Link>
+        </div>
       </div>
     </section>
   );

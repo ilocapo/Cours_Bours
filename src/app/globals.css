@@ -175,6 +175,21 @@ html.motion .open__slogan { display: flex; position: absolute; inset: 0; z-index
 .foot__links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 22px; }
 .foot__links a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
 
+/* Avis, questions, galerie */
+.faq-grid { display: grid; gap: 56px; }
+.rating { display: grid; gap: 8px; justify-items: start; }
+.rating__score { font-size: clamp(64px, 16vw, 110px); line-height: 1; }
+.rating__score span { font-size: 0.3em; opacity: 0.6; }
+.rating__list { display: grid; gap: 24px; margin-top: 24px; }
+.faq__item { border-bottom: 1px solid rgba(242, 234, 223, 0.22); padding: 16px 0; }
+.faq__q { cursor: pointer; font-size: 20px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+.faq__q::-webkit-details-marker { display: none; }
+.faq__q::after { content: "+"; font-family: var(--f-text); font-weight: 300; }
+.faq__item[open] .faq__q::after { content: "–"; }
+.faq__a { margin-top: 10px; opacity: 0.85; max-width: 56ch; }
+.gallery-wide { display: grid; gap: 14px; }
+.gallery-wide .arch { border-radius: 999px 999px 0 0; }
+
 /* Pages internes */
 .page-hero { padding-top: 130px; padding-bottom: 56px; }
 .page-hero__grid { display: grid; gap: 34px; }
@@ -222,6 +237,9 @@ html.motion [data-draw] { clip-path: inset(0 100% 0 0); }
   .foot__grid { grid-template-columns: 0.8fr 1fr; gap: 64px; align-items: end; }
   .page-hero__grid { grid-template-columns: 1.1fr 0.9fr; gap: 64px; align-items: end; }
   .cards { grid-template-columns: repeat(2, 1fr); gap: 56px 64px; }
+  .faq-grid { grid-template-columns: 0.7fr 1.3fr; gap: 80px; }
+  .gallery-wide { grid-template-columns: 1fr 1fr; gap: 24px; }
+  .faq__q { font-size: 24px; }
 }
 
 /* ≥ 1280 : bureau */

@@ -36,7 +36,7 @@ export default function Header() {
         </Link>
 
         <nav className="head__nav" aria-label="Navigation principale">
-          {nav.filter((n) => n.label !== "Le salon").map((n) => (
+          {nav.map((n) => (
             <Link key={n.href} href={n.href} className="lb head__link">{n.label}</Link>
           ))}
           <a className="btn btn--ivoire btn--sm lb" {...book}>Réserver</a>
