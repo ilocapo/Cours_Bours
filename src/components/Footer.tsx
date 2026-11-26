@@ -48,6 +48,7 @@ export default function Footer() {
         <div className="lb lb--s dim foot__links">
           <span>Beauty Center</span>
           <a href={site.instagramUrl} target="_blank" rel="noopener noreferrer">Instagram</a>
+          <a href={site.facebookUrl} target="_blank" rel="noopener noreferrer">Facebook</a>
           {site.email ? <a href={`mailto:${site.email}`}>Contact</a> : <span>Contact à venir</span>}
           <Link href="/mentions-legales">Mentions légales</Link>
           <Link href="/confidentialite">Confidentialité</Link>
