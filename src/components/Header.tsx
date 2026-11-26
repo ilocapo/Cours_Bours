@@ -14,7 +14,7 @@ const menuPhoto: Record<string, { src: string; alt: string; position?: string }>
   "/coiffure": photos.nattes,
   "/spa": photos.visage,
   "/ongles": photos.ongles2,
-  "/carte": photos.tressesIvoire,
+  "/carte": photos.bohemeDos,
   "/galerie": photos.boucles,
   "/a-propos": photos.salonVue,
   "/faq": photos.salonVue,

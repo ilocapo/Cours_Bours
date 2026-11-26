@@ -19,7 +19,7 @@ export const categories: Category[] = [
     intro:
       "Tresses, nattes, boucles et soins. Chaque coiffure se prépare avec vous, sans précipitation.",
     image: "/img/photos/presta-nattes.jpg",
-    imagePosition: "70% 20%",
+    imagePosition: "50% 30%",
     picto: "tresse",
   },
   {

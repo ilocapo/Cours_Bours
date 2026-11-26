@@ -95,7 +95,7 @@ export default function Home() {
                 <ServiceList key={c.id} categoryId={c.id} limit={c.slug === "coiffure" ? 2 : 1} />
               ))}
             </div>
-            <Arch className="rise" src={photos.tressesIvoire.src} alt={photos.tressesIvoire.alt} ratio="3 / 4" sizes="(min-width: 1024px) 380px, 40vw" sticker={<span className="sticker"><Picto name="sablier" tone="ivoire" size={20} /><span className="bod">4 h</span><span className="lb lb--s">Tresses bohème</span></span>} />
+            <Arch className="rise" src={photos.bohemeDos.src} alt={photos.bohemeDos.alt} position="center 15%" ratio="3 / 4" sizes="(min-width: 1024px) 380px, 40vw" sticker={<span className="sticker"><Picto name="sablier" tone="ivoire" size={20} /><span className="bod">4 h</span><span className="lb lb--s">Tresses bohème</span></span>} />
           </div>
           <Link href="/carte" className="lb link-line">Toute la carte</Link>
         </div>
