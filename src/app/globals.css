@@ -87,7 +87,8 @@ main { position: relative; }
 .arch { position: relative; overflow: hidden; border-radius: 999px 999px 0 0; background: var(--prune); }
 .arch img { transform-origin: center; }
 .arch video, .arch__in video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; background: var(--noir); }
-.hero__arch img { transform: scale(1.22); transform-origin: 62% 24%; }
+.hero__arch img { transform: scale(1.1); transform-origin: 62% 24%; }
+@media (min-width: 768px) { .hero__arch img { transform: scale(1.22); } }
 
 /* Cadres arche (planche 22) */
 .arch__in { position: absolute; inset: 0; overflow: hidden; border-radius: 999px 999px 0 0; }
@@ -204,17 +205,18 @@ html.intro .curtain__cap { animation: fade 0.9s 1s both; }
 
 /* 1. Ouverture : titre en haut ; photo à gauche, carte prune à droite (le bouton est dedans) */
 .hero { position: relative; z-index: 0; padding: calc(var(--head-h) + 44px) 0 var(--space-sec); }
-.hero__in { display: grid; grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr); grid-template-areas: "head head" "arch card"; gap: 32px 14px; align-items: stretch; }
+.hero__in { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); grid-template-areas: "head head" "card arch"; gap: 32px 14px; align-items: stretch; }
 .hero__head { grid-area: head; display: flex; flex-direction: column; gap: 22px; align-items: flex-start; }
 .hero__title { font-size: clamp(38px, 11.4vw, 48px); line-height: 1; }
 .hero__trait { width: 60%; max-width: 420px; }
 .hero__arch { grid-area: arch; width: 100%; aspect-ratio: auto !important; min-height: 380px; }
 .hero__card { grid-area: card; background: var(--prune); color: var(--iv); border-radius: 22px; padding: 26px 20px 26px; display: flex; flex-direction: column; align-items: flex-start; }
-.hero__card-title { font-size: clamp(22px, 6.4vw, 26px); margin-bottom: 14px; }
+.hero__card-title { font-size: clamp(19px, 5.4vw, 22px); margin-bottom: 14px; }
+.hero__card { padding-inline: 18px; }
 .hero__card p { opacity: 0.9; font-size: 13.5px; line-height: 1.65; }
-.hero__pictos { display: flex; gap: 8px; margin-top: 20px; }
-.hero__pictos .pastille { width: 36px; height: 46px; padding-bottom: 10px; }
-.hero__pictos .pastille img { width: 20px; height: 20px; }
+.hero__pictos { display: flex; gap: 6px; margin-top: 20px; }
+.hero__pictos .pastille { width: 30px; height: 40px; padding-bottom: 8px; }
+.hero__pictos .pastille img { width: 17px; height: 17px; }
 .hero__cta { margin-top: 24px; }
 
 /* Bandes : « un voile par rituel » (texte à gauche, média à droite, voile de la couleur du fond qui s'estompe) */
@@ -424,10 +426,10 @@ html.motion [data-arch-band] { opacity: 0; }
 /* ≥ 1280 : bureau */
 @media (min-width: 1280px) {
   :root { --pad: 6vw; --space-sec: 200px; --fs-display: clamp(100px, 8.4vw, 150px); --fs-h2: 64px; --fs-quote: 56px; }
-  .hero__in { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 56px 32px; }
+  .hero__in { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); gap: 56px 32px; }
   .hero__title { font-size: var(--fs-display); }
   .hero__arch { min-height: 560px; }
-  .hero__card { padding: 56px 56px; border-radius: 32px; justify-content: center; }
+  .hero__card { padding: 56px; border-radius: 32px; justify-content: center; }
   .hero__card-title { font-size: 48px; margin-bottom: 24px; }
   .hero__card p { font-size: 17px; max-width: 46ch; }
   .hero__pictos { gap: 14px; margin-top: 32px; }
