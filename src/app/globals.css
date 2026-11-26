@@ -89,7 +89,7 @@ main { position: relative; }
 .btn--sm { padding: 12px 22px 10px; }
 
 /* Logo dans son arche ivoire */
-.logo { background: var(--iv); border-radius: 999px 999px 0 0; padding: 8px 7px 4px; display: inline-flex; }
+.logo { flex-shrink: 0; background: var(--iv); border-radius: 999px 999px 0 0; padding: 8px 7px 4px; display: inline-flex; }
 .logo img { width: 42px; height: auto; }
 
 /* En-tête */
@@ -243,9 +243,6 @@ html.intro .curtain .logo { animation: arch-in 0.9s 0.15s cubic-bezier(0.2, 0.7,
   body { font-size: 16px; padding-bottom: 0; }
   .bar { display: none; }
   .lb { font-size: 11px; }
-  .head__menu { display: none; }
-  .head__nav { display: flex; align-items: center; gap: 28px; }
-  .overlay { display: none !important; }
   .sec { padding-block: 150px; }
   .panel.sec { padding-top: calc(150px + var(--r)); }
   .hero__title { font-size: clamp(64px, 9vw, 104px); }
@@ -267,6 +264,13 @@ html.intro .curtain .logo { animation: arch-in 0.9s 0.15s cubic-bezier(0.2, 0.7,
   .faq__q { font-size: 24px; }
 }
 
+/* ≥ 1100 : menu en ligne */
+@media (min-width: 1100px) {
+  .head__menu { display: none; }
+  .head__nav { display: flex; align-items: center; gap: 28px; }
+  .overlay { display: none !important; }
+}
+
 /* ≥ 1280 : bureau */
 @media (min-width: 1280px) {
   :root { --pad: 6vw; }
@@ -276,7 +280,7 @@ html.intro .curtain .logo { animation: arch-in 0.9s 0.15s cubic-bezier(0.2, 0.7,
   .hero { padding-block: 140px; }
   .hero__trait { width: 40%; }
   .open__intro .title { font-size: 64px; }
-  html.motion .open__arch { width: 34vw; max-width: 560px; height: 56svh; }
+  html.motion .open__arch { width: min(34vw, 560px); height: 56svh; }
   .rituals .title, .work .title, .menu .title { font-size: 64px; }
   .rituals__grid { max-width: 1240px; gap: 40px; }
   .menu__grid { grid-template-columns: 1fr 380px; max-width: 1200px; }
