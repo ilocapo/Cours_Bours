@@ -11,14 +11,13 @@ import { categories } from "@/data/categories";
 import { photos } from "@/data/photos";
 
 export const metadata: Metadata = { title: "La carte des rituels", description: "Coiffure, spa et ongles : tous les rituels et leurs durées." };
-const pictoBy: Record<string, string> = { coiffure: "tresse", spa: "goutte", ongles: "vernis" };
 
 export default function Carte() {
   return (
     <>
       <section className="sec sec--prune page-hero">
         <div className="wrap">
-          <Chrome left="La carte" right="Coiffure · Spa · Ongles" />
+          <Chrome left="La carte" right="Quatre univers" />
           <div className="page-hero__grid">
             <div>
               <Title as="h1" initial accent={1} lines={["La carte", "des rituels"]} />
@@ -32,7 +31,7 @@ export default function Carte() {
           {categories.map((c) => (
             <div key={c.id}>
               <div className="cards__head" data-fade>
-                <Pastille name={pictoBy[c.slug]} tone="prune" />
+                <Pastille name={c.picto} tone="prune" />
                 <h2 className="bod cards__title">{c.name}</h2>
               </div>
               <ServiceList categoryId={c.id} showTitle={false} />

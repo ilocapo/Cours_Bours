@@ -9,6 +9,7 @@ const cols = [
       { href: "/coiffure", label: "Coiffure" },
       { href: "/spa", label: "Spa" },
       { href: "/ongles", label: "Ongles" },
+      { href: "/esthetique", label: "Esthétique" },
       { href: "/carte", label: "La carte" },
     ],
   },
@@ -34,7 +35,7 @@ export default function Footer() {
               <Image src="/logo/logo-zst.png" alt="ZST Beauty Center" width={64} height={64} />
             </Link>
             <p className="foot__tag bod">Là où commence la beauté.</p>
-            <p className="foot__about">Salon de beauté afro à Fidjrossè, Cotonou : coiffure, spa et ongles.</p>
+            <p className="foot__about">Salon de beauté afro à Fidjrossè, Cotonou : coiffure, spa, ongles et esthétique.</p>
           </div>
 
           {cols.map((c) => (

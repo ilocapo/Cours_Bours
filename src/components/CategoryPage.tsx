@@ -13,17 +13,18 @@ const gallery: Record<string, Photo[]> = {
   coiffure: [photos.bohemeDos, photos.nattes, photos.boucles, photos.bouclesDos],
   spa: [photos.cabineBlanche, photos.salonCabine, photos.salonPosteBleu],
   ongles: [photos.ongles2, photos.pedicure, photos.ongles],
+  esthetique: [photos.cabineBlanche, photos.salonCabine, photos.salonPostes],
 };
 // Chaque page a sa propre photo d'ouverture.
 const heroPhoto: Record<string, { photo: Photo; position: string; ratio: string }> = {
   coiffure: { photo: photos.bohemeDos, position: "50% 15%", ratio: "4 / 5" },
   spa: { photo: photos.soinCuir, position: "50% 40%", ratio: "4 / 5" },
   ongles: { photo: photos.ongles, position: "50% 35%", ratio: "4 / 5" },
+  esthetique: { photo: photos.cabineBlanche, position: "30% 50%", ratio: "4 / 5" },
 };
-const pictoBy: Record<string, string> = { coiffure: "tresse", spa: "goutte", ongles: "vernis" };
-const num: Record<string, string> = { coiffure: "01", spa: "02", ongles: "03" };
+const num: Record<string, string> = { coiffure: "01", spa: "02", ongles: "03", esthetique: "04" };
 
-export default function CategoryPage({ slug }: { slug: "coiffure" | "spa" | "ongles" }) {
+export default function CategoryPage({ slug }: { slug: "coiffure" | "spa" | "ongles" | "esthetique" }) {
   const cat = categories.find((c) => c.slug === slug)!;
   const hero = heroPhoto[slug];
   const list = gallery[slug].filter((p, i, a) => a.findIndex((x) => x.src === p.src) === i);
@@ -34,7 +35,7 @@ export default function CategoryPage({ slug }: { slug: "coiffure" | "spa" | "ong
           <Chrome left={`${num[slug]} · Rituels`} right={cat.tagline} />
           <div className="page-hero__grid">
             <div>
-              <Pastille name={pictoBy[slug]} tone="ivoire" />
+              <Pastille name={cat.picto} tone="ivoire" />
               <Title as="h1" initial lines={[cat.name]} />
               <p data-fade>{cat.intro}</p>
               <div data-fade><BookingButton variant="ivoire">Réserver</BookingButton></div>

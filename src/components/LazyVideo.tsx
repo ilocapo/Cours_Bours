@@ -8,18 +8,27 @@ export default function LazyVideo({ src, poster, label, className = "" }: { src:
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
+    v.muted = true; // iOS : l'attribut seul ne suffit pas pour la lecture automatique
+    v.defaultMuted = true;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let loaded = false;
-    const load = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && !loaded) { loaded = true; v.src = src; v.load(); }
-    }, { rootMargin: "400px 0px" });
-    const play = new IntersectionObserver(([e]) => {
-      if (!loaded) return;
-      if (e.isIntersecting) v.play().catch(() => {}); else v.pause();
-    }, { threshold: 0.35 });
-    load.observe(v); play.observe(v);
-    return () => { load.disconnect(); play.disconnect(); };
+    const ensure = () => {
+      if (loaded) return;
+      loaded = true;
+      v.src = src;
+      v.load();
+    };
+    const io = new IntersectionObserver((entries) => {
+      const e = entries[entries.length - 1];
+      if (e.isIntersecting) {
+        ensure();
+        v.play().catch(() => {});
+      } else {
+        v.pause();
+      }
+    }, { threshold: 0.25, rootMargin: "200px 0px" });
+    io.observe(v);
+    return () => io.disconnect();
   }, [src]);
   return <video ref={ref} className={className} poster={poster} muted loop playsInline preload="none" aria-label={label} />;
 }

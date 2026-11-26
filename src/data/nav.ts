@@ -2,7 +2,7 @@ export const nav = [
   { href: "/coiffure", label: "Coiffure" },
   { href: "/spa", label: "Spa" },
   { href: "/ongles", label: "Ongles" },
-  { href: "/carte", label: "La carte" },
+  { href: "/esthetique", label: "Esthétique" },
   { href: "/galerie", label: "Galerie" },
   { href: "/a-propos", label: "À propos" },
   { href: "/faq", label: "Questions" },

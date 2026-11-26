@@ -13,7 +13,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: { default: `${site.name} — ${site.slogan}`, template: `%s — ${site.name}` },
-  description: "Salon de beauté afro à Fidjrossè, Cotonou : coiffure femme, homme et enfant, spa et massages, manucure et pédicure. Là où commence la beauté.",
+  description: "Salon de beauté afro à Fidjrossè, Cotonou : coiffure femme, homme et enfant, spa et massages, ongles, esthétique et maquillage. Là où commence la beauté.",
   alternates: { canonical: "./" },
   openGraph: {
     title: site.name, description: site.slogan, type: "website", locale: "fr_FR", url: "./", siteName: site.name,

@@ -5,5 +5,5 @@ export const faq = [
   { q: "Où se trouve le salon ?", a: "À Fidjrossè, Cotonou, 4ème rue, en face de l'église Saint François d'Assise." },
   { q: "Comment puis-je payer ?", a: "Par espèces, par carte bancaire ou par MTN Mobile Money." },
   { q: "Accueillez-vous les enfants ?", a: "Oui, la coiffure est proposée aux femmes, aux hommes et aux enfants." },
-  { q: "Quelles prestations proposez-vous ?", a: "Coiffure et tresses, soins du visage et du corps, spa et massages, manucure, pédicure et pose d'ongles." },
+  { q: "Quelles prestations proposez-vous ?", a: "Coiffure et tresses, spa et massages, ongles (manucure, pédicure, gel, french), esthétique (soins du visage, épilation, maquillage, mise en beauté)." },
 ];

@@ -20,7 +20,7 @@ export default function Page() {
           <div className="page-hero__grid">
             <div>
               <Title as="h1" initial accent={1} lines={["La maison qui", "prend le temps."]} />
-              <p data-fade>ZST Beauty Center est un salon de beauté à Fidjrossè, à Cotonou. Coiffure pour femmes, hommes et enfants, soins du visage et du corps, massages, manucure et pédicure : trois univers sous un même toit.</p>
+              <p data-fade>ZST Beauty Center est un salon de beauté à Fidjrossè, à Cotonou. Coiffure pour femmes, hommes et enfants, spa et massages, ongles, esthétique et maquillage : quatre univers sous un même toit.</p>
               <p data-fade style={{ marginTop: 18 }}>Chaque rituel se prépare avec vous, sans précipitation.</p>
               <div data-fade><BookingButton variant="ivoire">Réserver</BookingButton></div>
             </div>
