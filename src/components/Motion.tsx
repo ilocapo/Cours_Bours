@@ -65,6 +65,12 @@ export default function Motion() {
           scrollTrigger: { trigger: el, start: "top bottom", end: "bottom 30%", scrub: true } });
       });
 
+      // Arches qui montent doucement.
+      q("[data-parallax].rise").forEach((el) => {
+        gsap.fromTo(el, { yPercent: 14 }, { yPercent: 0, ease: "none",
+          scrollTrigger: { trigger: el, start: "top bottom", end: "top 55%", scrub: true } });
+      });
+
       // Pied de page : ZST géant qui remonte doucement.
       q("[data-zst]").forEach((el) => {
         gsap.fromTo(el, { yPercent: 35, opacity: 0.2 }, { yPercent: 0, opacity: 1, ease: "none",
@@ -81,7 +87,7 @@ export default function Motion() {
         if (!arch || !intro) return;
         const tl = gsap.timeline({
           defaults: { ease: "none" },
-          scrollTrigger: { trigger: root, start: "top top", end: "+=130%", pin: true, scrub: 0.6, invalidateOnRefresh: true },
+          scrollTrigger: { trigger: root, start: "top top", end: "+=130%", pin: root.querySelector(".open__pin") ?? true, scrub: 0.6, invalidateOnRefresh: true },
         });
         tl.to(intro, { opacity: 0, y: -50, duration: 0.3 }, 0)
           .fromTo(arch,

@@ -9,6 +9,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource-variable/bodoni-moda": "^5.3.0",
     "@fontsource/bodoni-moda": "^5.3.0",
     "@fontsource/jost": "^5.3.0",
     "gsap": "^3.15.1",

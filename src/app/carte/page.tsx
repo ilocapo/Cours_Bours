@@ -23,7 +23,7 @@ export default function Carte() {
           <Arch src={photos.bohemeProfilSerre.src} alt={photos.bohemeProfilSerre.alt} ratio="3 / 4" priority sizes="(min-width: 768px) 40vw, 90vw" />
         </div>
       </section>
-      <section className="sec sec--prune" style={{ paddingTop: 0 }}>
+      <section className="sec sec--prune"  style={{ paddingTop: 0 }}>
         <div className="wrap cards">
           {categories.map((c) => (
             <div key={c.id}>

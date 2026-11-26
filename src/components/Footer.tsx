@@ -8,7 +8,7 @@ import { openingHours, hoursDefined } from "@/data/hours";
 
 export default function Footer() {
   return (
-    <footer className="foot sec sec--noir" id="contact">
+    <footer className="foot sec sec--noir panel" id="contact">
       <div className="wrap foot__grid">
         <div className="foot__photo">
           <Arch src={photos.salonLogo.src} alt={photos.salonLogo.alt} position={photos.salonLogo.position} ratio="1 / 1.05" sizes="(min-width: 1280px) 34vw, 90vw" />

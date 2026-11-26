@@ -35,7 +35,7 @@ export default function CategoryPage({ slug }: { slug: "coiffure" | "spa" | "ong
         </div>
       </section>
 
-      <section className="sec sec--iv">
+      <section className="sec sec--iv panel">
         <div className="wrap" style={{ maxWidth: 900 }}>
           <Title lines={["Les rituels"]} className="block-title" />
           <ServiceList categoryId={cat.id} showTitle={false} />
@@ -47,7 +47,7 @@ export default function CategoryPage({ slug }: { slug: "coiffure" | "spa" | "ong
         </div>
       </section>
 
-      <section className="sec sec--prune">
+      <section className="sec sec--prune panel">
         <div className="wrap">
           <Title lines={["Le travail"]} className="block-title" />
           <div className="work__grid">

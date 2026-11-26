@@ -35,7 +35,7 @@ export default function Home() {
       </section>
 
       {/* 2. Le salon : l'arche qui s'ouvre */}
-      <section className="open" id="salon" data-open>
+      <section className="open panel" id="salon" data-open>
         <div className="open__pin">
           <div className="open__intro wrap">
             <div className="lb dim">Le salon</div>
@@ -44,7 +44,7 @@ export default function Home() {
           </div>
           <div className="open__arch arch">
             <div className="open__img">
-              <Image src={photos.salonVue.src} alt={photos.salonVue.alt} fill sizes="100vw" style={{ objectFit: "cover", objectPosition: "center" }} />
+              <Image src={photos.salonVue.src} alt={photos.salonVue.alt} fill sizes="100vw" style={{ objectFit: "cover", objectPosition: "50% 38%" }} />
             </div>
             <div className="open__veil" />
             <div className="open__slogan">
@@ -55,7 +55,7 @@ export default function Home() {
       </section>
 
       {/* 3. Trois rituels */}
-      <section className="sec sec--iv rituals" id="rituels">
+      <section className="sec sec--iv rituals panel" id="rituels">
         <div className="wrap">
           <div className="rituals__head">
             <span className="lb">Trois rituels</span>
@@ -79,7 +79,7 @@ export default function Home() {
       </section>
 
       {/* 4. La carte des rituels */}
-      <section className="sec sec--prune menu" id="carte">
+      <section className="sec sec--prune menu panel" id="carte">
         <div className="wrap">
           <Title lines={["La carte", "des rituels"]} />
           <div className="menu__grid">
@@ -88,7 +88,7 @@ export default function Home() {
                 <ServiceList key={c.id} categoryId={c.id} limit={c.slug === "coiffure" ? 2 : 1} />
               ))}
             </div>
-            <Arch src={photos.bohemeProfilSerre.src} alt={photos.bohemeProfilSerre.alt} ratio="3 / 4.6" sizes="(min-width: 1280px) 380px, (min-width: 768px) 280px, 112px" />
+            <Arch className="rise" src={photos.bohemeProfilSerre.src} alt={photos.bohemeProfilSerre.alt} ratio="3 / 4.6" sizes="(min-width: 1280px) 380px, (min-width: 768px) 280px, 112px" />
           </div>
           <Link href="/carte" className="link-under">
             <span className="lb">Toute la carte</span>
@@ -98,7 +98,7 @@ export default function Home() {
       </section>
 
       {/* 5. Le travail */}
-      <section className="sec sec--iv work" id="travail">
+      <section className="sec sec--iv work panel" id="travail">
         <div className="wrap">
           <div className="work__head">
             <span className="lb">Le travail</span>
