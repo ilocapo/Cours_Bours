@@ -16,7 +16,12 @@ export class SupabaseStore implements Store {
     const res = await fetch(`${this.url.replace(/\/$/, "")}/rest/v1/${path}`, {
       ...init,
       cache: "no-store",
-      headers: { apikey: this.key, Authorization: `Bearer ${this.key}`, "Content-Type": "application/json", Prefer: init.prefer ?? "return=representation", ...(init.headers ?? {}) },
+      headers: {
+        apikey: this.key,
+        // Clés « sb_secret_… » (nouveau format) : pas de JWT, donc pas d'en-tête Authorization. Ancienne clé service_role : JWT.
+        ...(this.key.startsWith("sb_") ? {} : { Authorization: `Bearer ${this.key}` }),
+        "Content-Type": "application/json", Prefer: init.prefer ?? "return=representation", ...(init.headers ?? {}),
+      },
     });
     if (!res.ok) throw new Error(`Supabase ${res.status} sur ${path.split("?")[0]} : ${(await res.text()).slice(0, 200)}`);
     const text = await res.text();
