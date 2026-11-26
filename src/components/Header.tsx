@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { nav } from "@/data/nav";
+import { homeNav, nav } from "@/data/nav";
 import { photos } from "@/data/photos";
 import { site } from "@/data/site";
 import { todayHours } from "@/data/hours";
@@ -22,6 +22,11 @@ const menuPhoto: Record<string, { src: string; alt: string; position?: string }>
   "/a-propos": photos.salonVue,
   "/faq": photos.salonVue,
   "/#contact": photos.salonLogo,
+};
+
+const homePhoto: Record<string, { src: string; alt: string; position?: string }> = {
+  "#accueil": photos.tresses, "#salon": photos.salonVue, "#rituels": photos.nattes,
+  "#avis": photos.bouclesDos, "#travail": photos.boucles, "#contact": photos.salonLogo,
 };
 
 const fmt = (t: string | null) => (t ? t.replace(":", " h ").replace(" h 00", " h") : "");
@@ -51,8 +56,24 @@ export default function Header() {
   }, [open]);
 
   if (pathname.startsWith("/admin")) return null;
+  const onHome = pathname === "/";
+  const links = onHome ? homeNav : nav;
+  // Sur l'accueil : défilement doux jusqu'à la section, menu refermé d'abord.
+  const goTo = (e: React.MouseEvent, href: string) => {
+    if (!onHome || !href.startsWith("#")) { setOpen(false); return; }
+    e.preventDefault();
+    const target = document.querySelector<HTMLElement>(href);
+    setOpen(false);
+    history.replaceState(null, "", href);
+    window.setTimeout(() => {
+      if (!target) return;
+      const lenis = getLenis();
+      if (lenis) lenis.scrollTo(target, { offset: href === "#accueil" ? -200 : -64, duration: 1.4 });
+      else target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  };
   const book = bookingProps();
-  const show = (href: string) => setPhoto(menuPhoto[href] ?? photos.salonVue);
+  const show = (href: string) => setPhoto(menuPhoto[href] ?? homePhoto[href] ?? photos.salonVue);
 
   return (
     <header className={`head ${solid ? "head--solid" : ""}`}>
@@ -62,8 +83,8 @@ export default function Header() {
         </Link>
 
         <nav className="head__nav" aria-label="Navigation principale">
-          {nav.map((n) => (
-            <Link key={n.href} href={n.href} className="lb head__link">{n.label}</Link>
+          {links.map((n) => (
+            <Link key={n.href} href={n.href} className="lb head__link" onClick={(e) => goTo(e, n.href)}>{n.label}</Link>
           ))}
           <a className="btn btn--ivoire btn--sm lb" {...book}>Réserver</a>
         </nav>
@@ -76,9 +97,9 @@ export default function Header() {
       <div id="menu-overlay" className={`overlay ${open ? "is-open" : ""}`} hidden={!open} data-lenis-prevent>
         <div className="overlay__body">
           <ul className="overlay__list">
-            {nav.map((n) => (
+            {links.map((n) => (
               <li key={n.href}>
-                <Link href={n.href} className="bod overlay__link" onClick={() => setOpen(false)}
+                <Link href={n.href} className="bod overlay__link" onClick={(e) => goTo(e, n.href)}
                   onMouseEnter={() => show(n.href)} onFocus={() => show(n.href)} onTouchStart={() => show(n.href)}>
                   {n.label}
                 </Link>
