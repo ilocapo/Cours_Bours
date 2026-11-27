@@ -58,7 +58,7 @@ export default function Contact({ photo = true, tone = "iv" }: { photo?: boolean
               </div>
             </div>
             <div className="contact__social" data-fade>
-              <p className="lb lb--s dim">Réservez aussi par message, surtout sur Instagram</p>
+              <p className="lb lb--s dim">Réservez aussi par message privé : Instagram, WhatsApp</p>
               <Socials tone={tone === "iv" ? "prune" : "ivoire"} />
             </div>
             <p className="lb lb--s dim" data-fade>Paiement : {site.payments.join(" · ")}</p>

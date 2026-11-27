@@ -3,6 +3,7 @@ import { can } from "@/lib/admin/roles";
 import { getStore } from "@/lib/booking/store";
 import { toView } from "@/lib/booking/service";
 import { computeStats } from "@/lib/booking/stats";
+import { computePayroll } from "@/lib/booking/payroll";
 import { hhmmColon, isoToLocal, todayLocal } from "@/lib/booking/time";
 import { METHOD_LABEL, SOURCE_LABEL } from "@/lib/booking/types";
 import { categories } from "@/data/categories";
@@ -49,6 +50,13 @@ export async function GET(req: Request) {
     rows = [["Numéro", "Date", "Cliente", "Prestations", "Remise (F CFA)", "Total (F CFA)", "Payé (F CFA)", "Reste (F CFA)", "Mode de paiement", "Statut", "Date du paiement", "Employée", "Envoyée le"]];
     for (const i of invoices.filter((x) => inR(x.issuedAt)).reverse())
       rows.push([i.number, isoToLocal(i.issuedAt).date, clients.find((c) => c.id === i.clientId)?.name ?? "", i.lines.map((l) => l.label).join(" + "), i.discountXof, i.totalXof, i.paidXof, i.status === "void" ? 0 : i.totalXof - i.paidXof, i.method ? METHOD_LABEL[i.method] : "", INV[i.status], i.paidAt ? isoToLocal(i.paidAt).date : "", staff.find((s) => s.id === i.staffId)?.name ?? "", i.sentAt ? isoToLocal(i.sentAt).date : ""]);
+  } else if (type === "paie") {
+    if (!can(me.role, "payroll")) return new Response("Non autorisé", { status: 403 });
+    const month = from.slice(0, 7);
+    const pay = await computePayroll(store, month);
+    name = `paie-${month}`;
+    rows = [["Personne", "Heures faites", "Heures prévues", "Écart", "Jours pointés", "Retards", "Congés", "Maladie", "Autres absences", "Prestations terminées", "Facturé (F CFA)"]];
+    for (const r of pay) rows.push([r.name, +(r.workedMin / 60).toFixed(2), +(r.plannedMin / 60).toFixed(2), +((r.workedMin - r.plannedMin) / 60).toFixed(2), r.daysWorked, r.lateCount, r.leaveDays, r.sickDays, r.otherDays, r.prestations, r.invoicedXof]);
   } else if (type === "journal") {
     const s = await computeStats(store, from, to);
     name = "journal-des-ventes";

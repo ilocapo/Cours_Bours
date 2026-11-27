@@ -1,7 +1,7 @@
 import type { OpeningHours } from "@/data/hours";
 import type { Service } from "@/data/services";
 import type { Staff } from "@/data/staff";
-import { DEFAULT_SETTINGS, type Booking, type Client, type Invoice, type Notification, type NotificationStatus, type Settings, type User } from "./types";
+import { DEFAULT_SETTINGS, type Absence, type Booking, type Client, type Invoice, type Notification, type NotificationStatus, type Settings, type TimeEntry, type User } from "./types";
 import type { Store } from "./store";
 
 // Accès à Supabase par l'API REST (PostgREST), côté serveur, avec la clé service_role.
@@ -42,9 +42,13 @@ export class SupabaseStore implements Store {
   }
   async listStaff(): Promise<Staff[]> {
     const rows = await this.get<Row>("staff?select=*&order=name");
-    return rows.map((r) => ({ id: r.id as string, name: r.name as string, categoryIds: (r.category_ids as string[]) ?? [], serviceIds: (r.service_ids as string[]) ?? [], schedule: (r.schedule as Staff["schedule"]) ?? null, color: (r.color as string) ?? "#1C1013", active: r.active as boolean }));
+    return rows.map((r) => ({ id: r.id as string, name: r.name as string, categoryIds: (r.category_ids as string[]) ?? [], serviceIds: (r.service_ids as string[]) ?? [], schedule: (r.schedule as Staff["schedule"]) ?? null, color: (r.color as string) ?? "#1C1013", active: r.active as boolean, pinHash: (r.pin_hash as string) ?? null, pinFails: (r.pin_fails as number) ?? 0, pinLockedUntil: r.pin_locked_until ? new Date(r.pin_locked_until as string).toISOString() : null }));
   }
-  async saveStaff(s: Staff) { await this.upsert("staff", { id: s.id, name: s.name, category_ids: s.categoryIds, service_ids: s.serviceIds, schedule: s.schedule, color: s.color, active: s.active }); }
+  async saveStaff(s: Staff) {
+    // Les colonnes de pointage n'existent qu'après la migration 0003 : on ne les envoie que si elles servent.
+    const pin = s.pinHash || s.pinFails || s.pinLockedUntil ? { pin_hash: s.pinHash ?? null, pin_fails: s.pinFails ?? 0, pin_locked_until: s.pinLockedUntil ?? null } : {};
+    await this.upsert("staff", { id: s.id, name: s.name, category_ids: s.categoryIds, service_ids: s.serviceIds, schedule: s.schedule, color: s.color, active: s.active, ...pin });
+  }
   async getHours(): Promise<OpeningHours[]> {
     const rows = await this.get<Row>("opening_hours?select=*&order=weekday");
     return rows.map((r) => ({ weekday: r.weekday as OpeningHours["weekday"], label: r.label as string, opens: (r.opens as string) ?? null, closes: (r.closes as string) ?? null }));
@@ -92,6 +96,21 @@ export class SupabaseStore implements Store {
   async getInvoice(id: string) { return (await this.get<Row>(`invoices?select=*&id=eq.${encodeURIComponent(id)}`)).map(this.toInvoice)[0] ?? null; }
   async getInvoiceByToken(token: string) { return (await this.get<Row>(`invoices?select=*&token=eq.${encodeURIComponent(token)}`)).map(this.toInvoice)[0] ?? null; }
   async saveInvoice(i: Invoice) { await this.upsert("invoices", { id: i.id, number: i.number, token: i.token, booking_id: i.bookingId, client_id: i.clientId, staff_id: i.staffId, issued_at: i.issuedAt, lines: i.lines, discount_xof: i.discountXof, total_xof: i.totalXof, paid_xof: i.paidXof, method: i.method, paid_at: i.paidAt, status: i.status, note: i.note, sent_at: i.sentAt, created_by: i.createdBy }); }
+
+  // --- pointage et absences (migration 0003)
+  private toTime = (r: Row): TimeEntry => ({ id: r.id as string, staffId: r.staff_id as string, inAt: new Date(r.in_at as string).toISOString(), outAt: r.out_at ? new Date(r.out_at as string).toISOString() : null, method: r.method as TimeEntry["method"], note: (r.note as string) ?? "" });
+  async listTimeEntries(fromIso?: string, toIso?: string) {
+    const q = ["select=*", "order=in_at"];
+    if (fromIso) q.push(`in_at=gte.${encodeURIComponent(fromIso)}`);
+    if (toIso) q.push(`in_at=lt.${encodeURIComponent(toIso)}`);
+    return (await this.get<Row>(`time_entries?${q.join("&")}`)).map(this.toTime);
+  }
+  async saveTimeEntry(t: TimeEntry) { await this.upsert("time_entries", { id: t.id, staff_id: t.staffId, in_at: t.inAt, out_at: t.outAt, method: t.method, note: t.note }); }
+  async deleteTimeEntry(id: string) { await this.req(`time_entries?id=eq.${encodeURIComponent(id)}`, { method: "DELETE", prefer: "return=minimal" }); }
+  private toAbs = (r: Row): Absence => ({ id: r.id as string, staffId: r.staff_id as string, fromDate: r.from_date as string, toDate: r.to_date as string, kind: r.kind as Absence["kind"], status: r.status as Absence["status"], note: (r.note as string) ?? "", createdAt: r.created_at as string });
+  async listAbsences() { return (await this.get<Row>("absences?select=*&order=from_date")).map(this.toAbs); }
+  async saveAbsence(a: Absence) { await this.upsert("absences", { id: a.id, staff_id: a.staffId, from_date: a.fromDate, to_date: a.toDate, kind: a.kind, status: a.status, note: a.note, created_at: a.createdAt }); }
+  async deleteAbsence(id: string) { await this.req(`absences?id=eq.${encodeURIComponent(id)}`, { method: "DELETE", prefer: "return=minimal" }); }
 
   // --- notifications
   private toNotif = (r: Row): Notification => ({ id: r.id as string, bookingId: r.booking_id as string, type: r.type as Notification["type"], channel: r.channel as Notification["channel"], sendAt: new Date(r.send_at as string).toISOString(), status: r.status as NotificationStatus, sentAt: r.sent_at ? new Date(r.sent_at as string).toISOString() : null, error: (r.error as string) ?? null });

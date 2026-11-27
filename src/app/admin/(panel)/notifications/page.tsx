@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import Flash from "@/components/admin/Flash";
 import { requireUser } from "@/lib/admin/session";
 import { getStore } from "@/lib/booking/store";
@@ -9,7 +10,7 @@ import { runReminders, sendTestMailAction } from "../../actions";
 export const metadata: Metadata = { title: "E-mails" };
 export const dynamic = "force-dynamic";
 
-const TYPE: Record<string, string> = { confirmation: "Confirmation", reminder_d1: "Rappel veille", reminder_h2: "Rappel avant RDV", salon_new: "Alerte salon : nouvelle", salon_cancel: "Alerte salon : annulation", thanks: "Remerciement" };
+const TYPE: Record<string, string> = { client_cancel: "Annulation (cliente)", noshow: "Suivi d'absence", confirmation: "Confirmation", reminder_d1: "Rappel veille", reminder_h2: "Rappel avant RDV", salon_new: "Alerte salon : nouvelle", salon_cancel: "Alerte salon : annulation", thanks: "Remerciement" };
 const ST: Record<string, string> = { pending: "En attente", sent: "Envoyé", failed: "Échec", skipped: "Ignoré" };
 
 export default async function Notifications({ searchParams }: { searchParams: Promise<{ ok?: string; erreur?: string }> }) {
@@ -22,6 +23,7 @@ export default async function Notifications({ searchParams }: { searchParams: Pr
   const live = !!process.env.RESEND_API_KEY;
   return (
     <>
+      <div className="adm__chips"><Link href="/admin/notifications" className="is-on">Journal des envois</Link><Link href="/admin/modeles">Modèles et scénarios</Link></div>
       <h1 className="bod adm__h1">E-mails et rappels</h1>
       <Flash ok={sp.ok} erreur={sp.erreur} />
       <p className="dim">Envoi : <strong>{live ? "réel (Resend)" : "mode test, rien ne part"}</strong>. La tâche planifiée appelle <code>/api/cron/reminders</code> toutes les 15 minutes. {pending} message{pending > 1 ? "s" : ""} en attente.</p>

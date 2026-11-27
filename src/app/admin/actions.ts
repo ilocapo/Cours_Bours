@@ -11,8 +11,11 @@ import { cancelBooking, createBooking, markDone, processDue } from "@/lib/bookin
 import { addPayment, createInvoice, sendInvoice, statusFor } from "@/lib/booking/invoices";
 import { sendMail, testMail } from "@/lib/booking/mail";
 import { toXof } from "@/lib/booking/money";
-import { addDays, isoToLocal, localToIso, parseHHMM } from "@/lib/booking/time";
-import type { BookingSource, BookingStatus, PayMethod, Role } from "@/lib/booking/types";
+import { addDays, hhmm, isoToLocal, localToIso, parseHHMM } from "@/lib/booking/time";
+import { SCENARIOS, scenario } from "@/lib/booking/templates";
+import { scenarioMail } from "@/lib/booking/mail";
+import { toView } from "@/lib/booking/service";
+import type { AbsenceKind, BookingSource, BookingStatus, PayMethod, Role, TemplateKey } from "@/lib/booking/types";
 import type { OpeningHours } from "@/data/hours";
 import type { Shift } from "@/data/staff";
 import { parsePhone } from "@/lib/phone";
@@ -88,7 +91,10 @@ export async function setStatus(fd: FormData) {
   const { store, b } = await bookingAccess(me, id);
   if (status === "cancelled") await cancelBooking(id, "salon");
   else if (status === "done") await markDone(store, b);
-  else await store.saveBooking({ ...b, status });
+  else {
+    await store.saveBooking({ ...b, status });
+    if (status === "noshow") { await store.saveNotification({ id: randomUUID(), bookingId: id, type: "noshow", channel: "email", sendAt: new Date().toISOString(), status: "pending", sentAt: null, error: null }); await processDue(); }
+  }
   redirect(back(fd));
 }
 
@@ -232,8 +238,9 @@ export async function saveStaffAction(fd: FormData) {
       schedule[wd] = on && s && e && parseHHMM(e) > parseHHMM(s) ? { start: s, end: e } : null;
     }
   }
-  await store.saveStaff({ id, name: str(fd, "name").trim() || "Sans nom", categoryIds: fd.getAll("categoryIds").map(String), serviceIds: fd.getAll("serviceIds").map(String), schedule, color: str(fd, "color") || "#1C1013", active: fd.get("active") === "on" });
-  redirect("/admin/equipe?ok=1");
+  const prev = (await store.listStaff()).find((x) => x.id === id);
+  await store.saveStaff({ ...(prev ?? {}), id, name: str(fd, "name").trim() || "Sans nom", categoryIds: fd.getAll("categoryIds").map(String), serviceIds: fd.getAll("serviceIds").map(String), schedule, color: str(fd, "color") || "#1C1013", active: fd.get("active") === "on" });
+  redirect(`/admin/equipe/${id}?ok=${encodeURIComponent("Enregistré.")}`);
 }
 
 export async function saveSettingsAction(fd: FormData) {
@@ -249,6 +256,7 @@ export async function saveSettingsAction(fd: FormData) {
     maxDaysAhead: Math.min(365, Math.max(1, Number(fd.get("maxDaysAhead")) || 60)),
     capacity: Math.max(1, Number(fd.get("capacity")) || 1),
     salonEmail: str(fd, "salonEmail") || cur.salonEmail,
+    googleReviewUrl: str(fd, "googleReviewUrl").trim() || undefined,
   });
   const hours = await store.getHours();
   const next: OpeningHours[] = hours.map((h) => {
@@ -315,3 +323,146 @@ export async function updateUserAction(fd: FormData) {
   redirect(`/admin/utilisateurs?ok=${encodeURIComponent("Compte mis à jour.")}`);
 }
 
+
+// ---------------------------------------------------------------- fermetures exceptionnelles
+export async function addClosureAction(fd: FormData) {
+  await requireUser("settings");
+  const store = await getStore();
+  const date = str(fd, "date");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const cur = await store.getSettings();
+    const list = (cur.closures ?? []).filter((c) => c.date !== date).concat({ date, label: str(fd, "label").trim() || "Fermé" }).sort((a, b) => a.date.localeCompare(b.date));
+    await store.saveSettings({ ...cur, closures: list });
+  }
+  redirect("/admin/reglages?ok=1");
+}
+export async function removeClosureAction(fd: FormData) {
+  await requireUser("settings");
+  const store = await getStore();
+  const cur = await store.getSettings();
+  await store.saveSettings({ ...cur, closures: (cur.closures ?? []).filter((c) => c.date !== str(fd, "date")) });
+  redirect("/admin/reglages?ok=1");
+}
+
+// ---------------------------------------------------------------- pointage (code personnel)
+const MAX_FAILS = 5;
+const LOCK_MIN = 10;
+
+export async function setPinAction(fd: FormData) {
+  await requireUser("team");
+  const store = await getStore();
+  const id = str(fd, "id"); const pin = str(fd, "pin").trim();
+  const st = (await store.listStaff()).find((x) => x.id === id);
+  if (!st) redirect("/admin/equipe");
+  if (!/^\d{4,6}$/.test(pin)) redirect(`/admin/equipe/${id}?erreur=${encodeURIComponent("Le code doit faire 4 à 6 chiffres.")}`);
+  await store.saveStaff({ ...st!, pinHash: hashPassword(pin), pinFails: 0, pinLockedUntil: null });
+  redirect(`/admin/equipe/${id}?ok=${encodeURIComponent("Code de pointage enregistré. Communiquez-le à la personne, elle seule doit le connaître.")}`);
+}
+
+export type PunchState = { ok?: string; error?: string } | undefined;
+export async function punchAction(_: PunchState, fd: FormData): Promise<PunchState> {
+  await requireUser("timeclock");
+  const store = await getStore();
+  const id = str(fd, "staffId"); const pin = str(fd, "pin").trim();
+  const st = (await store.listStaff()).find((x) => x.id === id && x.active);
+  if (!st) return { error: "Personne introuvable." };
+  if (!st.pinHash) return { error: `${st.name} n'a pas encore de code. La gérante peut en créer un dans Équipe.` };
+  const now = new Date();
+  if (st.pinLockedUntil && new Date(st.pinLockedUntil) > now) return { error: `Trop d'essais. Réessayez dans quelques minutes.` };
+  if (!verifyPassword(pin, st.pinHash)) {
+    const fails = (st.pinFails ?? 0) + 1;
+    await store.saveStaff({ ...st, pinFails: fails >= MAX_FAILS ? 0 : fails, pinLockedUntil: fails >= MAX_FAILS ? new Date(now.getTime() + LOCK_MIN * 60000).toISOString() : null });
+    return { error: fails >= MAX_FAILS ? `Code incorrect. Pointage bloqué ${LOCK_MIN} minutes.` : `Code incorrect (${MAX_FAILS - fails} essai${MAX_FAILS - fails > 1 ? "s" : ""} restant${MAX_FAILS - fails > 1 ? "s" : ""}).` };
+  }
+  if (st.pinFails) await store.saveStaff({ ...st, pinFails: 0, pinLockedUntil: null });
+  const l = isoToLocal(now.toISOString());
+  const open = (await store.listTimeEntries(localToIso(addDays(l.date, -1), 0), localToIso(addDays(l.date, 1), 0))).filter((t) => t.staffId === id && !t.outAt).at(-1);
+  if (open) {
+    await store.saveTimeEntry({ ...open, outAt: now.toISOString() });
+    return { ok: `${st.name} : départ enregistré à ${hhmm(l.minutes)}. Bonne soirée.` };
+  }
+  await store.saveTimeEntry({ id: randomUUID(), staffId: id, inAt: now.toISOString(), outAt: null, method: "pin", note: "" });
+  return { ok: `${st.name} : arrivée enregistrée à ${hhmm(l.minutes)}. Bonne journée.` };
+}
+
+export async function saveTimeEntryAction(fd: FormData) {
+  await requireUser("team");
+  const store = await getStore();
+  const staffId = str(fd, "staffId"); const month = str(fd, "month");
+  const date = str(fd, "date"); const tin = str(fd, "in"); const tout = str(fd, "out");
+  const id = str(fd, "id") || randomUUID();
+  const target = `/admin/paie/${staffId}?m=${month}`;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(tin)) redirect(`${target}&erreur=${encodeURIComponent("Date ou heure d'arrivée invalide.")}`);
+  const inAt = localToIso(date, parseHHMM(tin));
+  const outAt = /^\d{2}:\d{2}$/.test(tout) ? localToIso(date, parseHHMM(tout)) : null;
+  if (outAt && outAt <= inAt) redirect(`${target}&erreur=${encodeURIComponent("Le départ doit être après l'arrivée.")}`);
+  await store.saveTimeEntry({ id, staffId, inAt, outAt, method: "manual", note: str(fd, "note").slice(0, 200) });
+  redirect(`${target}&ok=${encodeURIComponent("Pointage enregistré.")}`);
+}
+
+export async function deleteTimeEntryAction(fd: FormData) {
+  await requireUser("team");
+  await (await getStore()).deleteTimeEntry(str(fd, "id"));
+  redirect(`/admin/paie/${str(fd, "staffId")}?m=${str(fd, "month")}&ok=${encodeURIComponent("Pointage supprimé.")}`);
+}
+
+// ---------------------------------------------------------------- absences et congés
+export async function requestAbsenceAction(fd: FormData) {
+  const me = await requireUser(["me", "absences.manage"]);
+  const store = await getStore();
+  const manager = can(me.role, "absences.manage");
+  const staffId = manager ? str(fd, "staffId") : me.staffId;
+  const to = manager ? "/admin/absences" : "/admin/moi";
+  const from = str(fd, "from"); const until = str(fd, "to") || from;
+  if (!staffId) redirect(`${to}?erreur=${encodeURIComponent("Votre compte n'est pas relié à une fiche de l'équipe.")}`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(until) || until < from) redirect(`${to}?erreur=${encodeURIComponent("Dates invalides.")}`);
+  const kind = (["conge", "maladie", "autre"].includes(str(fd, "kind")) ? str(fd, "kind") : "conge") as AbsenceKind;
+  await store.saveAbsence({ id: randomUUID(), staffId: staffId!, fromDate: from, toDate: until, kind, status: manager ? "approuvee" : "demande", note: str(fd, "note").slice(0, 300), createdAt: new Date().toISOString() });
+  redirect(`${to}?ok=${encodeURIComponent(manager ? "Absence enregistrée." : "Demande envoyée à la gérante.")}`);
+}
+
+export async function decideAbsenceAction(fd: FormData) {
+  await requireUser("absences.manage");
+  const store = await getStore();
+  const a = (await store.listAbsences()).find((x) => x.id === str(fd, "id"));
+  const decision = str(fd, "decision");
+  if (a && decision === "supprimer") await store.deleteAbsence(a.id);
+  else if (a && (decision === "approuvee" || decision === "refusee")) await store.saveAbsence({ ...a, status: decision });
+  redirect("/admin/absences?ok=1");
+}
+
+export async function setOwnPinAction(fd: FormData) {
+  const me = await requireUser("me");
+  const store = await getStore();
+  const pin = str(fd, "pin").trim();
+  const st = (await store.listStaff()).find((x) => x.id === me.staffId);
+  if (!st) redirect("/admin/moi");
+  if (!/^\d{4,6}$/.test(pin)) redirect(`/admin/moi?erreur=${encodeURIComponent("Le code doit faire 4 à 6 chiffres.")}`);
+  if (pin !== str(fd, "pin2").trim()) redirect(`/admin/moi?erreur=${encodeURIComponent("Les deux codes ne correspondent pas.")}`);
+  await store.saveStaff({ ...st!, pinHash: hashPassword(pin), pinFails: 0, pinLockedUntil: null });
+  redirect(`/admin/moi?ok=${encodeURIComponent("Votre code de pointage est enregistré.")}`);
+}
+
+// ---------------------------------------------------------------- modèles d'e-mails
+export async function saveTemplateAction(fd: FormData) {
+  await requireUser("notifications");
+  const store = await getStore();
+  const key = str(fd, "key") as TemplateKey;
+  if (!SCENARIOS.some((s) => s.key === key)) redirect("/admin/modeles");
+  const cur = await store.getSettings();
+  const templates = { ...(cur.templates ?? {}) };
+  if (str(fd, "intent") === "reset") delete templates[key];
+  else templates[key] = { enabled: fd.get("enabled") === "on", subject: str(fd, "subject").slice(0, 200), title: str(fd, "title").slice(0, 200), body: str(fd, "body").slice(0, 3000) };
+  await store.saveSettings({ ...cur, templates });
+  if (str(fd, "intent") === "test") {
+    const to = checkEmail(str(fd, "to"));
+    if (!to.ok) redirect(`/admin/modeles?erreur=${encodeURIComponent("Indiquez une adresse e-mail valide pour le test.")}#${key}`);
+    const now = new Date(Date.now() + 26 * 3_600_000);
+    const sample = { id: "exemple", token: "exemple", serviceId: "x", staffId: null, clientId: "x", startsAt: now.toISOString(), endsAt: new Date(now.getTime() + 3_600_000).toISOString(), status: "confirmed" as const, source: "site" as const, note: "", createdAt: now.toISOString(), serviceName: "Pose gel", durationMin: 60, clientName: "Awa Dossou", clientPhone: "+22997000000", clientEmail: (to as { email: string }).email, staffName: null };
+    const mail = scenarioMail(key, sample, { settings: await store.getSettings() }) ?? scenarioMail(key, sample, { settings: { ...(await store.getSettings()), templates: { ...templates, [key]: { ...scenario(key).defaults, ...templates[key], enabled: true } } } });
+    const r = mail ? await sendMail(mail) : { ok: false, error: "Scénario vide" };
+    redirect(`/admin/modeles?${r.ok ? "ok=" + encodeURIComponent("E-mail de test envoyé.") : "erreur=" + encodeURIComponent("Échec : " + (r.error ?? ""))}#${key}`);
+  }
+  redirect(`/admin/modeles?ok=${encodeURIComponent(str(fd, "intent") === "reset" ? "Texte d'origine rétabli." : "Modèle enregistré.")}#${key}`);
+}
+void toView;

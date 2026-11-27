@@ -1,4 +1,4 @@
-import type { Booking, Client, Invoice, Notification, NotificationStatus, Settings, User } from "./types";
+import type { Absence, Booking, Client, Invoice, Notification, NotificationStatus, Settings, TimeEntry, User } from "./types";
 import type { OpeningHours } from "@/data/hours";
 import type { Service } from "@/data/services";
 import type { Staff } from "@/data/staff";
@@ -34,6 +34,13 @@ export interface Store {
   getInvoice(id: string): Promise<Invoice | null>;
   getInvoiceByToken(token: string): Promise<Invoice | null>;
   saveInvoice(i: Invoice): Promise<void>;
+
+  listTimeEntries(fromIso?: string, toIso?: string): Promise<TimeEntry[]>;
+  saveTimeEntry(t: TimeEntry): Promise<void>;
+  deleteTimeEntry(id: string): Promise<void>;
+  listAbsences(): Promise<Absence[]>;
+  saveAbsence(a: Absence): Promise<void>;
+  deleteAbsence(id: string): Promise<void>;
 
   listNotifications(filter?: { bookingId?: string; status?: NotificationStatus; dueBefore?: string; limit?: number }): Promise<Notification[]>;
   saveNotification(n: Notification): Promise<void>;

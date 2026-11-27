@@ -10,7 +10,7 @@ import { createManual } from "../../../actions";
 export const metadata: Metadata = { title: "Nouvelle réservation" };
 export const dynamic = "force-dynamic";
 
-export default async function Nouvelle({ searchParams }: { searchParams: Promise<{ date?: string; error?: string }> }) {
+export default async function Nouvelle({ searchParams }: { searchParams: Promise<{ date?: string; time?: string; staff?: string; error?: string }> }) {
   await requireUser("bookings.manage");
   const sp = await searchParams;
   const store = await getStore();
@@ -26,8 +26,8 @@ export default async function Nouvelle({ searchParams }: { searchParams: Promise
         <label className="field"><span className="lb lb--s">Prestation</span>
           <select name="serviceId" required>{categories.map((c) => <optgroup key={c.id} label={c.name}>{services.filter((s) => s.active && s.categoryId === c.id).map((s) => <option key={s.id} value={s.id}>{s.name} ({s.durationMin} min)</option>)}</optgroup>)}</select></label>
         <label className="field"><span className="lb lb--s">Date</span><input type="date" name="date" defaultValue={sp.date ?? todayLocal()} required /></label>
-        <label className="field"><span className="lb lb--s">Heure</span><input type="time" name="time" step={900} defaultValue="10:00" required /></label>
-        <label className="field"><span className="lb lb--s">Avec</span><select name="staffId"><option value="">Choisir automatiquement</option>{staff.filter((s) => s.active).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+        <label className="field"><span className="lb lb--s">Heure</span><input type="time" name="time" step={900} defaultValue={/^\d{2}:\d{2}$/.test(sp.time ?? "") ? sp.time : "10:00"} required /></label>
+        <label className="field"><span className="lb lb--s">Avec</span><select name="staffId" defaultValue={sp.staff ?? ""}><option value="">Choisir automatiquement</option>{staff.filter((s) => s.active).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
         <label className="field"><span className="lb lb--s">Nom et prénom</span><input name="name" list="clients" required autoComplete="off" /></label>
         <datalist id="clients">{clients.map((c) => <option key={c.id} value={c.name}>{c.phone}</option>)}</datalist>
         <label className="field"><span className="lb lb--s">Téléphone</span><input name="phone" type="tel" required placeholder="+229 97 00 00 00" /><span className="lb lb--s dim">Sans indicatif, le Bénin (+229) est ajouté.</span></label>

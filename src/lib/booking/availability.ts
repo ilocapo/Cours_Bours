@@ -22,7 +22,7 @@ export function staffWorks(st: Staff, hours: OpeningHours[], date: string, start
   return startMin >= parseHHMM(open) && endMin <= parseHHMM(close);
 }
 
-type Ctx = { svc: Service; staff: Staff[]; hours: OpeningHours[]; capacity: number; booked: Booking[] };
+type Ctx = { svc: Service; staff: Staff[]; hours: OpeningHours[]; capacity: number; booked: Booking[]; absent?: Set<string> };
 
 /** Créneau libre ? Retourne la personne disponible (ou null si on ne gère pas d'équipe) ; `false` si impossible. */
 function freeAt(c: Ctx, date: string, startMin: number, wanted?: string | null): { staffId: string | null } | false {
@@ -31,7 +31,7 @@ function freeAt(c: Ctx, date: string, startMin: number, wanted?: string | null):
   const clash = c.booked.filter((b) => overlaps(s, e, b.startsAt, b.endsAt));
   const team = c.staff.filter((x) => x.active);
   if (team.length === 0) return clash.length < c.capacity ? { staffId: null } : false;
-  const elig = eligibleStaff(team, c.svc).filter((x) => staffWorks(x, c.hours, date, startMin, startMin + c.svc.durationMin));
+  const elig = eligibleStaff(team, c.svc).filter((x) => !c.absent?.has(x.id) && staffWorks(x, c.hours, date, startMin, startMin + c.svc.durationMin));
   const busy = new Set(clash.map((b) => b.staffId).filter(Boolean) as string[]);
   const unassigned = clash.filter((b) => !b.staffId).length;
   if (wanted) return elig.some((x) => x.id === wanted) && !busy.has(wanted) ? { staffId: wanted } : false;
@@ -43,7 +43,10 @@ async function context(store: Store, serviceId: string, date: string) {
   const [services, hours, settings, staff] = await Promise.all([store.listServices(), store.getHours(), store.getSettings(), store.listStaff()]);
   const svc = services.find((s) => s.id === serviceId && s.active);
   const booked = (await store.listBookings(localToIso(date, 0), localToIso(addDays(date, 1), 0))).filter((b) => b.status === "confirmed" || b.status === "done");
-  return { svc, hours, settings, staff, booked };
+  // Absences approuvées (congés, maladie) : la personne n'est pas proposée ce jour-là. Table absente avant la migration 0003 : on ignore.
+  let absent = new Set<string>();
+  try { absent = new Set((await store.listAbsences()).filter((a) => a.status === "approuvee" && a.fromDate <= date && date <= a.toDate).map((a) => a.staffId)); } catch { /* migration pas encore passée */ }
+  return { svc, hours, settings, staff, booked, absent };
 }
 
 /** Créneaux libres (minutes depuis minuit, heure du salon) pour un rituel un jour donné. */
@@ -52,8 +55,9 @@ export async function slotsFor(
   q: { serviceId: string; date: string; staffId?: string | null },
   now = new Date(),
 ): Promise<number[]> {
-  const { svc, hours, settings, staff, booked } = await context(store, q.serviceId, q.date);
+  const { svc, hours, settings, staff, booked, absent } = await context(store, q.serviceId, q.date);
   if (!svc) return [];
+  if (settings.closures?.some((c) => c.date === q.date)) return []; // fermeture exceptionnelle
   const today = todayLocal(now);
   if (q.date < today || q.date > addDays(today, settings.maxDaysAhead)) return [];
   const h = hours.find((x) => x.weekday === weekdayOf(q.date));
@@ -61,7 +65,7 @@ export async function slotsFor(
   const open = parseHHMM(h.opens);
   const close = parseHHMM(h.closes);
   const earliest = now.getTime() + settings.leadTimeMin * 60_000;
-  const c: Ctx = { svc, staff, hours, capacity: settings.capacity, booked };
+  const c: Ctx = { svc, staff, hours, capacity: settings.capacity, booked, absent };
   const out: number[] = [];
   for (let t = open; t + svc.durationMin <= close; t += settings.slotStepMin) {
     if (new Date(localToIso(q.date, t)).getTime() < earliest) continue;
@@ -72,9 +76,9 @@ export async function slotsFor(
 
 /** Choisit la première personne libre et compétente pour ce créneau (null si aucune équipe n'est saisie ou personne de libre). */
 export async function pickStaff(store: Store, serviceId: string, date: string, startMin: number): Promise<string | null> {
-  const { svc, hours, settings, staff, booked } = await context(store, serviceId, date);
+  const { svc, hours, settings, staff, booked, absent } = await context(store, serviceId, date);
   if (!svc) return null;
-  const r = freeAt({ svc, staff, hours, capacity: settings.capacity, booked }, date, startMin);
+  const r = freeAt({ svc, staff, hours, capacity: settings.capacity, booked, absent }, date, startMin);
   return r ? r.staffId : null;
 }
 

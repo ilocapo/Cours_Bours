@@ -13,7 +13,7 @@ type Net = keyof typeof PATHS;
 export function socialLinks(): { net: Net; label: string; href: string }[] {
   const out: { net: Net; label: string; href: string }[] = [];
   if (site.whatsapp) out.push({ net: "whatsapp", label: "WhatsApp : réserver ou écrire", href: `https://wa.me/${site.whatsapp}` });
-  out.push({ net: "instagram", label: "Instagram : réserver par message", href: site.instagramUrl });
+  out.push({ net: "instagram", label: "Instagram : réserver par message privé", href: site.instagramDm });
   out.push({ net: "tiktok", label: "TikTok", href: site.tiktokUrl });
   out.push({ net: "facebook", label: "Facebook", href: site.facebookUrl });
   return out;

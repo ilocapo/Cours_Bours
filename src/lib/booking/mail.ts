@@ -1,8 +1,9 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { site } from "@/data/site";
-import { longWhen } from "./time";
-import type { BookingView, Invoice } from "./types";
+import { hhmm, isoToLocal, longDate, longWhen } from "./time";
+import { render, scenario, templateFor } from "./templates";
+import type { BookingView, Invoice, Settings, TemplateKey } from "./types";
 import { METHOD_LABEL } from "./types";
 import { formatXof } from "./money";
 
@@ -65,33 +66,33 @@ const link = (b: { token: string }) => `${site.url}/reservation/${b.token}`;
 const footer = (b?: { token: string }, reminders = false) =>
   `${esc(site.name)} · ${esc(site.phone ?? "")}<br>${b && reminders ? `<a href="${link(b)}?rappels=off" style="color:${IV}">Ne plus recevoir de rappels</a>` : ""}`;
 
-export function confirmationMail(b: BookingView, ics: string): Mail {
-  const first = b.clientName.split(" ")[0];
-  return {
-    to: b.clientEmail!, subject: `Votre rendez-vous du ${longWhen(b.startsAt)}`,
-    html: layout("Votre rendez-vous est confirmé.", `<p>Bonjour ${esc(first)},</p><p>Nous vous attendons chez ZST Beauty Center.</p>${recap(b)}
-<p>${btn(link(b), "Voir, déplacer ou annuler")}</p><p style="font-size:14px;opacity:.8">Le fichier joint vous permet de l'ajouter à votre agenda. Pour déplacer le rendez-vous, annulez-le puis réservez un nouveau créneau, ou écrivez-nous sur WhatsApp.</p>`, footer(b, true)),
-    text: `Bonjour ${first},\n\nVotre rendez-vous est confirmé : ${b.serviceName}, ${longWhen(b.startsAt)}.\nVoir, déplacer ou annuler : ${link(b)}\n\n${site.name}`,
-    attachments: [{ filename: "rendez-vous-zst.ics", content: Buffer.from(ics).toString("base64") }],
-  };
-}
+const paragraphs = (text: string) => text.split(/\n{2,}/).map((p) => `<p style="margin:0 0 14px">${esc(p).replace(/\n/g, "<br>")}</p>`).join("");
 
-export function reminderMail(b: BookingView, kind: "reminder_d1" | "reminder_h2"): Mail {
-  const first = b.clientName.split(" ")[0];
-  const title = kind === "reminder_d1" ? "À demain chez ZST." : "On vous attend dans deux heures.";
+export type MailCtx = { settings: Settings; ics?: string };
+const varsFor = (b: BookingView): Record<string, string> => {
+  const l = isoToLocal(b.startsAt);
   return {
-    to: b.clientEmail!, subject: kind === "reminder_d1" ? `Rappel : demain, ${b.serviceName}` : `Rappel : aujourd'hui à ${longWhen(b.startsAt).split(" à ")[1]}`,
-    html: layout(title, `<p>Bonjour ${esc(first)},</p><p>Un petit rappel de votre rendez-vous.</p>${recap(b)}<p>${btn(link(b), "Voir ou annuler")}</p>`, footer(b, true)),
-    text: `Bonjour ${first},\n\nRappel de votre rendez-vous : ${b.serviceName}, ${longWhen(b.startsAt)}.\nVoir ou annuler : ${link(b)}`,
+    prenom: b.clientName.split(" ")[0], nom: b.clientName, prestation: b.serviceName, date: longDate(l.date), heure: hhmm(l.minutes),
+    quand: longWhen(b.startsAt), adresse: site.address ?? "", telephone: site.phone ?? "",
   };
-}
+};
 
-export function thanksMail(b: BookingView): Mail {
-  const first = b.clientName.split(" ")[0];
+/** Un e-mail de scénario : texte modifiable (sujet, titre, corps) + bloc récapitulatif et bouton fixes. */
+export function scenarioMail(key: TemplateKey, b: BookingView, ctx: MailCtx): Mail | null {
+  const tpl = templateFor(ctx.settings, key);
+  if (!tpl.enabled || !b.clientEmail) return null;
+  const sc = scenario(key);
+  const v = varsFor(b);
+  const reviewUrl = ctx.settings.googleReviewUrl || site.mapsUrl;
+  const href = key === "thanks" ? reviewUrl : key === "client_cancel" || key === "noshow" ? `${site.url}/reserver` : link(b);
+  const withRecap = key !== "thanks" && key !== "noshow";
+  const body = paragraphs(render(tpl.body, v)) + (withRecap ? recap(b) : "") + `<p>${btn(href, esc(sc.button))}</p>`;
+  const reminders = key === "reminder_d1" || key === "reminder_h2" || key === "thanks";
   return {
-    to: b.clientEmail!, subject: "Merci pour votre visite",
-    html: layout("Merci pour votre visite.", `<p>Bonjour ${esc(first)},</p><p>Merci d'avoir pris ce moment chez ZST. Votre avis nous aide beaucoup.</p><p>${btn(site.mapsUrl, "Laisser un avis")}</p>`, footer(b, true)),
-    text: `Bonjour ${first}, merci pour votre visite. Laisser un avis : ${site.mapsUrl}`,
+    to: b.clientEmail, subject: render(tpl.subject, v),
+    html: layout(esc(render(tpl.title, v)), body, footer(b, reminders)),
+    text: `${render(tpl.body, v)}\n\n${sc.button} : ${href}\n\n${site.name}`,
+    attachments: key === "confirmation" && ctx.ics ? [{ filename: "rendez-vous-zst.ics", content: Buffer.from(ctx.ics).toString("base64") }] : undefined,
   };
 }
 

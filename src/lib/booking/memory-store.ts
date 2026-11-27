@@ -3,12 +3,12 @@ import { dirname, join } from "node:path";
 import { services as seedServices, type Service } from "@/data/services";
 import { staff as seedStaff, type Staff } from "@/data/staff";
 import { openingHours as seedHours, type OpeningHours } from "@/data/hours";
-import { DEFAULT_SETTINGS, type Booking, type Client, type Invoice, type Notification, type NotificationStatus, type Settings, type User } from "./types";
+import { DEFAULT_SETTINGS, type Absence, type Booking, type Client, type Invoice, type Notification, type NotificationStatus, type Settings, type TimeEntry, type User } from "./types";
 import type { Store } from "./store";
 
 type Data = {
   services: Service[]; staff: Staff[]; hours: OpeningHours[]; settings: Settings;
-  clients: Client[]; bookings: Booking[]; notifications: Notification[]; users: User[]; invoices: Invoice[];
+  clients: Client[]; bookings: Booking[]; notifications: Notification[]; users: User[]; invoices: Invoice[]; timeEntries: TimeEntry[]; absences: Absence[];
 };
 
 // Stockage dans .data/store.json : pour le développement et les tests. Pas pour la production.
@@ -18,13 +18,13 @@ function load(): Data {
   if (existsSync(FILE)) {
     try {
       const d = JSON.parse(readFileSync(FILE, "utf8"));
-      return { users: [], invoices: [], ...d, staff: (d.staff ?? []).map((s: Staff) => ({ ...s, serviceIds: s.serviceIds ?? [], schedule: s.schedule ?? null, color: s.color ?? "#1C1013" })) };
+      return { users: [], invoices: [], timeEntries: [], absences: [], ...d, staff: (d.staff ?? []).map((s: Staff) => ({ ...s, serviceIds: s.serviceIds ?? [], schedule: s.schedule ?? null, color: s.color ?? "#1C1013" })) };
     } catch { /* repart du modèle */ }
   }
   return {
     services: structuredClone(seedServices), staff: structuredClone(seedStaff),
     hours: structuredClone(seedHours).map((h) => ({ ...h, opens: h.opens ?? "09:00", closes: h.closes ?? "20:00" })),
-    settings: { ...DEFAULT_SETTINGS }, clients: [], bookings: [], notifications: [], users: [], invoices: [],
+    settings: { ...DEFAULT_SETTINGS }, clients: [], bookings: [], notifications: [], users: [], invoices: [], timeEntries: [], absences: [],
   };
 }
 
@@ -78,6 +78,13 @@ export class MemoryStore implements Store {
   async getInvoice(id: string) { return this.fresh().invoices.find((i) => i.id === id) ?? null; }
   async getInvoiceByToken(token: string) { return this.fresh().invoices.find((i) => i.token === token) ?? null; }
   async saveInvoice(i: Invoice) { this.fresh(); this.upsert(this.d.invoices, i); }
+
+  async listTimeEntries(fromIso?: string, toIso?: string) { return this.fresh().timeEntries.filter((t) => (!fromIso || t.inAt >= fromIso) && (!toIso || t.inAt < toIso)).sort((a, b) => a.inAt.localeCompare(b.inAt)); }
+  async saveTimeEntry(t: TimeEntry) { this.fresh(); this.upsert(this.d.timeEntries, t); }
+  async deleteTimeEntry(id: string) { this.fresh(); this.d.timeEntries = this.d.timeEntries.filter((t) => t.id !== id); this.persist(); }
+  async listAbsences() { return this.fresh().absences; }
+  async saveAbsence(a: Absence) { this.fresh(); this.upsert(this.d.absences, a); }
+  async deleteAbsence(id: string) { this.fresh(); this.d.absences = this.d.absences.filter((a) => a.id !== id); this.persist(); }
 
   async listNotifications(f: { bookingId?: string; status?: NotificationStatus; dueBefore?: string; limit?: number } = {}) {
     let l = this.fresh().notifications.filter((n) => (!f.bookingId || n.bookingId === f.bookingId) && (!f.status || n.status === f.status) && (!f.dueBefore || n.sendAt <= f.dueBefore));

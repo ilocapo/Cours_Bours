@@ -15,15 +15,19 @@ export type Perm =
   | "exports"         // exports CSV et Excel
   | "settings"        // horaires, délais, e-mail du salon
   | "notifications"   // journal des e-mails
-  | "users";          // gérer les comptes
+  | "users"           // gérer les comptes
+  | "timeclock"       // faire pointer les employées
+  | "payroll"         // heures et paie du mois
+  | "absences.manage" // valider les congés et absences
+  | "me";             // mon espace (heures, congés)
 
-const ALL: Perm[] = ["agenda.all", "agenda.own", "bookings.manage", "bookings.own", "clients", "catalog", "team", "invoices.read", "invoices.write", "stats", "exports", "settings", "notifications", "users"];
+const ALL: Perm[] = ["agenda.all", "agenda.own", "bookings.manage", "bookings.own", "clients", "catalog", "team", "invoices.read", "invoices.write", "stats", "exports", "settings", "notifications", "users", "timeclock", "payroll", "absences.manage", "me"];
 
 export const PERMS: Record<Role, Perm[]> = {
   super_admin: ALL,
-  gerant: ALL.filter((p) => p !== "users"),
-  employe: ["agenda.own", "bookings.own", "invoices.write"],
-  comptable: ["invoices.read", "stats", "exports"],
+  gerant: ALL.filter((p) => p !== "users" && p !== "me"),
+  employe: ["agenda.own", "bookings.own", "invoices.write", "me"],
+  comptable: ["invoices.read", "stats", "exports", "payroll"],
 };
 
 export const can = (role: Role, perm: Perm) => PERMS[role].includes(perm);
@@ -44,7 +48,11 @@ export const NAV: NavItem[] = [
   { href: "/admin/factures", label: "Factures", perm: "invoices.read" },
   { href: "/admin/statistiques", label: "Statistiques", perm: "stats" },
   { href: "/admin/exports", label: "Exports", perm: "exports" },
+  { href: "/admin/moi", label: "Mon espace", perm: "me" },
   { href: "/admin/equipe", label: "Équipe", perm: "team" },
+  { href: "/admin/pointage", label: "Pointage", perm: "timeclock" },
+  { href: "/admin/absences", label: "Congés", perm: "absences.manage" },
+  { href: "/admin/paie", label: "Paie", perm: "payroll" },
   { href: "/admin/prestations", label: "Prestations", perm: "catalog" },
   { href: "/admin/notifications", label: "E-mails", perm: "notifications" },
   { href: "/admin/reglages", label: "Réglages", perm: "settings" },

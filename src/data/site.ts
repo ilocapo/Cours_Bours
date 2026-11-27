@@ -4,6 +4,8 @@ export const site = {
   slogan: "Là où commence la beauté.",
   instagram: "zst_beauty_center",
   instagramUrl: "https://www.instagram.com/zst_beauty_center/",
+  // Lien direct vers les messages privés Instagram : à mettre dans la bio et sur les affiches (/instagram redirige ici).
+  instagramDm: "https://ig.me/m/zst_beauty_center",
   tiktokUrl: "https://www.tiktok.com/@zst_beautycenter",
   facebookUrl: "https://www.facebook.com/zstbc/",
   address: "Fidjrossè, Cotonou, Bénin" as string | null,

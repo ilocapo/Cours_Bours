@@ -2,9 +2,10 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { getStore, type Store } from "./store";
 import { pickStaff, slotsFor } from "./availability";
 import { buildIcs } from "./ics";
-import { confirmationMail, reminderMail, salonMail, sendMail, thanksMail } from "./mail";
+import { salonMail, scenarioMail, sendMail } from "./mail";
+import { scenario } from "./templates";
 import { addDays, isoToLocal, localToIso, longWhen } from "./time";
-import type { Booking, BookingSource, BookingView, Notification, NotificationType } from "./types";
+import type { Booking, BookingSource, BookingView, Notification, NotificationType, TemplateKey } from "./types";
 import { parsePhone } from "@/lib/phone";
 import { checkEmail, checkName } from "@/lib/validate";
 
@@ -96,7 +97,7 @@ export async function cancelBooking(id: string, by: "client" | "salon", now = ne
   for (const n of await store.listNotifications({ bookingId: id, status: "pending" })) {
     await store.saveNotification({ ...n, status: "skipped", error: "Rendez-vous annulé" });
   }
-  await store.saveNotification({ id: randomUUID(), bookingId: id, type: "salon_cancel", channel: "email", sendAt: now.toISOString(), status: "pending", sentAt: null, error: null });
+  for (const type of ["salon_cancel", "client_cancel"] as const) await store.saveNotification({ id: randomUUID(), bookingId: id, type, channel: "email", sendAt: now.toISOString(), status: "pending", sentAt: null, error: null });
   void by;
   await processDue(now);
   return true;
@@ -115,19 +116,21 @@ export async function processDue(now = new Date()): Promise<{ sent: number; fail
       if (status === "sent") sent++; else if (status === "failed") failed++; else skipped++;
     };
     if (!b) { await finish("skipped", "Rendez-vous introuvable"); continue; }
-    if (b.status === "cancelled" && n.type !== "salon_cancel") { await finish("skipped", "Rendez-vous annulé"); continue; }
+    if (b.status === "cancelled" && n.type !== "salon_cancel" && n.type !== "client_cancel") { await finish("skipped", "Rendez-vous annulé"); continue; }
     const v = await toView(store, b);
     const client = await store.getClient(b.clientId);
-    if ((n.type === "reminder_d1" || n.type === "reminder_h2" || n.type === "thanks") && !client?.consentReminders) { await finish("skipped", "Rappels refusés"); continue; }
+    if ((n.type === "reminder_d1" || n.type === "reminder_h2" || (n.type === "thanks" && scenario("thanks").transactional === false)) && !client?.consentReminders) { await finish("skipped", "Rappels refusés"); continue; }
     if (n.type === "reminder_h2" && new Date(b.startsAt).getTime() < now.getTime()) { await finish("skipped", "Rendez-vous passé"); continue; }
 
     let mail;
     if (n.type === "salon_new" || n.type === "salon_cancel") {
       mail = salonMail(v, n.type); mail.to = settings.salonEmail;
     } else if (!v.clientEmail) { await finish("skipped", "Pas d'adresse e-mail"); continue; }
-    else if (n.type === "confirmation") mail = confirmationMail(v, buildIcs({ id: b.id, startsAt: b.startsAt, endsAt: b.endsAt, title: `${v.serviceName} · ZST Beauty Center`, description: longWhen(b.startsAt) }));
-    else if (n.type === "thanks") mail = thanksMail(v);
-    else mail = reminderMail(v, n.type);
+    else {
+      const ics = n.type === "confirmation" ? buildIcs({ id: b.id, startsAt: b.startsAt, endsAt: b.endsAt, title: `${v.serviceName} · ZST Beauty Center`, description: longWhen(b.startsAt) }) : undefined;
+      mail = scenarioMail(n.type as TemplateKey, v, { settings, ics });
+      if (!mail) { await finish("skipped", "Scénario désactivé"); continue; }
+    }
     const r = await sendMail(mail);
     await finish(r.ok ? "sent" : "failed", r.ok ? null : r.error ?? "Erreur");
   }
