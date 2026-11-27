@@ -19,6 +19,8 @@ type Props = {
   tone?: "iv" | "prune";
   /** Pastille / sticker posé sur l'arche (arche pleine). */
   sticker?: ReactNode;
+  /** Révélation au défilement (désactiver pour du contenu ajouté après coup). */
+  reveal?: boolean;
   /** Une vidéo (sans son) à la place de la photo. */
   video?: { src: string; poster?: string; label: string };
 };
@@ -26,11 +28,11 @@ type Props = {
 // L'arche : forme signature. Demi-cercle en haut, base droite.
 export default function Arch({
   src, alt, position = "center", ratio = "3 / 4", sizes = "(min-width: 1280px) 30vw, 90vw",
-  priority, parallax = true, className = "", frame = "pleine", caption, tone = "iv", sticker, video,
+  priority, parallax = true, className = "", frame = "pleine", caption, tone = "iv", sticker, video, reveal = true,
 }: Props) {
   const img = video ? <LazyVideo src={video.src} poster={video.poster} label={video.label} /> : <Image src={src} alt={alt} fill sizes={sizes} priority={priority} style={{ objectFit: "cover", objectPosition: position }} />;
   const cls = `arch arch--${frame} ${frame === "fenetre" ? `arch--f-${tone}` : ""} ${className}`.trim();
-  const attrs = { "data-arch": true, ...(parallax ? { "data-parallax": true } : {}) };
+  const attrs = { ...(reveal ? { "data-arch": true } : {}), ...(parallax && reveal ? { "data-parallax": true } : {}) };
   if (frame === "pleine") {
     return (
       <div className={cls} style={{ aspectRatio: ratio }} {...attrs}>

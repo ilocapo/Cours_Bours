@@ -18,10 +18,10 @@ export default function GalleryMore() {
       <div className="gmore__panel" id="gmore-panel" inert={!open}>
         <div className="gmore__in">
           {seen && <div className="work__grid work__grid--even gmore__slide">
-            {extra.slice(0, 3).map((p) => <Arch key={p.src} src={p.src} alt={p.alt} position={p.position} ratio="3 / 4" sizes={sizes} />)}
-            <Arch video={videos[2]} src="" alt="" ratio="3 / 4" parallax={false} />
-            {extra.slice(3).map((p) => <Arch key={p.src} src={p.src} alt={p.alt} position={p.position} ratio="3 / 4" sizes={sizes} />)}
-            <Arch video={videos[3]} src="" alt="" ratio="3 / 4" parallax={false} />
+            {extra.slice(0, 3).map((p) => <Arch key={p.src} src={p.src} alt={p.alt} position={p.position} ratio="3 / 4" sizes={sizes} reveal={false} />)}
+            <Arch video={videos[2]} src="" alt="" ratio="3 / 4" parallax={false} reveal={false} />
+            {extra.slice(3).map((p) => <Arch key={p.src} src={p.src} alt={p.alt} position={p.position} ratio="3 / 4" sizes={sizes} reveal={false} />)}
+            <Arch video={videos[3]} src="" alt="" ratio="3 / 4" parallax={false} reveal={false} />
           </div>}
           <button type="button" className="lb link-line gmore__close" onClick={() => setOpen(false)}>Fermer</button>
         </div>

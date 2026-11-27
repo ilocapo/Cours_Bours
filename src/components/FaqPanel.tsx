@@ -13,7 +13,7 @@ export default function FaqPanel() {
       </button>
       <div className="slidein__panel" id="faq-panel" inert={!open}>
         <div className="slidein__in">
-          <div className="slidein__slide">{seen && <Faq />}</div>
+          <div className="slidein__slide">{seen && <Faq animate={false} />}</div>
         </div>
       </div>
     </div>
