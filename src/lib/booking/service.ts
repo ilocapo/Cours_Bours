@@ -133,3 +133,13 @@ export async function processDue(now = new Date()): Promise<{ sent: number; fail
   }
   return { sent, failed, skipped };
 }
+
+/** Passe un rendez-vous en « terminé » et programme (une seule fois) l'e-mail de remerciement. */
+export async function markDone(store: Store, b: Booking): Promise<void> {
+  await store.saveBooking({ ...b, status: "done" });
+  const c = await store.getClient(b.clientId);
+  if (!c?.email || !c.consentReminders) return;
+  const already = (await store.listNotifications({ bookingId: b.id })).some((n) => n.type === "thanks");
+  if (already) return;
+  await store.saveNotification({ id: randomUUID(), bookingId: b.id, type: "thanks", channel: "email", sendAt: new Date(Date.now() + 2 * 3_600_000).toISOString(), status: "pending", sentAt: null, error: null });
+}

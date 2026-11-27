@@ -7,7 +7,7 @@ import { can } from "@/lib/admin/roles";
 import { checkPasswordStrength, hashPassword, verifyPassword } from "@/lib/admin/password";
 import { ensureTestUsers, requireUser, type Current } from "@/lib/admin/session";
 import { getStore } from "@/lib/booking/store";
-import { cancelBooking, createBooking, processDue } from "@/lib/booking/service";
+import { cancelBooking, createBooking, markDone, processDue } from "@/lib/booking/service";
 import { addPayment, createInvoice, sendInvoice, statusFor } from "@/lib/booking/invoices";
 import { sendMail, testMail } from "@/lib/booking/mail";
 import { toXof } from "@/lib/booking/money";
@@ -87,13 +87,8 @@ export async function setStatus(fd: FormData) {
   const id = str(fd, "id"); const status = str(fd, "status") as BookingStatus;
   const { store, b } = await bookingAccess(me, id);
   if (status === "cancelled") await cancelBooking(id, "salon");
-  else {
-    await store.saveBooking({ ...b, status });
-    if (status === "done") {
-      const c = await store.getClient(b.clientId);
-      if (c?.email && c.consentReminders) await store.saveNotification({ id: randomUUID(), bookingId: id, type: "thanks", channel: "email", sendAt: new Date(Date.now() + 2 * 3_600_000).toISOString(), status: "pending", sentAt: null, error: null });
-    }
-  }
+  else if (status === "done") await markDone(store, b);
+  else await store.saveBooking({ ...b, status });
   redirect(back(fd));
 }
 
@@ -167,7 +162,7 @@ export async function createInvoiceAction(fd: FormData) {
   const label = str(fd, "label").trim() || svc?.name || "Prestation";
   const method = (str(fd, "method") || "especes") as PayMethod;
   const inv = await createInvoice(store, { bookingId: b.id, clientId: b.clientId, staffId: b.staffId, lines: [{ label, qty: 1, unitXof: amount! }], paidXof: fd.get("paid") === "on" ? amount! : 0, method, note: str(fd, "note"), createdBy: me.name });
-  await store.saveBooking({ ...b, status: "done" });
+  await markDone(store, b);
   if (str(fd, "intent") === "send") {
     const r = await sendInvoice(store, inv.id);
     if (!r.ok) fail(`Facture ${inv.number} enregistrée, mais l'e-mail n'est pas parti : ${r.error}`);
