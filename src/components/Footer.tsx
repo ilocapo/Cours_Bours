@@ -54,7 +54,7 @@ export default function Footer() {
             <h2 className="lb foot__h">Contact</h2>
             <ul>
               <li>{site.address}</li>
-              {phone && <li><a href={`tel:${phone.replace(/\s/g, "")}`}>{phone}</a></li>}
+              {phone && <li><a href={`tel:${phone.replace(/[^\d+]/g, "")}`}>{phone}</a></li>}
               {site.whatsapp && <li><a href={`https://wa.me/${site.whatsapp}`} target="_blank" rel="noopener noreferrer">WhatsApp</a></li>}
               {site.email && <li><a href={`mailto:${site.email}`}>{site.email}</a></li>}
             </ul>

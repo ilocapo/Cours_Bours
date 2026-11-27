@@ -140,7 +140,7 @@ export default function Header() {
             {today && today.open ? `Aujourd'hui · ${fmt(today.open)} – ${fmt(today.close)}` : "Horaires à venir"}
           </p>
           <p className="lb sheet__info">
-            {site.phone && <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>}
+            {site.phone && <a href={`tel:${site.phone.replace(/[^\d+]/g, "")}`}>{site.phone}</a>}
             {site.whatsapp && <a href={`https://wa.me/${site.whatsapp}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>}
           </p>
         </div>

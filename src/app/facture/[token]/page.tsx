@@ -27,7 +27,7 @@ export default async function Facture({ params }: { params: Promise<{ token: str
         <div><h1 className="bod">Facture {inv.number}</h1><p className="lb dim">{longDate(isoToLocal(inv.issuedAt).date)}</p></div>
       </header>
       <section className="invoice__parties">
-        <div><p className="lb lb--s dim">Émetteur</p><p><strong>{site.name}</strong><br />{site.address}<br />{site.phone && formatPhone(site.phone.replace(/\s/g, ""))}<br />{site.email}</p></div>
+        <div><p className="lb lb--s dim">Émetteur</p><p><strong>{site.name}</strong><br />{site.address}<br />{site.phone && formatPhone(site.phone.replace(/[^\d+]/g, ""))}<br />{site.email}</p></div>
         <div><p className="lb lb--s dim">Facturée à</p><p><strong>{client?.name}</strong><br />{client?.phone && formatPhone(client.phone)}<br />{client?.email}</p></div>
       </section>
       <table className="invoice__table">

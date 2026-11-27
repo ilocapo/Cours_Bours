@@ -6,7 +6,7 @@ const nextConfig = {
   async redirects() {
     return [
       { source: "/instagram", destination: "https://ig.me/m/zst_beauty_center", permanent: false },
-      { source: "/whatsapp", destination: "https://wa.me/22967703535?text=Bonjour%2C%20je%20souhaite%20r%C3%A9server%20un%20rituel%20chez%20ZST%20Beauty%20Center.", permanent: false },
+      { source: "/whatsapp", destination: "https://wa.me/2290167703535?text=Bonjour%2C%20je%20souhaite%20r%C3%A9server%20un%20rituel%20chez%20ZST%20Beauty%20Center.", permanent: false },
     ];
   },
   // La réservation interne s'active seule dès que la base est branchée (SUPABASE_URL),

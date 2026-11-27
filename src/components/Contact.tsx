@@ -36,7 +36,7 @@ export default function Contact({ photo = true, tone = "iv" }: { photo?: boolean
                 <p>{site.address}</p>
                 {site.addressNote && <p className="dim">{site.addressNote}</p>}
                 <p className="contact__lines">
-                  {site.phone && <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>}
+                  {site.phone && <a href={`tel:${site.phone.replace(/[^\d+]/g, "")}`}>{site.phone}</a>}
                   {site.whatsapp && <a href={`https://wa.me/${site.whatsapp}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>}
                 </p>
               </div>
