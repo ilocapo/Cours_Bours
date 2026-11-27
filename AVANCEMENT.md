@@ -6,7 +6,7 @@ Dernière mise à jour : 27 novembre 2026. Légende : ✅ fait · 🟡 fait, act
 - ✅ Accueil immersif, animations, pages Coiffure / Spa / Ongles / La carte, mentions légales, confidentialité
 - ✅ Mobile d'abord, menu mobile, barre « Réserver »
 - ⏳ Logo HD, vraie carte des soins (prix, durées), vidéos
-- 🟡 Adresse, horaires, téléphone : Baruch les a, à m'envoyer
+- ✅ Adresse, horaires, téléphone : déjà sur le site (confirmé par Baruch)
 
 ## 2. Réservation en ligne (v2)
 - ✅ Parcours client : rituel, date, créneau, personne
