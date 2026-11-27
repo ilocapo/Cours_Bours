@@ -26,7 +26,7 @@ export default async function Prestations({ searchParams }: { searchParams: Prom
               <input type="hidden" name="id" value={s.id} /><input type="hidden" name="categoryId" value={c.id} />
               <input name="name" defaultValue={s.name} aria-label="Nom" required />
               <label><input name="durationMin" type="number" min={5} step={5} defaultValue={s.durationMin} aria-label="Durée en minutes" /> <span className="lb lb--s">min</span></label>
-              <label><input name="price" inputMode="numeric" defaultValue={s.price ?? ""} placeholder="—" aria-label="Tarif indicatif interne en francs CFA" /> <span className="lb lb--s">F CFA, indicatif</span></label>
+              <label><input name="price" inputMode="numeric" defaultValue={s.price ?? ""} placeholder="—" aria-label="Tarif indicatif interne en francs CFA" /> <span className="lb lb--s">F CFA</span></label>
               <label className="check"><input type="checkbox" name="active" defaultChecked={s.active} /><span>Actif</span></label>
               <button className="btn btn--outline-prune btn--sm lb">Enregistrer</button>
             </form>
@@ -35,7 +35,7 @@ export default async function Prestations({ searchParams }: { searchParams: Prom
             <input type="hidden" name="categoryId" value={c.id} /><input type="hidden" name="active" value="on" />
             <input name="name" placeholder={`Nouvelle prestation ${c.name.toLowerCase()}`} aria-label="Nom" required />
             <label><input name="durationMin" type="number" min={5} step={5} defaultValue={60} aria-label="Durée" /> <span className="lb lb--s">min</span></label>
-            <label><input name="price" inputMode="numeric" placeholder="—" aria-label="Tarif indicatif" /> <span className="lb lb--s">F CFA, indicatif</span></label>
+            <label><input name="price" inputMode="numeric" placeholder="—" aria-label="Tarif indicatif" /> <span className="lb lb--s">F CFA</span></label>
             <span /><button className="btn btn--prune btn--sm lb">Ajouter</button>
           </form>
         </section>

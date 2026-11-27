@@ -30,13 +30,13 @@ export default async function Paie({ searchParams }: { searchParams: Promise<{ m
           {rows.map((r) => (
             <Link key={r.staffId} href={`/admin/paie/${r.staffId}?m=${month}`} className="paytable__row">
               <strong>{r.name}{r.openNow ? <small className="tag tag--work"> en poste</small> : null}</strong>
-              <span><b>{hm(r.workedMin)}</b><i>{r.plannedMin ? ` (${r.workedMin >= r.plannedMin ? "+" : "−"}${hm(Math.abs(r.workedMin - r.plannedMin))})` : ""}</i></span>
-              <span>{hm(r.plannedMin)}</span><span>{r.daysWorked}</span><span>{r.lateCount}</span>
-              <span>{r.leaveDays + r.sickDays + r.otherDays}{r.sickDays ? ` (dont ${r.sickDays} maladie)` : ""}</span>
-              <span>{r.prestations}{can(me.role, "invoices.read") && r.invoicedXof ? ` · ${formatXof(r.invoicedXof)}` : ""}</span>
+              <span data-l="Heures faites"><b>{hm(r.workedMin)}</b><i>{r.plannedMin ? ` (${r.workedMin >= r.plannedMin ? "+" : "−"}${hm(Math.abs(r.workedMin - r.plannedMin))})` : ""}</i></span>
+              <span data-l="Prévues">{hm(r.plannedMin)}</span><span data-l="Jours">{r.daysWorked}</span><span data-l="Retards">{r.lateCount}</span>
+              <span data-l="Congés">{r.leaveDays + r.sickDays + r.otherDays}{r.sickDays ? ` (dont ${r.sickDays} maladie)` : ""}</span>
+              <span data-l="Prestations">{r.prestations}{can(me.role, "invoices.read") && r.invoicedXof ? ` · ${formatXof(r.invoicedXof)}` : ""}</span>
             </Link>
           ))}
-          <div className="paytable__row paytable__row--tot"><strong>Total</strong><span><b>{hm(tot.w)}</b></span><span>{hm(tot.p)}</span><span /><span /><span /><span /></div>
+          <div className="paytable__row paytable__row--tot"><strong>Total</strong><span data-l="Heures faites"><b>{hm(tot.w)}</b></span><span data-l="Prévues">{hm(tot.p)}</span><span /><span /><span /><span /></div>
         </div>
       )}
       <p className="lb lb--s dim">Heures faites = somme des pointages (arrivée à départ). Prévues = planning de la personne, hors congés approuvés et fermetures. Un retard = arrivée plus de 10 minutes après l&apos;heure prévue. Ouvrez une personne pour corriger un oubli de pointage.</p>
