@@ -40,3 +40,20 @@ Dernière mise à jour : 27 novembre 2026. Légende : ✅ fait · 🟡 fait, act
 - 🟡 Changer les clés exposées (Supabase, Resend, mot de passe base) et les mots de passe de test
 - ⏳ Nom de domaine branché
 - ⏳ Tests e2e à refaire après validation de l'aperçu
+
+## 6. Comptes à créer (coût et priorité)
+| Compte | Pour quoi | Coût | Quand |
+|---|---|---|---|
+| Supabase | base de données, comptes admin | gratuit (offre gratuite suffisante pour un salon) | ✅ déjà créé |
+| Hébergement (Vercel aujourd'hui) | le site | gratuit, voir note ci-dessous | ✅ déjà en place |
+| Resend | e-mails aux clientes | gratuit jusqu'à 3 000 e-mails/mois | ✅ créé, en mode test |
+| Nom de domaine (OVH, Gandi…) | adresse du site et e-mails d'envoi | environ 10 à 15 € par an, seul coût incompressible | avant l'ouverture au public |
+| cron-job.org | déclenche les rappels toutes les 15 min | gratuit | à faire, 5 minutes |
+| Gmail dédié au salon | e-mail du salon en attendant | gratuit | provisoire : `emefa.capo@gmail.com`, à changer plus tard dans Réglages |
+| MTN MoMo / Moov Money | acompte en ligne | à vérifier (compte marchand ou agrégateur local) | plus tard |
+| Brevo ou WhatsApp Business | rappels SMS / WhatsApp | SMS payants à l'unité | plus tard |
+
+Notes
+- Paiement mobile : en attendant, le numéro MTN / Moov du salon déjà sur le site sert pour un paiement manuel. L'acompte en ligne viendra quand le compte marchand existera.
+- Hébergement : Vercel Hobby est gratuit mais réservé à un usage non commercial dans ses conditions. Pour un salon, prévoir Cloudflare Pages (gratuit, usage commercial permis) ou Vercel Pro (environ 20 $ par mois).
+- E-mail du salon : provisoire (`emefa.capo@gmail.com`), à remplacer plus tard dans Réglages.
