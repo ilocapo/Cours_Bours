@@ -22,7 +22,8 @@ Dernière mise à jour : 27 novembre 2026. Légende : ✅ fait · 🟡 fait, act
 - ✅ Agenda refait (jour, semaine, panneau de rendez-vous)
 - ✅ Clients, factures (format temporaire), statistiques, exports
 - ✅ Modèles d'e-mails modifiables, demande d'avis Google
-- ✅ Pointage par code, congés, paie, Mon espace, fermetures exceptionnelles
+- ✅ Pointage par code, congés, paie, Mon espace, fermetures exceptionnelles (pointage testé en ligne par Baruch)
+- ✅ Admin pensé pour le téléphone (onglets en bas, menu en tiroir), validé par Baruch
 - ✅ Migration `0003_pointage_absences.sql` lancée dans Supabase
 - 🟡 Lien d'avis Google à saisir dans Réglages
 - 🟡 E-mail du salon dans Réglages
